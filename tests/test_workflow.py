@@ -6,9 +6,11 @@ import shutil
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 import urllib.parse
 import urllib.request
 import uuid
+from email.message import Message
 from http.server import ThreadingHTTPServer
 
 from vulnflow.correlate import Config, correlate
@@ -36,6 +38,57 @@ class ParserTests(Base):
         got = {os.path.basename(p): detect(p) for p in self.samples}
         self.assertEqual(got, {"zeek_conn.log": "zeek", "paloalto_traffic.csv": "paloalto",
                                "netflow_segment6.csv": "generic", "quarterly_scan.nessus": "nessus"})
+
+    def test_mucaro_archive_links_survive_standalone_reports(self):
+        archive = self.write("mucaro-archive.csv",
+            "indicatorType,indicator,articleUrls,sources,disposition,firstSeenAt,lastSeenAt\n"
+            "cve,CVE-2024-21887,https://research.example/report,Research,Actionable,2026-10-01,2026-10-20\n"
+            "ip,8.8.8.8,https://research.example/indicator,Research,Actionable,2026-10-01,2026-10-20\n"
+            "ip,9.9.9.9,javascript:alert(1),Unknown,Actionable,2026-10-01,2026-10-20\n")
+        output = os.path.join(self.tmp, "archive-output")
+        with patch("vulnflow.article_preview.fetch_preview",
+                   return_value={"title": "Source report", "overview": "A short source-backed overview."}):
+            res, paths = run(self.samples + [archive], output)
+        self.assertEqual(res["ioc_archive"]["indicators"], 2)
+        self.assertIn("CVE-2024-21887", [m["value"] for m in res["ioc_matches"]])
+        self.assertIn("8.8.8.8", [m["value"] for m in res["ioc_matches"]])
+        for name in ("executive_summary.html", "technical_report.html", "explorer.html"):
+            with open(paths[name], encoding="utf-8") as fh:
+                page = fh.read()
+            self.assertIn('id="ioc-drawer"', page)
+            self.assertIn("https://research.example/report", page)
+            self.assertIn("A short source-backed overview.", page)
+            self.assertNotIn("javascript:alert(1)", page)
+
+    def test_article_preview_reads_short_source_description(self):
+        from vulnflow.article_preview import fetch_preview, _public_address
+        self.assertIsNone(_public_address("http://127.0.0.1/private"))
+
+        class Response:
+            status = 200
+            headers = Message()
+            headers["Content-Type"] = "text/html; charset=utf-8"
+
+            def read(self, _limit):
+                return (b'<html><head><title>Research note</title>'
+                        b'<meta name="description" content="A concise source overview."></head>'
+                        b'<body><p>Longer article content stays on the source page.</p></body></html>')
+
+        class Connection:
+            def request(self, *_args, **_kwargs):
+                pass
+
+            def getresponse(self):
+                return Response()
+
+            def close(self):
+                pass
+
+        with patch("vulnflow.article_preview._public_address",
+                   return_value=("research.example", 443, "93.184.215.14", "/report")), \
+             patch("vulnflow.article_preview.http.client.HTTPSConnection", return_value=Connection()):
+            preview = fetch_preview("https://research.example/report")
+        self.assertEqual(preview, {"title": "Research note", "overview": "A concise source overview."})
 
     def test_paloalto_syslog_without_header(self):
         line = ("<14>Oct 16 03:12:00 fw01 1,2026/10/16 03:12:00,0164,TRAFFIC,end,2560,2026/10/16 03:12:00,"

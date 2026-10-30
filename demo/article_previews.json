@@ -1,0 +1,18 @@
+{
+  "https://sansec.io/research/stylesmuggler-0day": {
+    "title": "StyleSmuggler: Magento and Adobe Commerce remote code execution",
+    "overview": "Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."
+  },
+  "https://www.sentinelone.com/labs/dont-call-us-well-call-your-apis-tradertraitor-backdoors-resurface-on-victim-with-no-crypto-ties/": {
+    "title": "TraderTraitor backdoors resurface on an IT-services victim",
+    "overview": "SentinelOne describes job-interview lures that use modified Terraform lock files to install macOS backdoors. The report examines an IT-services victim outside cryptocurrency, attacker-controlled infrastructure, and how the malware sought cloud credentials and API access."
+  },
+  "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/": {
+    "title": "AI-powered espionage campaign targets Linux infrastructure",
+    "overview": "Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."
+  },
+  "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/": {
+    "title": "Star Blizzard refines phishing and RedFlick malware delivery",
+    "overview": "Microsoft describes phishing campaigns that used RedFlick to deliver the CosmicPulse backdoor. The report explains the Windows infection flow, persistence techniques, and network indicators for investigation."
+  }
+}

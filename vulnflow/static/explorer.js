@@ -4,6 +4,11 @@ const D = JSON.parse(document.getElementById('vf-data').textContent);
 const cv = document.getElementById('stage'), ctx = cv.getContext('2d');
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const iocIds = new Set((D.ioc_matches || []).map(item => item.id));
+const iocButton = (type, value, label = value) => {
+  const key = type + ':' + (type === 'cve' ? String(value).toUpperCase() : value);
+  return iocIds.has(key) ? `<button type="button" class="ioc-link" data-ioc-key="${esc(key)}">${esc(label)}</button>` : esc(label);
+};
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // backdrop follows the report theme picked on the vulnflow pages (same browser storage when served);
 // light themes get a dark slate, since the glowing graph needs a dark canvas
@@ -325,6 +330,10 @@ function drawNode(n, T) {
     ctx.strokeStyle = n.color; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(x, y - r * 1.25); ctx.lineTo(x + r * 1.25, y); ctx.lineTo(x, y + r * 1.25); ctx.lineTo(x - r * 1.25, y); ctx.closePath();
     ctx.fill(); ctx.stroke();
+    if (iocIds.has('ip:' + n.d.id)) {
+      ctx.strokeStyle = '#2ee6d6'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke();
+    }
   } else if (!n.d.scanned) {
     ctx.fillStyle = 'rgba(14,22,36,.9)'; ctx.strokeStyle = '#8da2b5'; ctx.lineWidth = 1.5; ctx.setLineDash([2, 2]);
     ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
@@ -392,12 +401,18 @@ function pick(sx, sy) {
   nodes.forEach(n => {
     if (n.a < 0.3) return;
     const [x, y] = toS(n.x, n.y), d = Math.hypot(x - sx, y - sy), r = Math.max(8, n.r * cam.z + 6);
-    if (d < r && d < bd) { bd = d; best = n; }
+    const labelRight = x - r - 8;
+    const labelHit = n.ext && state.mode === 'focus' && state.labels && !n.small && n.a > 0.5
+      && sx >= labelRight - n.d.id.length * 7.5 && sx <= labelRight
+      && Math.abs(sy - (y + 4)) < 12;
+    const score = labelHit ? 0 : d;
+    if ((d < r || labelHit) && score < bd) { bd = score; best = n; }
   });
   return best;
 }
 let drag = null;
-cv.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, cx: cam.tx, cy: cam.ty, moved: false}; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, cx: cam.tx, cy: cam.ty,
+  node: pick(e.clientX, e.clientY), moved: false}; cv.setPointerCapture(e.pointerId); });
 cv.addEventListener('pointermove', e => {
   if (drag) {
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
@@ -411,11 +426,16 @@ cv.addEventListener('pointermove', e => {
   tip(n, e.clientX, e.clientY);
 });
 cv.addEventListener('pointerup', e => {
-  const wasDrag = drag && drag.moved; drag = null; cv.classList.remove('dragging');
+  const wasDrag = drag && drag.moved, startNode = drag && drag.node;
+  drag = null; cv.classList.remove('dragging');
   if (wasDrag) return;
-  const n = pick(e.clientX, e.clientY);
+  const n = pick(e.clientX, e.clientY) || startNode;
   if (!n) return;
- 
+  if (n.ext) {
+    const key = 'ip:' + n.d.id;
+    if (iocIds.has(key)) document.dispatchEvent(new CustomEvent('ioc:open', {detail: {id: key}}));
+    return;
+  }
   if (!n.ext && D.focus[n.id]) focus(n.id);
 });
 cv.addEventListener('dblclick', e => { if (!pick(e.clientX, e.clientY)) { overview(); } });
@@ -439,7 +459,8 @@ function tip(n, x, y) {
         (a.out_ports.length ? `; ports ${esc(a.out_ports.join(', '))}` : '') + '</span>' : '') +
       (a.alerts || a.alerts_blocked ? `<br>IPS: ${a.alerts} not blocked, ${a.alerts_blocked} blocked` : '') +
       (a.signatures.length ? `<br><span class="m">${esc(a.signatures.join('; '))}</span>` : '') +
-      (a.returned && a.dir === 'both' ? '<br><span style="color:#b98cff">The host also connected out to this address (lead)</span>' : '');
+      (a.returned && a.dir === 'both' ? '<br><span style="color:#b98cff">The host also connected out to this address (lead)</span>' : '') +
+      (iocIds.has('ip:' + a.ip) ? '<br><span style="color:#2ee6d6">Click for Múcaro article overview</span>' : '');
   } else {
     const d = n.d, info = state.mode === 'focus' && n.info && n.id !== state.focus ? n.info : null;
     h = `<b>${esc(d.name || d.id)}</b>${d.name ? ` <span class="m">${esc(d.id)}</span>` : ''}<br>` +
@@ -498,8 +519,8 @@ function renderPanel(id) {
   const nAlert = F.attackers.filter(a => a.kind === 'alert').length;
   const atk = F.attackers.map(a =>
     `<div class="row" data-k="atk" data-ip="${esc(a.ip)}"><span class="kind k-${a.kind}" title="${esc(KIND_TXT[a.kind])}"></span>` +
-    `<span class="ip">${esc(a.ip)}</span><span class="lk">${a.sessions ? '← ' + a.sessions : ''}${a.sessions && a.out_sessions ? '  ' : ''}${a.out_sessions ? '→ ' + a.out_sessions : ''}${a.alerts ? ' · ' + a.alerts + ' IPS' : ''}</span>` +
-    `<span class="sub">${esc(KIND_TXT[a.kind])}${a.ports.length ? ' · ports ' + esc(a.ports.join(', ')) : ''}` +
+    `<span class="ip">${iocButton('ip', a.ip)}</span><span class="lk">${a.sessions ? '← ' + a.sessions : ''}${a.sessions && a.out_sessions ? '  ' : ''}${a.out_sessions ? '→ ' + a.out_sessions : ''}${a.alerts ? ' · ' + a.alerts + ' IPS' : ''}</span>` +
+    `<span class="sub">${esc(KIND_TXT[a.kind])}${iocIds.has('ip:' + a.ip) ? ' · ' + iocButton('ip', a.ip, 'Article summary') : ''}${a.ports.length ? ' · ports ' + esc(a.ports.join(', ')) : ''}` +
     `${a.alerts_blocked ? ' · ' + a.alerts_blocked + ' IPS blocked' : ''}` +
     `${a.dir === 'both' && a.out_sessions ? ' · <span style="color:var(--violet)">host also connected out' + (a.out_ports.length ? ' on ' + esc(a.out_ports.join(', ')) : '') + '</span>' : ''}` +
     `${a.dir === 'out' && a.out_ports.length ? ' · ports ' + esc(a.out_ports.join(', ')) : ''}` +
@@ -523,7 +544,7 @@ function renderPanel(id) {
   const fds = F.findings.map(f =>
     `<div class="fd"><span class="pill ${esc(f.pri)}">${esc(f.pri)}</span> <b>${esc(f.name)}</b>` +
     `<div class="meta">${f.port ? esc(f.port + '/' + f.proto) : 'host-level'} · ${esc(f.sev)} · CVSS ${Number(f.cvss).toFixed(1)}` +
-    `${f.exploit ? ' · public exploit' : ''} · score ${f.score}${f.cves.length ? ' · ' + esc(f.cves.join(', ')) : ''}<br>${esc(f.exposure)}</div>` +
+    `${f.exploit ? ' · public exploit' : ''} · score ${f.score}${f.cves.length ? ' · ' + f.cves.map(c => iocButton('cve', c)).join(', ') : ''}<br>${esc(f.exposure)}</div>` +
     f.evidence.map(e => `<div class="ev"><span class="tag ${e.c === 'corroborated' ? 'likely' : 'lead'}">${e.c === 'corroborated' ? 'LIKELY' : 'LEAD'}</span> ${esc(e.t)}</div>`).join('') + '</div>').join('');
   p.innerHTML =
     `<div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><h2>${esc(d.name ? d.name.split('.')[0] : id)}</h2>` +
@@ -539,6 +560,11 @@ function renderPanel(id) {
     `<h3>East / west: internal hosts · blast radius if exploited</h3>${peers}${hop2}` +
     (F.peers_total > F.peers.length ? `<div class="row"><span></span><span class="sub">${F.peers_total - F.peers.length} more not shown</span></div>` : '') +
     `<h3>Vulnerabilities</h3>${fds || '<div class="fd">None at the configured severity.</div>'}` +
+    (D.ioc_matches && D.ioc_matches.some(item => item.hosts.includes(id))
+      ? `<h3>Múcaro IOC matches</h3><div class="note">Exact archive matches are leads for review.</div>` +
+        D.ioc_matches.filter(item => item.hosts.includes(id)).map(item =>
+          `<div class="fd">${iocButton(item.type, item.value)} <span class="meta">${esc(item.type)} · ${item.articles.length} source article(s)</span> · ${iocButton(item.type, item.value, 'View summary')}</div>`).join('')
+      : '') +
     `<div class="note">This view shows all traffic to and from the host in the telemetry: outside addresses on the left, internal hosts on the right. Inbound outside traffic is targeting, not proof of compromise. ` +
     `Likelihood is an estimate from observed sessions, the ports in use and the scanner's findings on each peer. Use it to decide where to look first; only host evidence confirms a compromise. Click a row for the reasons.</div>`;
   p.hidden = false; p.scrollTop = 0;
@@ -581,6 +607,7 @@ $('legend').innerHTML =
   `<span><i style="background:${KIND.reached}"></i>Reached the host</span>` +
   `<span><i style="background:repeating-linear-gradient(90deg,#5b6b82 0 5px,transparent 5px 9px)"></i>Blocked or failed, no session</span>` +
   `<span><i style="background:${RETURN}"></i>Host connected out</span>` +
+  `<span><span class="sw" style="background:transparent;border:2px solid #2ee6d6"></span>Click outlined IOC for article overview</span>` +
   `<span><i style="background:${BAND.High}"></i><i style="background:${BAND.Medium};width:12px"></i><i style="background:${BAND.Low};width:12px"></i>Blast-radius likelihood high / medium / low</span>` +
   `<span><span class="sw" style="background:${SEV.Critical}"></span>Critical <span class="sw" style="background:${SEV.High}"></span>High <span class="sw" style="background:${SEV.Medium}"></span>Medium <span class="sw" style="background:${SEV.Low}"></span>Low</span>` +
   `<span class="cal">Leads and estimates, not confirmed compromise</span>`;

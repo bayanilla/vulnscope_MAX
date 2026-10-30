@@ -1,0 +1,7 @@
+{"ts":"2026-10-17T08:01:00Z","uid":"Ldemo01","id.orig_h":"10.10.1.11","id.resp_h":"10.10.0.53","query":"247.cdnflare.xyz"}
+{"ts":"2026-10-17T08:15:00Z","uid":"Ldemo02","id.orig_h":"10.10.1.11","id.resp_h":"10.10.0.53","query":"ntp.timesync.to"}
+{"ts":"2026-10-17T08:19:00Z","uid":"Ldemo03","id.orig_h":"10.10.1.11","id.resp_h":"10.10.0.53","query":"checkout-cdn.com"}
+{"ts":"2026-10-17T09:59:00Z","uid":"Ldemo04","id.orig_h":"10.10.2.42","id.resp_h":"10.10.0.53","query":"solidmonpe.com"}
+{"ts":"2026-10-17T10:07:00Z","uid":"Ldemo05","id.orig_h":"10.10.2.42","id.resp_h":"10.10.0.53","query":"beraskencur.site"}
+{"ts":"2026-10-17T11:59:00Z","uid":"Ldemo06","id.orig_h":"10.10.3.48","id.resp_h":"10.10.0.53","query":"byveo.org"}
+{"ts":"2026-10-17T12:06:00Z","uid":"Ldemo07","id.orig_h":"10.10.3.48","id.resp_h":"10.10.0.53","query":"secure-dns-hub.com"}

@@ -14,10 +14,9 @@ padding:6px 12px;cursor:pointer;backdrop-filter:blur(8px)}
 button:hover{border-color:var(--cyan);color:#fff}button[aria-pressed="false"]{opacity:.55}
 button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 #hud{position:fixed;top:14px;left:18px;pointer-events:none;text-shadow:0 0 12px rgba(46,230,214,.35)}
-.brand{font-size:15px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
-.brand b{color:var(--fg);letter-spacing:.22em}
-.brand .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cyan);margin-right:10px;
-box-shadow:0 0 10px var(--cyan);animation:pulse 2s infinite}
+.brand{display:flex;align-items:center;gap:7px;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.brand b{color:var(--fg);letter-spacing:.14em}
+.brand .view{color:var(--cyan);font-size:11px;letter-spacing:.16em;border-left:1px solid var(--line);padding-left:9px;margin-left:3px}
 #subtitle{color:var(--muted);font-size:12px;margin-top:4px}
 #controls{position:fixed;top:14px;right:18px;display:flex;gap:8px;z-index:3}
 #rail{position:fixed;top:78px;left:18px;bottom:96px;width:260px;display:flex;flex-direction:column;gap:8px;z-index:2}

@@ -1,4 +1,7 @@
-# Vulnerability Exposure Workflow (`vulnflow`)
+# Múcaro VulnScope
+
+The command-line package remains `vulnflow` for existing workflows. VulnScope Explorer is the
+interactive network view within Múcaro VulnScope.
 
 Upload network telemetry and Nessus results. The workflow cleans and normalizes them,
 works out which vulnerable services are actually reachable and from where, how far a
@@ -19,6 +22,10 @@ python3 -m vulnflow analyze samples -o example_output
 python3 -m vulnflow analyze /path/to/log-bundle -o out \
     --internal-net 10.0.0.0/8 --internal-net 172.16.0.0/12
 
+# Optional: add a Múcaro IOC Archive CSV export for source-article links
+python3 -m vulnflow analyze /path/to/log-bundle -o out \
+    --ioc-archive /path/to/mucaro-60-day-ioc-archive.csv
+
 # 3. Point it at a folder and open the interactive host explorer in your browser
 python3 -m vulnflow explore ~/Documents/case-logs            # add --host 10.0.1.10 to open on one host
 
@@ -27,6 +34,24 @@ python3 -m vulnflow serve --port 8080          # http://127.0.0.1:8080/
 ```
 
 Run tests with `python3 -m unittest discover -s tests` (no model or network needed).
+
+### Múcaro IOC Archive links
+
+Export the **IOC Archive** as CSV in Múcaro, selecting the 60-day window and the desired filters. Add
+that CSV with `--ioc-archive`, include it in an analyzed folder, or upload it with telemetry and a Nessus
+scan on the local upload page. VulnScope compares exact IPs in network sessions and IDS/IPS alerts,
+CVEs in scan findings, and domains, URLs, hashes, and packages in matching Zeek event fields. Matched
+indicators appear in the executive report, technical report, and host Explorer. Click one in the HTML
+pages to open its source article links. The links are saved in the standalone output, so the popup
+does not depend on Múcaro's feed remaining live. For matched source articles, VulnScope reads the
+public page's title and description or lead paragraphs and saves a short overview alongside the
+link. This is a source preview, not a Múcaro AI Brief. Use `--no-article-preview` to skip fetching,
+or `--article-preview-cache /path/to/previews.json` to reuse saved overviews offline. If a page
+cannot be read, its link remains available. An IOC match is a lead for review, not confirmation
+of compromise. This import uses a CSV snapshot; automated API retrieval is a separate step.
+
+See [the synthetic Múcaro cases](demo/README.md) for repeatable small and 250-host demos with
+multiple source-linked indicators.
 
 ## Supported inputs (auto-detected)
 
@@ -217,3 +242,8 @@ How it is kept honest and safe:
   way to prioritise investigation, not as a final verdict.
 - Natural next steps: use Zeek `dns.log` for hostname-to-IP mapping, file evidence from `files.log`,
   and a Splunk/Elastic export target.
+
+## License
+
+MIT. See [LICENSE](LICENSE). The Múcaro browser tab icon retains its original
+MIT attribution in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

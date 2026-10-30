@@ -23,6 +23,7 @@ from urllib.parse import unquote
 import json
 
 from . import multipart
+from .branding import PRODUCT_NAME, icon_data_uri
 from .correlate import Config
 from dataclasses import replace
 from urllib.parse import parse_qs
@@ -39,7 +40,7 @@ TYPES = {".html": "text/html; charset=utf-8", ".md": "text/markdown; charset=utf
          ".jsonl": "application/x-ndjson; charset=utf-8"}
 
 FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>vulnScope</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>{product_name}</title><link rel="icon" href="{icon}">
 {theme_init}<style>{css} form{{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:16px 0}}
 label{{display:block;font-weight:600;margin:14px 0 4px}} .hint{{color:var(--muted);font-size:.9rem}}
 button{{margin-top:18px;padding:8px 18px;font-size:1rem}}
@@ -52,7 +53,7 @@ button.secondary{{background:transparent;color:var(--fg);border:1px solid var(--
 #pk-list{{list-style:none;margin:8px 0 0;padding:0;max-height:280px;overflow:auto;border-top:1px solid var(--line)}}
 #pk-list li{{padding:5px 8px;cursor:pointer;border-bottom:1px solid var(--line)}} #pk-list li:hover,#pk-list li:focus{{background:rgba(127,127,127,.15)}}
 #pk-list li::before{{content:"📁  "}}</style></head><body>{theme_ui}
-<h1>Point vulnScope to the files</h1>
+<h1>Analyze files with {product_name}</h1>
 <p>Point the workflow at a folder of network telemetry and Nessus results, or upload files. It cleans and
 normalizes the data, correlates scanned hosts with observed traffic, and produces an executive summary and a
 technical report.</p>
@@ -82,6 +83,9 @@ technical report.</p>
 <label for="scans">Vulnerability scans</label>
 <input id="scans" type="file" name="scans" multiple>
 <div class="hint">Nessus .nessus (preferred) or Nessus CSV export.</div>
+<label for="ioc_archive">Múcaro IOC Archive (optional)</label>
+<input id="ioc_archive" type="file" name="ioc_archive" accept=".csv,text/csv">
+<div class="hint">Export a 60-day IOC Archive CSV from Múcaro to link exact matches to their source articles.</div>
 <label for="nets">Internal networks (optional)</label>
 <input id="nets" type="text" name="internal_nets" placeholder="10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16">
 <div class="hint">Anything outside these ranges is treated as the internet. Leave blank for private ranges.</div>
@@ -136,7 +140,7 @@ technical report.</p>
 def _page(title, body):
     return (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-            f"<title>{html.escape(title)}</title>{THEME_INIT}<style>{CSS}</style></head>"
+            f"<title>{html.escape(title)} · {PRODUCT_NAME}</title><link rel=\"icon\" href=\"{icon_data_uri()}\">{THEME_INIT}<style>{CSS}</style></head>"
             f"<body>{theme_control()}{body}</body></html>")
 
 
@@ -285,6 +289,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
         def _form(self, error=""):
             err = f'<p style="color:#c0392b"><strong>{html.escape(error)}</strong></p>' if error else ""
             self._send(200, FORM.format(css=CSS, theme_init=THEME_INIT, theme_ui=theme_control(),
+                                        product_name=PRODUCT_NAME, icon=icon_data_uri(),
                                         error=err, formats=", ".join(FORMATS), csrf=csrf,
                                         csrf_js=json.dumps(csrf), native_js="true" if NATIVE_PICKER else "false",
                                         path=html.escape(state.get("last_path", ""))))

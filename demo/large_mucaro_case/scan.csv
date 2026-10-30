@@ -1,0 +1,2 @@
+Plugin ID,CVE,CVSS v3.0 Base Score,Risk,Host,Protocol,Port,Name,Synopsis,Solution
+990001,CVE-2026-75650,10.0,Critical,10.10.1.11,tcp,443,Synthetic Magento StyleSmuggler finding,Fabricated scan finding for the source-linked web server storyline.,Apply the vendor hotfix and review host evidence.

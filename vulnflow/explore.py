@@ -263,7 +263,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                    "alerts": s.get("threat_alerts", 0)},
         "nodes": [nodes[n] for n in keep],
         "links": [[a, b, w] for (a, b), w in sorted(links.items(), key=lambda kv: -kv[1])[:3000]],
-        "focus": focus,
+        "focus": focus, "ioc_matches": res.get("ioc_matches", []),
         "start": res["hosts"][0]["host"] if res["hosts"] else None,
     }
 
@@ -274,10 +274,13 @@ def _read(name: str) -> str:
 
 
 def html(data: dict) -> str:
+    from . import ioc_archive
+    from .branding import EXPLORER_NAME, PRODUCT_NAME, icon_data_uri
     blob = json.dumps(data, separators=(",", ":"), default=str).replace("</", "<\\/")
     return ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-            "<title>vulnflow Explorer</title><style>" + _read("explorer.css") + "</style></head><body>"
+            f"<title>{EXPLORER_NAME} · {PRODUCT_NAME}</title><link rel=\"icon\" href=\"{icon_data_uri()}\"><style>" + _read("explorer.css") + ioc_archive.CSS + "</style></head><body>"
             + _read("explorer.html")
             + f'<script id="vf-data" type="application/json">{blob}</script>'
-            + "<script>" + _read("explorer.js") + "</script></body></html>\n")
+            + "<script>" + _read("explorer.js") + "</script>"
+            + ioc_archive.drawer_html(data["ioc_matches"]) + "</body></html>\n")

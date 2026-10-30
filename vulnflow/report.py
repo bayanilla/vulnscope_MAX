@@ -9,6 +9,7 @@ import os
 import re
 
 from .correlate import PRIORITY_LABELS
+from .branding import PRODUCT_NAME, icon_data_uri
 
 
 def _c(v) -> str:
@@ -51,7 +52,7 @@ def executive_summary(res: dict) -> str:
     nm = lambda ips: ", ".join(names.get(ip, ip) for ip in ips)
     gaps = cov["active_servers_not_scanned"]
 
-    L = ["# Executive Summary: Vulnerability Exposure Assessment", "",
+    L = [f"# {PRODUCT_NAME}: Executive Summary", "",
          f"Prepared {res['generated'][:10]}. Network activity analysed from "
          f"{s['window_start'] or 'n/a'} to {s['window_end'] or 'n/a'}.", "",
          "## Bottom line", ""]
@@ -88,6 +89,10 @@ def executive_summary(res: dict) -> str:
     if gaps:
         bottom.append(f"{_plural(len(gaps), 'active server')} seen on the network "
                       f"{'was' if len(gaps) == 1 else 'were'} not in the scan, so their risk is unknown.")
+    if res.get("ioc_matches"):
+        bottom.append(f"{_plural(len(res['ioc_matches']), 'observed indicator')} matched the imported "
+                      "Múcaro IOC Archive. Review the source reports and surrounding telemetry; "
+                      "a match alone does not confirm malicious activity.")
     L += ["\n\n".join(bottom), "", "## Key numbers", "",
           "| Measure | Value |", "|---|---|",
           f"| Systems scanned | {cov['scanned_hosts']} |",
@@ -97,8 +102,10 @@ def executive_summary(res: dict) -> str:
           f"| Vulnerable services reached from the internet | {len(exposed)} |",
           f"| Exploitable vulnerabilities with observed traffic | {s['exploitable_and_exposed']} |",
           f"| Systems with corroborated evidence / to investigate / possible next targets | {len(corr)} / {len(inv)} / {len(spread)} |",
-          f"| Active servers missing from the scan | {len(gaps)} |", "",
-          "## Top risks", ""]
+          f"| Active servers missing from the scan | {len(gaps)} |"]
+    if "ioc_matches" in res:
+        L.append(f"| Múcaro IOC Archive matches | {len(res['ioc_matches'])} |")
+    L += ["", "## Top risks", ""]
     top = [r for r in F if r["priority"] in ("P1", "P2")][:5] or F[:3]
     if not top:
         L.append("No vulnerabilities at or above the configured severity were found.")
@@ -130,9 +137,10 @@ def executive_summary(res: dict) -> str:
                     + (f" If confirmed, extend the check to {nm(spread)}." if spread and not corr else ""))
     elif spread and not corr:
         recs.append(f"**Check {nm(spread)}** for unexpected connections and signs of compromise.")
-    if exposed_expl:
-        hs = sorted({_name(r['host'], r['hostname']) for r in exposed_expl})
-        recs.append(f"**Patch or shield internet-facing exploitable services within 48 hours**: {', '.join(hs)}. "
+    exposed_urgent = [r for r in exposed if r["exploit_available"] or r["host"] in corr]
+    if exposed_urgent:
+        hs = sorted({_name(r['host'], r['hostname']) for r in exposed_urgent})
+        recs.append(f"**Patch or shield high-risk internet-facing services within 48 hours**: {', '.join(hs)}. "
                     f"If a patch cannot go in, restrict access at the firewall.")
     wide = [h for h in H if h["blast"]["vulnerable_pivots"] and h["priority"] in ("P1", "P2")]
     if wide:
@@ -156,13 +164,17 @@ def executive_summary(res: dict) -> str:
           "A system with no observed traffic is scored as \"unknown\" rather than safe. Telemetry only shows "
           "what the sensors could see, so absence of traffic is not proof that a service is unreachable.",
           "", "Full evidence for every finding is in the technical report."]
-    return "\n".join(L) + "\n"
+    report = "\n".join(L) + "\n"
+    if "ioc_matches" in res:
+        from .ioc_archive import markdown_section
+        report += "\n" + markdown_section(res["ioc_matches"])
+    return report
 
 
 # ---------------------------------------------------------------- technical
 def technical_report(res: dict) -> str:
     s, cov, F, H, cfg = res["summary"], res["coverage"], res["findings"], res["hosts"], res["config"]
-    L = ["# Technical Analysis: Vulnerability and Network Telemetry Correlation", "",
+    L = [f"# {PRODUCT_NAME}: Technical Analysis", "",
          f"Generated {res['generated']}. Telemetry window {s['window_start'] or 'n/a'} to {s['window_end'] or 'n/a'}.",
          "", "## 1. Inputs and data quality", "",
          "| File | Format | Records read | Kept | Dropped | Notes |", "|---|---|---|---|---|---|"]
@@ -287,7 +299,11 @@ def technical_report(res: dict) -> str:
           "- `normalized/flows.csv`, `normalized/findings.csv`: cleaned inputs in the common schema",
           "- `normalized/zeek_events.jsonl`: other Zeek streams with stream identity and source fields",
           "- `normalized/ot_events.jsonl`: industrial protocol records with operation and message direction"]
-    return "\n".join(L) + "\n"
+    report = "\n".join(L) + "\n"
+    if "ioc_matches" in res:
+        from .ioc_archive import markdown_section
+        report += "\n" + markdown_section(res["ioc_matches"])
+    return report
 
 
 # ---------------------------------------------------------------- HTML
@@ -305,7 +321,7 @@ catch (_) { document.documentElement.dataset.theme = 'dark'; }
 
 def theme_control() -> str:
     options = "".join(f'<option value="{value}">{label}</option>' for value, label in THEMES)
-    return (f'<div class="theme-bar"><span class="theme-brand">vulnPath</span>'
+    return (f'<div class="theme-bar"><span class="theme-brand">{PRODUCT_NAME}</span>'
             f'<label for="theme-choice">Theme</label><select id="theme-choice" aria-label="Theme">{options}</select></div>'
             '<script>(function(){const s=document.getElementById("theme-choice");'
             'const root=document.documentElement;'
@@ -331,7 +347,7 @@ h1{font-size:1.65rem;margin-top:.8rem}h2{margin-top:2rem;border-bottom:1px solid
 h3{margin-top:1.8rem;color:var(--accent)}h4{margin-bottom:.3rem}
 a{color:var(--accent)}a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .theme-bar{display:flex;align-items:center;gap:.65rem;padding:.55rem .8rem;margin:-24px -22px 24px;background:var(--bar);border-bottom:1px solid var(--line);color:var(--fg)}
-.theme-brand{font-weight:800;letter-spacing:.02em;margin-right:auto}.theme-bar label{font-size:.82rem;margin:0}.theme-bar select{max-width:180px;padding:.25rem .4rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);color:var(--fg);font:inherit}
+.theme-brand{display:inline-flex;align-items:center;gap:.45rem;font-weight:800;letter-spacing:.02em;margin-right:auto}.theme-bar label{font-size:.82rem;margin:0}.theme-bar select{max-width:180px;padding:.25rem .4rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);color:var(--fg);font:inherit}
 form,.msg{background:var(--panel)}button{background:var(--accent);color:var(--accent-text);border:1px solid var(--accent);border-radius:var(--radius);cursor:pointer}button:hover{filter:brightness(1.08)}
 input,textarea,select{accent-color:var(--accent)}input[type=text],input[type=password],textarea,select{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:var(--radius)}
 table{border-collapse:collapse;width:100%;margin:.6rem 0;font-size:.9rem;display:block;overflow-x:auto}
@@ -422,19 +438,24 @@ def md_body(md: str, inserts: dict | None = None) -> str:
     return "\n".join(o for o in out if o)
 
 
-def md_to_html(md: str, title: str, inserts: dict | None = None) -> str:
+def md_to_html(md: str, title: str, inserts: dict | None = None,
+               ioc_matches: list[dict] | None = None) -> str:
     """Standalone HTML page. With `inserts` (the reports) the visual layer is added: badges,
     tiles, diagrams and the interactive findings table."""
     from . import visual
+    from . import ioc_archive
+    if inserts is not None and ioc_matches:
+        inserts = {**inserts, "Múcaro IOC matches": [{"replace_table": ioc_archive.table_html(ioc_matches)}]}
     body = md_body(md, inserts)
     script = ""
     if inserts is not None:
         body, script = visual.decorate(body), visual.SCRIPT
     return (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-            f"<title>{html.escape(title)}</title>{THEME_INIT}<style>{CSS}{visual.VISUAL_CSS}</style></head><body>"
+            f"<title>{html.escape(title)} · {PRODUCT_NAME}</title><link rel=\"icon\" href=\"{icon_data_uri()}\">{THEME_INIT}<style>{CSS}{visual.VISUAL_CSS}"
+            f"{ioc_archive.CSS if ioc_matches else ''}</style></head><body>"
             + theme_control()
-            + body + script + "</body></html>\n")
+            + body + script + ioc_archive.drawer_html(ioc_matches or []) + "</body></html>\n")
 
 
 # ---------------------------------------------------------------- write all
@@ -459,9 +480,11 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
     w("executive_summary.md", ex)
     from . import visual
     from .diagram import hostile_activity_svg
-    w("executive_summary.html", md_to_html(ex, "Executive Summary", visual.executive_inserts(res)))
+    w("executive_summary.html", md_to_html(ex, "Executive Summary", visual.executive_inserts(res),
+                                           res.get("ioc_matches")))
     w("technical_report.md", tech)
-    w("technical_report.html", md_to_html(tech, "Technical Analysis", visual.technical_inserts(res)))
+    w("technical_report.html", md_to_html(tech, "Technical Analysis", visual.technical_inserts(res),
+                                         res.get("ioc_matches")))
     w("hostile_activity.svg", hostile_activity_svg(res, standalone=True))
     from . import explore
     w("explorer.html", explore.html(explore.build(res, ds)))

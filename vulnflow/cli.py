@@ -98,6 +98,12 @@ def main(argv=None) -> int:
     a.add_argument("-o", "--out", default="vulnflow_out")
     a.add_argument("--format", action="append", default=[], metavar="FILE=FORMAT",
                    help=f"force a file's format ({', '.join(FORMATS)})")
+    a.add_argument("--ioc-archive", action="append", default=[], metavar="CSV",
+                   help="Múcaro IOC Archive CSV export (repeatable; also detected inside input folders)")
+    a.add_argument("--no-article-preview", action="store_true",
+                   help="skip fetching short source previews for matched archive articles")
+    a.add_argument("--article-preview-cache", metavar="JSON",
+                   help="saved short source overviews keyed by article URL (useful offline)")
     a.add_argument("--llm", action="store_true", help="also write an AI analyst brief")
     common(a)
     _llm_flags(a)
@@ -128,6 +134,12 @@ def main(argv=None) -> int:
     x.add_argument("--host", dest="focus", metavar="IP", help="open focused on this host")
     x.add_argument("--no-open", action="store_true", help="write the explorer without opening a browser")
     x.add_argument("--format", action="append", default=[], metavar="FILE=FORMAT", help=argparse.SUPPRESS)
+    x.add_argument("--ioc-archive", action="append", default=[], metavar="CSV",
+                   help="Múcaro IOC Archive CSV export")
+    x.add_argument("--no-article-preview", action="store_true",
+                   help="skip fetching short source previews")
+    x.add_argument("--article-preview-cache", metavar="JSON",
+                   help="saved short source overviews keyed by article URL")
     common(x)
 
     g = sub.add_parser("samples", help="write synthetic sample inputs")
@@ -177,9 +189,11 @@ def main(argv=None) -> int:
     if args.cmd == "explore" and not args.out:
         args.out = os.path.join("vulnflow_out", os.path.basename(os.path.abspath(args.files[0])) or "explore")
     overrides = dict(x.split("=", 1) for x in args.format)
-    files = _input_files(args.files, args.out)
+    files = _input_files(args.files, args.out) + args.ioc_archive
     try:
-        res, paths = run(files, args.out, _cfg(args), overrides)
+        res, paths = run(files, args.out, _cfg(args), overrides,
+                         article_previews=not args.no_article_preview,
+                         article_preview_cache=args.article_preview_cache)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -190,6 +204,8 @@ def main(argv=None) -> int:
     print(f"P1 {pc['P1']}  P2 {pc['P2']}  P3 {pc['P3']}  P4 {pc['P4']}")
     print(f"corroborated exploitation evidence: {', '.join(s['hosts_corroborated']) or 'none'}; "
           f"leads to investigate: {', '.join(s['hosts_to_investigate'] + s['hosts_possible_spread']) or 'none'}")
+    if "ioc_matches" in res:
+        print(f"Múcaro IOC Archive matches for source review: {len(res['ioc_matches'])}")
     if args.cmd == "explore":
         url = "file://" + os.path.abspath(paths["explorer.html"]) + (f"#host={args.focus}" if args.focus else "")
         print(f"\nExplorer: {url}")

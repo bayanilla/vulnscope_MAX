@@ -7,5 +7,6 @@ vulnflow.log
 server.log
 vulnflow_runs/
 vulnflow_out/
+demo/*_output/
 # separate git repository (github.com/bayanilla/vulnpath)
 vulnpath/
