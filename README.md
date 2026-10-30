@@ -13,10 +13,20 @@ AI analyst needs `pip install anthropic` only if you choose Anthropic.
 
 ## Quick start
 
+**Want to see the indicators immediately?** The download includes a ready-made, synthetic
+250-host demo with 14 exact Múcaro archive matches from three articles. Open
+`example_output/explorer.html` in your browser, or open
+`example_output/executive_summary.html` and `example_output/technical_report.html`.
+Click an indicator to see its saved article overview and source link. These pages work as
+local files; GitHub's source preview does not run the interactive HTML. AI-generated article
+briefs require a user-provided OpenAI key and the separate generation step below.
+
 ```bash
-# 1. Try it on the synthetic sample environment (250 hosts, about 9,800 sessions)
+# 1. Rebuild the included indicator demo (250 hosts, about 9,800 sessions)
 python3 -m vulnflow samples samples
-python3 -m vulnflow analyze samples -o example_output
+python3 -m vulnflow analyze samples demo/large_mucaro_case \
+    --ioc-archive demo/large_mucaro_archive.csv \
+    --article-preview-cache demo/article_previews.json -o example_output
 
 # 2. Run on real data (files or recursively scanned folders, any mix of formats)
 python3 -m vulnflow analyze /path/to/log-bundle -o out \

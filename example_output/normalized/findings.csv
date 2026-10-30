@@ -1,5 +1,6 @@
 host_ip,hostname,os,port,proto,service,plugin_id,plugin_name,severity,cvss,cvss_version,cves,exploit_available,exploit_frameworks,source
 10.10.1.10,web01.corp.example,Linux Kernel 5.4 on Ubuntu 20.04,443,tcp,www,153884,Apache 2.4.49 < 2.4.51 Path Traversal and RCE,4,9.8,3,CVE-2021-41773 CVE-2021-42013,True,Metasploit,quarterly_scan.nessus
+10.10.1.11,web02.corp.example,Linux Kernel 5.15 on Ubuntu 22.04,443,tcp,,990001,Synthetic Magento StyleSmuggler finding,4,10.0,3,CVE-2026-75650,False,,scan.csv
 10.10.1.20,app01.corp.example,Linux Kernel 5.15 on Ubuntu 22.04,8009,tcp,ajp13,134862,Apache Tomcat AJP Connector Request Injection (Ghostcat),4,9.8,3,CVE-2020-1938,True,Metasploit,quarterly_scan.nessus
 10.10.1.30,vpn01.corp.example,Ivanti Connect Secure 22.3,443,tcp,www,189987,Ivanti Connect Secure Command Injection (CVE-2024-21887),4,9.1,3,CVE-2023-46805 CVE-2024-21887,True,Metasploit,quarterly_scan.nessus
 10.10.2.24,sql01.corp.example,Microsoft Windows Server 2016,1433,tcp,mssql,73756,Microsoft SQL Server Unsupported Version Detection,4,10.0,3,,False,,quarterly_scan.nessus

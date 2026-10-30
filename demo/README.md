@@ -1,5 +1,10 @@
 # Múcaro VulnScope synthetic demos
 
+The repository download already includes a built version of the large demo in
+`example_output/`. Open `example_output/explorer.html` locally to click the 14
+matched indicators, or open its executive and technical HTML reports. The
+commands below regenerate equivalent pages from the bundled synthetic inputs.
+
 ## 250-host, three-article demo
 
 This combines the existing 250-host sample with fabricated events on three of its hosts. A web server

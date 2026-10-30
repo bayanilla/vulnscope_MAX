@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Executive Summary</title><script>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Executive Summary · Múcaro VulnScope</title><link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0iIzBGMTcyQSIvPgogIDxwYXRoIGQ9Ik0xMiA0OFYxNkgyMUwzMiAzM0w0MyAxNkg1MlY0OEg0M1YzMUwzMiA0N0wyMSAzMVY0OEgxMloiIGZpbGw9IiMyMkQzRUUiLz4KPC9zdmc+Cg=="><script>
 try { document.documentElement.dataset.theme = localStorage.getItem('vulnflow-theme') || 'dark'; }
 catch (_) { document.documentElement.dataset.theme = 'dark'; }
 </script><style>
@@ -18,7 +18,7 @@ h1{font-size:1.65rem;margin-top:.8rem}h2{margin-top:2rem;border-bottom:1px solid
 h3{margin-top:1.8rem;color:var(--accent)}h4{margin-bottom:.3rem}
 a{color:var(--accent)}a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .theme-bar{display:flex;align-items:center;gap:.65rem;padding:.55rem .8rem;margin:-24px -22px 24px;background:var(--bar);border-bottom:1px solid var(--line);color:var(--fg)}
-.theme-brand{font-weight:800;letter-spacing:.02em;margin-right:auto}.theme-bar label{font-size:.82rem;margin:0}.theme-bar select{max-width:180px;padding:.25rem .4rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);color:var(--fg);font:inherit}
+.theme-brand{display:inline-flex;align-items:center;gap:.45rem;font-weight:800;letter-spacing:.02em;margin-right:auto}.theme-bar label{font-size:.82rem;margin:0}.theme-bar select{max-width:180px;padding:.25rem .4rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);color:var(--fg);font:inherit}
 form,.msg{background:var(--panel)}button{background:var(--accent);color:var(--accent-text);border:1px solid var(--accent);border-radius:var(--radius);cursor:pointer}button:hover{filter:brightness(1.08)}
 input,textarea,select{accent-color:var(--accent)}input[type=text],input[type=password],textarea,select{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:var(--radius)}
 table{border-collapse:collapse;width:100%;margin:.6rem 0;font-size:.9rem;display:block;overflow-x:auto}
@@ -113,60 +113,80 @@ path.e-return,path.e-ips,path.e-ips-blocked,path.e-spread,path.e-onward,path.e-i
 .tag-likely{fill:var(--sev-critical,#f87171)}.tag-lead{fill:var(--sev-medium,#facc15)}.tag-tx{fill:var(--bg,#0f172a)}
 .dg-dim{opacity:.18}.dg-focus rect,.dg-focus circle{stroke-width:4px}
 .node,.bnode{cursor:pointer}
-</style></head><body><div class="theme-bar"><span class="theme-brand">vulnPath</span><label for="theme-choice">Theme</label><select id="theme-choice" aria-label="Theme"><option value="dark">SOC Dark</option><option value="nord">Nord Calm</option><option value="high-contrast">High Contrast</option><option value="light">Light</option><option value="classic-windows">Classic Windows</option><option value="matrix">Matrix</option><option value="aqua">Mac OS X Aqua</option><option value="win2k">Windows 2000</option></select></div><script>(function(){const s=document.getElementById("theme-choice");const root=document.documentElement;s.value=[...s.options].some(o=>o.value===root.dataset.theme)?root.dataset.theme:"dark";s.addEventListener("change",()=>{root.dataset.theme=s.value;try{localStorage.setItem("vulnflow-theme",s.value)}catch(_){}})})();</script><h1>Executive Summary: Vulnerability Exposure Assessment</h1>
-<p>Prepared 2026-10-21. Network activity analysed from 2026-10-12T00:01:19Z to 2026-10-18T03:11:38Z.</p>
+
+.ioc-link{font:inherit;color:#2da8b7;background:transparent;border:0;padding:0;text-align:left;
+text-decoration:underline;text-underline-offset:3px;cursor:pointer;overflow-wrap:anywhere}
+.ioc-link:hover,.ioc-link:focus-visible{color:#7ce7ef}
+.ioc-shade[hidden],.ioc-drawer[hidden]{display:none!important}
+.ioc-shade{position:fixed;inset:0;background:#0009;z-index:1000}
+.ioc-drawer{position:fixed;right:0;top:0;bottom:0;width:min(460px,100vw);padding:24px;
+overflow:auto;background:#101c2b;color:#eef7ff;border-left:1px solid #42637c;z-index:1001;
+box-shadow:-16px 0 45px #0009;font:14px/1.5 system-ui,sans-serif}
+.ioc-drawer h2{margin:0 0 8px;font-size:20px}.ioc-drawer p{margin:8px 0;color:#b9cadb}
+.ioc-drawer-brand{display:flex;align-items:center;gap:8px;margin:0 0 18px;font-weight:800;letter-spacing:.03em}
+.ioc-drawer-brand span{font-size:11px;font-weight:500;color:#b9cadb}
+.ioc-drawer .ioc-close{float:right;background:#253a4d;color:#fff;border:1px solid #54728d;
+border-radius:6px;padding:5px 10px;cursor:pointer}
+.ioc-drawer a{color:#79dce7;overflow-wrap:anywhere}.ioc-drawer li{margin:8px 0}
+.ioc-brief{margin:12px 0;padding:12px;border:1px solid #42637c;border-radius:8px;background:#172a3c}
+.ioc-brief h4{margin:0 0 6px;color:#79dce7}.ioc-brief ol{padding-left:20px;margin:6px 0}
+.ioc-brief details{margin-top:10px}.ioc-brief summary{cursor:pointer;color:#79dce7}
+@media print{.ioc-shade,.ioc-drawer{display:none!important}}
+</style></head><body><div class="theme-bar"><span class="theme-brand">Múcaro VulnScope</span><label for="theme-choice">Theme</label><select id="theme-choice" aria-label="Theme"><option value="dark">SOC Dark</option><option value="nord">Nord Calm</option><option value="high-contrast">High Contrast</option><option value="light">Light</option><option value="classic-windows">Classic Windows</option><option value="matrix">Matrix</option><option value="aqua">Mac OS X Aqua</option><option value="win2k">Windows 2000</option></select></div><script>(function(){const s=document.getElementById("theme-choice");const root=document.documentElement;s.value=[...s.options].some(o=>o.value===root.dataset.theme)?root.dataset.theme:"dark";s.addEventListener("change",()=>{root.dataset.theme=s.value;try{localStorage.setItem("vulnflow-theme",s.value)}catch(_){}})})();</script><h1>Múcaro VulnScope: Executive Summary</h1>
+<p>Prepared 2026-10-30. Network activity analysed from 2026-10-12T00:01:19Z to 2026-10-18T03:11:38Z.</p>
 <h2>Bottom line</h2>
-<p><strong>Likely exploitation on web01.corp.example (10.10.1.10).</strong> An IPS/IDS alert on a vulnerable service and the host's own traffic afterwards point the same way. Start incident response; host forensics is needed to confirm a compromise.</p>
+<p><strong>Likely exploitation on web01.corp.example (10.10.1.10), web02.corp.example (10.10.1.11).</strong> An IPS/IDS alert on a vulnerable service and the host's own traffic afterwards point the same way. Start incident response; host forensics is needed to confirm a compromise.</p>
 <p>A flagged system later made new connections to vulnerable services on 2 other systems (fs01.corp.example (10.10.2.25), ws-031.corp.example (10.10.3.31)). If the first system is compromised, these are the likely next targets.</p>
-<p>20 vulnerabilities on 20 systems need action now (Priority 1).</p>
-<p>6 vulnerable services on 6 systems are being reached from the internet; 1 of them have a publicly available exploit.</p>
-<p>Of 447 vulnerabilities reported by the scanner, 48 sit on services with no observed traffic and can be scheduled rather than rushed.</p>
+<p>22 vulnerabilities on 21 systems need action now (Priority 1).</p>
+<p>7 vulnerable services on 6 systems are being reached from the internet; 1 of them have a publicly available exploit.</p>
+<p>Of 448 vulnerabilities reported by the scanner, 48 sit on services with no observed traffic and can be scheduled rather than rushed.</p>
 <p>4 active servers seen on the network were not in the scan, so their risk is unknown.</p>
+<p>14 observed indicators matched the imported Múcaro IOC Archive. Review the source reports and surrounding telemetry; a match alone does not confirm malicious activity.</p>
 <h2>Key numbers</h2>
-<div class="tiles"><div class="tile t-p1"><b>20</b><span>Priority 1 findings (act now)</span></div><div class="tile t-p1"><b>1</b><span>Systems with likely exploitation</span></div><div class="tile t-ok"><b>0</b><span>Systems to investigate (leads)</span></div><div class="tile t-warn"><b>6</b><span>Vulnerable services reached from the internet</span></div><div class="tile t-warn"><b>4</b><span>Active servers missing from the scan</span></div><div class="tile "><b>9,764</b><span>Network sessions analysed across 250 scanned systems</span></div></div><div class="pbar" role="img" aria-label="Findings by priority"><div class="b-P1" style="flex:20" title="20 P1 findings (act now)">20</div><div class="b-P2" style="flex:130" title="130 P2 findings (this cycle)">130</div><div class="b-P3" style="flex:249" title="249 P3 findings (scheduled)">249</div><div class="b-P4" style="flex:48" title="48 P4 findings (routine)">48</div></div><div class="pbar-legend"><span><span class="pri pri-P1" title="P1: act now">P1</span> act now: 20 (4%)</span><span><span class="pri pri-P2" title="P2: this cycle">P2</span> this cycle: 130 (29%)</span><span><span class="pri pri-P3" title="P3: scheduled">P3</span> scheduled: 249 (55%)</span><span><span class="pri pri-P4" title="P4: routine">P4</span> routine: 48 (10%)</span></div>
+<div class="tiles"><div class="tile t-p1"><b>22</b><span>Priority 1 findings (act now)</span></div><div class="tile t-p1"><b>2</b><span>Systems with likely exploitation</span></div><div class="tile t-ok"><b>0</b><span>Systems to investigate (leads)</span></div><div class="tile t-warn"><b>7</b><span>Vulnerable services reached from the internet</span></div><div class="tile t-warn"><b>4</b><span>Active servers missing from the scan</span></div><div class="tile "><b>9,777</b><span>Network sessions analysed across 250 scanned systems</span></div></div><div class="pbar" role="img" aria-label="Findings by priority"><div class="b-P1" style="flex:22" title="22 P1 findings (act now)">22</div><div class="b-P2" style="flex:129" title="129 P2 findings (this cycle)">129</div><div class="b-P3" style="flex:249" title="249 P3 findings (scheduled)">249</div><div class="b-P4" style="flex:48" title="48 P4 findings (routine)">48</div></div><div class="pbar-legend"><span><span class="pri pri-P1" title="P1: act now">P1</span> act now: 22 (4%)</span><span><span class="pri pri-P2" title="P2: this cycle">P2</span> this cycle: 129 (28%)</span><span><span class="pri pri-P3" title="P3: scheduled">P3</span> scheduled: 249 (55%)</span><span><span class="pri pri-P4" title="P4: routine">P4</span> routine: 48 (10%)</span></div>
 <h2>Top risks</h2>
 <ol>
 <li><strong>web01.corp.example (10.10.1.10)</strong>: Apache 2.4.49 &lt; 2.4.51 Path Traversal and RCE (CVE-2021-41773, CVE-2021-42013). Vulnerable service reached from the internet; public exploit exists; compromise could spread to 6 connected systems; <span class="ev ev-likely">Likely exploitation</span>. Risk score 100/100, <span class="pri pri-P1" title="P1: act now">P1<small>act now</small></span>.</li>
+<li><strong>web02.corp.example (10.10.1.11)</strong>: Synthetic Magento StyleSmuggler finding (CVE-2026-75650). Vulnerable service reached from the internet; compromise could spread to 5 connected systems; <span class="ev ev-likely">Likely exploitation</span>. Risk score 100/100, <span class="pri pri-P1" title="P1: act now">P1<small>act now</small></span>.</li>
 <li><strong>app01.corp.example (10.10.1.20)</strong>: Apache Tomcat AJP Connector Request Injection (Ghostcat) (CVE-2020-1938). Vulnerable service reached internally; public exploit exists; compromise could spread to 2 connected systems. Risk score 100/100, <span class="pri pri-P1" title="P1: act now">P1<small>act now</small></span>.</li>
 <li><strong>app02.corp.example (10.10.2.30)</strong>: Apache Log4j &lt; 2.15.0 Remote Code Execution (Log4Shell) (CVE-2021-44228). Vulnerable service reached internally by many hosts; public exploit exists; compromise could spread to 4 connected systems. Risk score 100/100, <span class="pri pri-P1" title="P1: act now">P1<small>act now</small></span>.</li>
 <li><strong>app03.corp.example (10.10.2.31)</strong>: Apache Log4j &lt; 2.15.0 Remote Code Execution (Log4Shell) (CVE-2021-44228). Vulnerable service reached internally by many hosts; public exploit exists; compromise could spread to 2 connected systems. Risk score 100/100, <span class="pri pri-P1" title="P1: act now">P1<small>act now</small></span>.</li>
-<li><strong>app04.corp.example (10.10.2.32)</strong>: Apache Log4j &lt; 2.15.0 Remote Code Execution (Log4Shell) (CVE-2021-44228). Vulnerable service reached internally by many hosts; public exploit exists; compromise could spread to 3 connected systems. Risk score 100/100, <span class="pri pri-P1" title="P1: act now">P1<small>act now</small></span>.</li>
 </ol>
-<h3>Where the hostile activity is</h3><div class="panel"><p class="hint">Click a host to focus the report on it. Click a finding in the table below to highlight it here.</p><div class="focus-note" aria-live="polite"></div><div class="dg-wrap"><svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 1050 740" width="1050" height="740" role="img" aria-label="Hostile activity against vulnerable services" font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12">
+<h3>Where the hostile activity is</h3><div class="panel"><p class="hint">Click a host to focus the report on it. Click a finding in the table below to highlight it here.</p><div class="focus-note" aria-live="polite"></div><div class="dg-wrap"><svg xmlns="http://www.w3.org/2000/svg" class="dg" viewBox="0 0 1050 840" width="1050" height="840" role="img" aria-label="Hostile activity against vulnerable services" font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12">
 <defs><marker id="dg-arr-return" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="lb-return"/></marker><marker id="dg-arr-ips" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="lb-ips"/></marker><marker id="dg-arr-spread" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="lb-spread"/></marker><marker id="dg-arr-onward" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="lb-onward"/></marker><marker id="dg-arr-ips-blocked" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="lb-ips-blocked"/></marker><marker id="dg-arr-internet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="lb-internet"/></marker></defs>
-<rect class="dg-bg" width="1050" height="740" rx="8"/>
+<rect class="dg-bg" width="1050" height="840" rx="8"/>
 <text x="30" y="36" font-size="15" font-weight="600" class="dg-ink">Hostile activity against vulnerable services</text>
 <g class="edge" data-src="internet" data-dst="10.10.1.10" data-findings="10.10.1.10|153884|443">
-<path d="M260,505.0 C335.0,505.0 335.0,105.0 410,105.0" class="e-internet" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#dg-arr-internet)"/>
-<text x="335" y="299" text-anchor="middle" font-size="11" class="dg-halo lb-internet">tcp/443 · 224 sessions</text>
+<path d="M260,605.0 C335.0,605.0 335.0,105.0 410,105.0" class="e-internet" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#dg-arr-internet)"/>
+<text x="335" y="349" text-anchor="middle" font-size="11" class="dg-halo lb-internet">tcp/443 · 224 sessions</text>
 </g>
-<g class="edge" data-src="internet" data-dst="10.10.1.11" data-findings="10.10.1.11|200206|443">
-<path d="M260,505.0 C335.0,505.0 335.0,205.0 410,205.0" class="e-internet" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#dg-arr-internet)"/>
-<text x="335" y="349" text-anchor="middle" font-size="11" class="dg-halo lb-internet">tcp/443 · 90 sessions</text>
+<g class="edge" data-src="internet" data-dst="10.10.1.11" data-findings="10.10.1.11|200206|443 10.10.1.11|990001|443">
+<path d="M260,605.0 C335.0,605.0 335.0,205.0 410,205.0" class="e-internet" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#dg-arr-internet)"/>
+<text x="335" y="399" text-anchor="middle" font-size="11" class="dg-halo lb-internet">tcp/443 · 92 sessions</text>
 </g>
 <g class="edge" data-src="internet" data-dst="10.10.1.13" data-findings="10.10.1.13|200206|443">
-<path d="M260,505.0 C335.0,505.0 335.0,305.0 410,305.0" class="e-internet" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#dg-arr-internet)"/>
-<text x="335" y="399" text-anchor="middle" font-size="11" class="dg-halo lb-internet">tcp/443 · 79 sessions</text>
+<path d="M260,605.0 C335.0,605.0 335.0,305.0 410,305.0" class="e-internet" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#dg-arr-internet)"/>
+<text x="335" y="449" text-anchor="middle" font-size="11" class="dg-halo lb-internet">tcp/443 · 79 sessions</text>
 </g>
 <g class="edge" data-src="internet" data-dst="10.10.1.12" data-findings="10.10.1.12|200206|443">
-<path d="M260,505.0 C335.0,505.0 335.0,405.0 410,405.0" class="e-internet" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#dg-arr-internet)"/>
-<text x="335" y="449" text-anchor="middle" font-size="11" class="dg-halo lb-internet">tcp/443 · 85 sessions</text>
+<path d="M260,605.0 C335.0,605.0 335.0,405.0 410,405.0" class="e-internet" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#dg-arr-internet)"/>
+<text x="335" y="499" text-anchor="middle" font-size="11" class="dg-halo lb-internet">tcp/443 · 85 sessions</text>
 </g>
 <g class="edge" data-src="internet" data-dst="10.10.1.14" data-findings="10.10.1.14|200206|443">
-<path d="M260,505.0 C335.0,505.0 335.0,505.0 410,505.0" class="e-internet" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#dg-arr-internet)"/>
-<text x="335" y="499" text-anchor="middle" font-size="11" class="dg-halo lb-internet">tcp/443 · 120 sessions</text>
+<path d="M260,605.0 C335.0,605.0 335.0,505.0 410,505.0" class="e-internet" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#dg-arr-internet)"/>
+<text x="335" y="549" text-anchor="middle" font-size="11" class="dg-halo lb-internet">tcp/443 · 120 sessions</text>
 </g>
 <g class="edge" data-src="192.0.2.216" data-dst="10.10.3.31" data-findings="10.10.3.31|125313|3389">
-<path d="M260,205.0 C525.0,205.0 525.0,205.0 790,205.0" class="e-ips-blocked" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#dg-arr-ips-blocked)"/>
-<text x="525" y="199" text-anchor="middle" font-size="11" class="dg-halo lb-ips-blocked">tcp/3389 · IPS blocked ×1</text>
-</g>
-<g class="edge" data-src="192.0.2.145" data-dst="10.10.3.31" data-findings="10.10.3.31|125313|3389">
 <path d="M260,305.0 C525.0,305.0 525.0,205.0 790,205.0" class="e-ips-blocked" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#dg-arr-ips-blocked)"/>
 <text x="525" y="249" text-anchor="middle" font-size="11" class="dg-halo lb-ips-blocked">tcp/3389 · IPS blocked ×1</text>
 </g>
-<g class="edge" data-src="192.0.2.174" data-dst="10.10.3.31" data-findings="10.10.3.31|125313|3389">
+<g class="edge" data-src="192.0.2.145" data-dst="10.10.3.31" data-findings="10.10.3.31|125313|3389">
 <path d="M260,405.0 C525.0,405.0 525.0,205.0 790,205.0" class="e-ips-blocked" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#dg-arr-ips-blocked)"/>
 <text x="525" y="299" text-anchor="middle" font-size="11" class="dg-halo lb-ips-blocked">tcp/3389 · IPS blocked ×1</text>
+</g>
+<g class="edge" data-src="192.0.2.174" data-dst="10.10.3.31" data-findings="10.10.3.31|125313|3389">
+<path d="M260,505.0 C525.0,505.0 525.0,205.0 790,205.0" class="e-ips-blocked" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#dg-arr-ips-blocked)"/>
+<text x="525" y="349" text-anchor="middle" font-size="11" class="dg-halo lb-ips-blocked">tcp/3389 · IPS blocked ×1</text>
 </g>
 <g class="edge" data-src="10.10.1.10" data-dst="10.10.6.70" data-findings="10.10.1.10|153884|443">
 <path d="M640,105.0 C715.0,105.0 715.0,305.0 790,305.0" class="e-onward" stroke-width="1.8" marker-end="url(#dg-arr-onward)"/>
@@ -183,6 +203,10 @@ path.e-return,path.e-ips,path.e-ips-blocked,path.e-spread,path.e-onward,path.e-i
 <g class="edge" data-src="203.0.113.45" data-dst="10.10.1.10" data-findings="10.10.1.10|153884|443">
 <path d="M260,105.0 C335.0,105.0 335.0,105.0 410,105.0" class="e-ips" stroke-width="2.6" marker-end="url(#dg-arr-ips)"/>
 <text x="335" y="99" text-anchor="middle" font-size="11" class="dg-halo lb-ips">tcp/443 · IPS NOT blocked ×1</text>
+</g>
+<g class="edge" data-src="209.73.130.148" data-dst="10.10.1.11" data-findings="10.10.1.11|200206|443 10.10.1.11|990001|443">
+<path d="M260,205.0 C335.0,205.0 335.0,205.0 410,205.0" class="e-ips" stroke-width="2.6" marker-end="url(#dg-arr-ips)"/>
+<text x="335" y="199" text-anchor="middle" font-size="11" class="dg-halo lb-ips">tcp/443 · IPS NOT blocked ×1</text>
 </g>
 <g class="edge" data-src="10.10.1.10" data-dst="203.0.113.45" data-findings="10.10.1.10|153884|443">
 <path d="M410,124.6 C340,158.6 330,158.6 260,124.6" class="e-return" stroke-width="2.6" marker-end="url(#dg-arr-return)"/>
@@ -219,26 +243,32 @@ path.e-return,path.e-ips,path.e-ips-blocked,path.e-spread,path.e-onward,path.e-i
 <text x="800" y="290" font-weight="600" class="dg-ink">10.10.6.70</text>
 <text x="800" y="307" class="dg-ink2">not in scan</text>
 </g>
-<g class="node" data-host="192.0.2.216" data-sev="none" tabindex="0"><title>192.0.2.216: click to focus</title>
+<g class="node" data-host="209.73.130.148" data-sev="none" tabindex="0"><title>209.73.130.148: click to focus</title>
 <rect class="dg-box src sev-none" x="30" y="170" width="230" height="70" rx="8" stroke-width="2"/>
-<text x="40" y="190" font-weight="600" class="dg-ink">192.0.2.216 (external)</text>
-<text x="40" y="207" class="dg-ink2">source: blocked attempts</text>
+<text x="40" y="190" font-weight="600" class="dg-ink">209.73.130.148 (external)</text>
+<text x="40" y="207" class="dg-ink2">source: exploit attempts</text>
 </g>
-<g class="node" data-host="192.0.2.145" data-sev="none" tabindex="0"><title>192.0.2.145: click to focus</title>
-<rect class="dg-box src sev-none" x="30" y="270" width="230" height="70" rx="8" stroke-width="2"/>
-<text x="40" y="290" font-weight="600" class="dg-ink">192.0.2.145 (external)</text>
-<text x="40" y="307" class="dg-ink2">source: blocked attempts</text>
-</g>
-<g class="node" data-host="192.0.2.174" data-sev="none" tabindex="0"><title>192.0.2.174: click to focus</title>
-<rect class="dg-box src sev-none" x="30" y="370" width="230" height="70" rx="8" stroke-width="2"/>
-<text x="40" y="390" font-weight="600" class="dg-ink">192.0.2.174 (external)</text>
-<text x="40" y="407" class="dg-ink2">source: blocked attempts</text>
-</g>
-<g class="node" data-host="10.10.1.11" data-sev="High" tabindex="0"><title>10.10.1.11: click to focus</title>
-<rect class="dg-box sev-High" x="410" y="170" width="230" height="70" rx="8" stroke-width="2"/>
+<g class="node" data-host="10.10.1.11" data-sev="Critical" tabindex="0"><title>10.10.1.11: click to focus</title>
+<rect class="dg-box sev-Critical" x="410" y="170" width="230" height="70" rx="8" stroke-width="2"/>
 <text x="420" y="190" font-weight="600" class="dg-ink">10.10.1.11</text>
 <text x="420" y="207" class="dg-ink2">web02.corp.example</text>
-<text x="420" y="225" class="tx-High">High: CVE-2024-24989</text>
+<text x="420" y="225" class="tx-Critical">Critical: CVE-2026-75650</text>
+<rect x="578" y="161" width="58" height="18" rx="9" class="tag-likely"/><text x="607" y="174" text-anchor="middle" font-size="10" font-weight="700" class="tag-tx">LIKELY</text>
+</g>
+<g class="node" data-host="192.0.2.216" data-sev="none" tabindex="0"><title>192.0.2.216: click to focus</title>
+<rect class="dg-box src sev-none" x="30" y="270" width="230" height="70" rx="8" stroke-width="2"/>
+<text x="40" y="290" font-weight="600" class="dg-ink">192.0.2.216 (external)</text>
+<text x="40" y="307" class="dg-ink2">source: blocked attempts</text>
+</g>
+<g class="node" data-host="192.0.2.145" data-sev="none" tabindex="0"><title>192.0.2.145: click to focus</title>
+<rect class="dg-box src sev-none" x="30" y="370" width="230" height="70" rx="8" stroke-width="2"/>
+<text x="40" y="390" font-weight="600" class="dg-ink">192.0.2.145 (external)</text>
+<text x="40" y="407" class="dg-ink2">source: blocked attempts</text>
+</g>
+<g class="node" data-host="192.0.2.174" data-sev="none" tabindex="0"><title>192.0.2.174: click to focus</title>
+<rect class="dg-box src sev-none" x="30" y="470" width="230" height="70" rx="8" stroke-width="2"/>
+<text x="40" y="490" font-weight="600" class="dg-ink">192.0.2.174 (external)</text>
+<text x="40" y="507" class="dg-ink2">source: blocked attempts</text>
 </g>
 <g class="node" data-host="10.10.1.13" data-sev="High" tabindex="0"><title>10.10.1.13: click to focus</title>
 <rect class="dg-box sev-High" x="410" y="270" width="230" height="70" rx="8" stroke-width="2"/>
@@ -259,37 +289,40 @@ path.e-return,path.e-ips,path.e-ips-blocked,path.e-spread,path.e-onward,path.e-i
 <text x="420" y="525" class="tx-High">High: CVE-2024-24989</text>
 </g>
 <g class="node" data-host="internet" data-sev="none" tabindex="0"><title>internet: click to focus</title>
-<rect class="dg-box src sev-none" x="30" y="470" width="230" height="70" rx="8" stroke-width="2"/>
-<text x="40" y="490" font-weight="600" class="dg-ink">Internet</text>
-<text x="40" y="507" class="dg-ink2">154 outside sources</text>
+<rect class="dg-box src sev-none" x="30" y="570" width="230" height="70" rx="8" stroke-width="2"/>
+<text x="40" y="590" font-weight="600" class="dg-ink">Internet</text>
+<text x="40" y="607" class="dg-ink2">154 outside sources</text>
 </g>
-<text x="30" y="600" font-weight="600" class="dg-ink">Legend</text>
-<line x1="30" y1="614" x2="70" y2="614" class="edge-line e-return" stroke-width="2.6"/><text x="80" y="618" class="dg-ink2">Host connected back to the source after contact (lead)</text>
-<line x1="30" y1="632" x2="70" y2="632" class="edge-line e-ips" stroke-width="2.6"/><text x="80" y="636" class="dg-ink2">IPS/IDS alert NOT blocked (alert only)</text>
-<line x1="30" y1="650" x2="70" y2="650" class="edge-line e-spread" stroke-width="2.2"/><text x="80" y="654" class="dg-ink2">Flagged host newly reached this vulnerable service</text>
-<line x1="30" y1="668" x2="70" y2="668" class="edge-line e-onward" stroke-width="1.8"/><text x="80" y="672" class="dg-ink2">New lateral connection after contact (candidate path)</text>
-<line x1="30" y1="686" x2="70" y2="686" class="edge-line e-ips-blocked" stroke-width="1.6" stroke-dasharray="4 3"/><text x="80" y="690" class="dg-ink2">IPS/IDS alert blocked or reset</text>
-<line x1="30" y1="704" x2="70" y2="704" class="edge-line e-internet" stroke-width="1.4" stroke-dasharray="6 4"/><text x="80" y="708" class="dg-ink2">Internet sessions to the vulnerable service</text>
-<rect x="450" y="606" width="14" height="12" fill="none" stroke-width="2" class="sev-Critical"/><text x="472" y="616" class="dg-ink2">Critical vulnerability on target</text>
-<rect x="450" y="624" width="14" height="12" fill="none" stroke-width="2" class="sev-High"/><text x="472" y="634" class="dg-ink2">High vulnerability on target</text>
-<rect x="450" y="642" width="14" height="12" fill="none" stroke-width="2" class="sev-Medium"/><text x="472" y="652" class="dg-ink2">Medium vulnerability on target</text>
-<rect x="450" y="660" width="14" height="12" fill="none" stroke-width="2" class="sev-Low"/><text x="472" y="670" class="dg-ink2">Low vulnerability on target</text>
-<rect x="450" y="680" width="44" height="15" rx="7.5" class="tag-likely"/><text x="472" y="691" text-anchor="middle" font-size="9" font-weight="700" class="tag-tx">LIKELY</text><text x="502" y="691" class="dg-ink2">Alert and host behaviour agree (likely exploitation)</text>
-<rect x="450" y="700" width="44" height="15" rx="7.5" class="tag-lead"/><text x="472" y="711" text-anchor="middle" font-size="9" font-weight="700" class="tag-tx">LEAD</text><text x="502" y="711" class="dg-ink2">Pattern worth investigating, not confirmed</text>
-<text x="30" y="730" font-size="11" class="dg-ink2">Detected behaviour and candidate paths are leads, not confirmed compromise.</text>
+<text x="30" y="700" font-weight="600" class="dg-ink">Legend</text>
+<line x1="30" y1="714" x2="70" y2="714" class="edge-line e-return" stroke-width="2.6"/><text x="80" y="718" class="dg-ink2">Host connected back to the source after contact (lead)</text>
+<line x1="30" y1="732" x2="70" y2="732" class="edge-line e-ips" stroke-width="2.6"/><text x="80" y="736" class="dg-ink2">IPS/IDS alert NOT blocked (alert only)</text>
+<line x1="30" y1="750" x2="70" y2="750" class="edge-line e-spread" stroke-width="2.2"/><text x="80" y="754" class="dg-ink2">Flagged host newly reached this vulnerable service</text>
+<line x1="30" y1="768" x2="70" y2="768" class="edge-line e-onward" stroke-width="1.8"/><text x="80" y="772" class="dg-ink2">New lateral connection after contact (candidate path)</text>
+<line x1="30" y1="786" x2="70" y2="786" class="edge-line e-ips-blocked" stroke-width="1.6" stroke-dasharray="4 3"/><text x="80" y="790" class="dg-ink2">IPS/IDS alert blocked or reset</text>
+<line x1="30" y1="804" x2="70" y2="804" class="edge-line e-internet" stroke-width="1.4" stroke-dasharray="6 4"/><text x="80" y="808" class="dg-ink2">Internet sessions to the vulnerable service</text>
+<rect x="450" y="706" width="14" height="12" fill="none" stroke-width="2" class="sev-Critical"/><text x="472" y="716" class="dg-ink2">Critical vulnerability on target</text>
+<rect x="450" y="724" width="14" height="12" fill="none" stroke-width="2" class="sev-High"/><text x="472" y="734" class="dg-ink2">High vulnerability on target</text>
+<rect x="450" y="742" width="14" height="12" fill="none" stroke-width="2" class="sev-Medium"/><text x="472" y="752" class="dg-ink2">Medium vulnerability on target</text>
+<rect x="450" y="760" width="14" height="12" fill="none" stroke-width="2" class="sev-Low"/><text x="472" y="770" class="dg-ink2">Low vulnerability on target</text>
+<rect x="450" y="780" width="44" height="15" rx="7.5" class="tag-likely"/><text x="472" y="791" text-anchor="middle" font-size="9" font-weight="700" class="tag-tx">LIKELY</text><text x="502" y="791" class="dg-ink2">Alert and host behaviour agree (likely exploitation)</text>
+<rect x="450" y="800" width="44" height="15" rx="7.5" class="tag-lead"/><text x="472" y="811" text-anchor="middle" font-size="9" font-weight="700" class="tag-tx">LEAD</text><text x="502" y="811" class="dg-ink2">Pattern worth investigating, not confirmed</text>
+<text x="30" y="830" font-size="11" class="dg-ink2">Detected behaviour and candidate paths are leads, not confirmed compromise.</text>
 </svg></div></div>
 <h2>Recommended actions</h2>
 <ol>
-<li><strong>Start incident response for web01.corp.example (10.10.1.10).</strong> Preserve logs and memory, confirm on the host, contain, then patch. Patching alone will not remove an attacker. Include fs01.corp.example (10.10.2.25), ws-031.corp.example (10.10.3.31) in the scope.</li>
-<li><strong>Patch or shield internet-facing exploitable services within 48 hours</strong>: web01.corp.example (10.10.1.10). If a patch cannot go in, restrict access at the firewall.</li>
+<li><strong>Start incident response for web01.corp.example (10.10.1.10), web02.corp.example (10.10.1.11).</strong> Preserve logs and memory, confirm on the host, contain, then patch. Patching alone will not remove an attacker. Include fs01.corp.example (10.10.2.25), ws-031.corp.example (10.10.3.31) in the scope.</li>
+<li><strong>Patch or shield high-risk internet-facing services within 48 hours</strong>: web01.corp.example (10.10.1.10), web02.corp.example (10.10.1.11). If a patch cannot go in, restrict access at the firewall.</li>
 <li><strong>Limit how far a breach can spread.</strong> 120 high-priority systems can reach other vulnerable systems directly; restrict admin protocols (SMB, RDP, SSH) between these segments.</li>
 <li><strong>Fix 145 internally reachable high-priority vulnerabilities</strong> in the current patch cycle; they are the next step for an attacker already inside.</li>
 <li><strong>Close the scan gap.</strong> Add the 4 unscanned active servers to the scan scope so their exposure can be assessed.</li>
 <li><strong>Schedule the remaining findings</strong> through normal patching, and switch off services that no one is using.</li>
 </ol>
 <h2>How confident is this?</h2>
-<p>The assessment combines the vulnerability scan with 9,764 observed network sessions. 249 of 250 scanned systems appeared in the network data. A system with no observed traffic is scored as "unknown" rather than safe. Telemetry only shows what the sensors could see, so absence of traffic is not proof that a service is unreachable.</p>
-<p>Full evidence for every finding is in the technical report.</p><script>
+<p>The assessment combines the vulnerability scan with 9,777 observed network sessions. 249 of 250 scanned systems appeared in the network data. A system with no observed traffic is scored as "unknown" rather than safe. Telemetry only shows what the sensors could see, so absence of traffic is not proof that a service is unreachable.</p>
+<p>Full evidence for every finding is in the technical report.</p>
+<h2>Múcaro IOC matches</h2>
+<p>Exact matches to the imported IOC Archive are leads for review, not proof of malicious activity.</p>
+<table><thead><tr><th>Indicator</th><th>Type</th><th>Related hosts</th><th>Observed in</th><th>Sources</th></tr></thead><tbody><tr><td><button type="button" class="ioc-link" data-ioc-key="domain:247.cdnflare.xyz">247.cdnflare.xyz</button></td><td>domain</td><td>10.10.1.11</td><td>1 dns event</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="domain:beraskencur.site">beraskencur.site</button></td><td>domain</td><td>10.10.2.42</td><td>1 dns event</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="domain:byveo.org">byveo.org</button></td><td>domain</td><td>10.10.3.48</td><td>1 dns event</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="domain:checkout-cdn.com">checkout-cdn.com</button></td><td>domain</td><td>10.10.1.11</td><td>1 dns event</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="domain:ntp.timesync.to">ntp.timesync.to</button></td><td>domain</td><td>10.10.1.11</td><td>1 dns event</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="domain:secure-dns-hub.com">secure-dns-hub.com</button></td><td>domain</td><td>10.10.3.48</td><td>1 dns event</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="domain:solidmonpe.com">solidmonpe.com</button></td><td>domain</td><td>10.10.2.42</td><td>1 dns event</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="ip:103.160.59.97">103.160.59.97</button></td><td>ip</td><td>10.10.3.48</td><td>2 network session</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="ip:104.194.158.65">104.194.158.65</button></td><td>ip</td><td>10.10.2.42</td><td>2 network session</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="ip:104.248.131.53">104.248.131.53</button></td><td>ip</td><td>10.10.2.42</td><td>1 network session</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="ip:185.157.160.251">185.157.160.251</button></td><td>ip</td><td>10.10.1.11</td><td>2 network session</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="ip:209.141.43.95">209.141.43.95</button></td><td>ip</td><td>10.10.1.11</td><td>1 network session</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="ip:209.73.130.148">209.73.130.148</button></td><td>ip</td><td>10.10.1.11</td><td>1 IDS/IPS alert, 2 network session</td><td>1 article(s)</td></tr><tr><td><button type="button" class="ioc-link" data-ioc-key="ip:99.84.67.186">99.84.67.186</button></td><td>ip</td><td>10.10.1.11</td><td>3 network session</td><td>1 article(s)</td></tr></tbody></table><script>
 (function(){
 const table=document.querySelector('table.findings');
 const svg=document.querySelector('svg.dg:not(.blast)');
@@ -348,5 +381,112 @@ if(table){
   apply();
 }
 window.addEventListener('beforeprint',()=>document.querySelectorAll('details').forEach(d=>d.open=true));
+})();
+</script><script id="ioc-provenance-data" type="application/json">[{"id":"domain:247.cdnflare.xyz","type":"domain","value":"247.cdnflare.xyz","articles":["https://sansec.io/research/stylesmuggler-0day"],"sources":["sansec.io"],"first_seen":"2026-09-05T23:53:12.412Z","last_seen":"2026-10-15T19:09:41.509Z","disposition":"Actionable","hosts":["10.10.1.11"],"observed":{"dns event":1},"article_previews":{"https://sansec.io/research/stylesmuggler-0day":{"title":"StyleSmuggler: Magento and Adobe Commerce remote code execution","overview":"Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."}}},{"id":"domain:beraskencur.site","type":"domain","value":"beraskencur.site","articles":["https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"],"sources":["unit42.paloaltonetworks.com"],"first_seen":"2026-10-15T22:29:22.052Z","last_seen":"2026-10-15T22:29:22.052Z","disposition":"Actionable","hosts":["10.10.2.42"],"observed":{"dns event":1},"article_previews":{"https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/":{"title":"AI-powered espionage campaign targets Linux infrastructure","overview":"Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."}}},{"id":"domain:byveo.org","type":"domain","value":"byveo.org","articles":["https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/"],"sources":["www.microsoft.com"],"first_seen":"2026-09-30T14:50:48.985Z","last_seen":"2026-09-30T14:50:48.985Z","disposition":"Actionable","hosts":["10.10.3.48"],"observed":{"dns event":1},"article_previews":{"https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/":{"title":"Star Blizzard refines phishing and RedFlick malware delivery","overview":"Microsoft describes phishing campaigns that used RedFlick to deliver the CosmicPulse backdoor. The report explains the Windows infection flow, persistence techniques, and network indicators for investigation."}}},{"id":"domain:checkout-cdn.com","type":"domain","value":"checkout-cdn.com","articles":["https://sansec.io/research/stylesmuggler-0day"],"sources":["sansec.io"],"first_seen":"2026-10-15T19:09:41.509Z","last_seen":"2026-10-15T19:09:41.509Z","disposition":"Actionable","hosts":["10.10.1.11"],"observed":{"dns event":1},"article_previews":{"https://sansec.io/research/stylesmuggler-0day":{"title":"StyleSmuggler: Magento and Adobe Commerce remote code execution","overview":"Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."}}},{"id":"domain:ntp.timesync.to","type":"domain","value":"ntp.timesync.to","articles":["https://sansec.io/research/stylesmuggler-0day"],"sources":["sansec.io"],"first_seen":"2026-09-07T14:10:56.472Z","last_seen":"2026-10-15T19:09:41.509Z","disposition":"Actionable","hosts":["10.10.1.11"],"observed":{"dns event":1},"article_previews":{"https://sansec.io/research/stylesmuggler-0day":{"title":"StyleSmuggler: Magento and Adobe Commerce remote code execution","overview":"Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."}}},{"id":"domain:secure-dns-hub.com","type":"domain","value":"secure-dns-hub.com","articles":["https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/"],"sources":["www.microsoft.com"],"first_seen":"2026-09-30T14:50:48.985Z","last_seen":"2026-09-30T14:50:48.985Z","disposition":"Actionable","hosts":["10.10.3.48"],"observed":{"dns event":1},"article_previews":{"https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/":{"title":"Star Blizzard refines phishing and RedFlick malware delivery","overview":"Microsoft describes phishing campaigns that used RedFlick to deliver the CosmicPulse backdoor. The report explains the Windows infection flow, persistence techniques, and network indicators for investigation."}}},{"id":"domain:solidmonpe.com","type":"domain","value":"solidmonpe.com","articles":["https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"],"sources":["unit42.paloaltonetworks.com"],"first_seen":"2026-10-15T22:29:22.052Z","last_seen":"2026-10-15T22:29:22.052Z","disposition":"Actionable","hosts":["10.10.2.42"],"observed":{"dns event":1},"article_previews":{"https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/":{"title":"AI-powered espionage campaign targets Linux infrastructure","overview":"Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."}}},{"id":"ip:103.160.59.97","type":"ip","value":"103.160.59.97","articles":["https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/"],"sources":["www.microsoft.com"],"first_seen":"2026-09-30T14:50:48.985Z","last_seen":"2026-09-30T14:50:48.985Z","disposition":"Actionable","hosts":["10.10.3.48"],"observed":{"network session":2},"article_previews":{"https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/":{"title":"Star Blizzard refines phishing and RedFlick malware delivery","overview":"Microsoft describes phishing campaigns that used RedFlick to deliver the CosmicPulse backdoor. The report explains the Windows infection flow, persistence techniques, and network indicators for investigation."}}},{"id":"ip:104.194.158.65","type":"ip","value":"104.194.158.65","articles":["https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"],"sources":["unit42.paloaltonetworks.com"],"first_seen":"2026-10-15T22:29:22.052Z","last_seen":"2026-10-15T22:29:22.052Z","disposition":"Actionable","hosts":["10.10.2.42"],"observed":{"network session":2},"article_previews":{"https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/":{"title":"AI-powered espionage campaign targets Linux infrastructure","overview":"Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."}}},{"id":"ip:104.248.131.53","type":"ip","value":"104.248.131.53","articles":["https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"],"sources":["unit42.paloaltonetworks.com"],"first_seen":"2026-10-15T22:29:22.052Z","last_seen":"2026-10-15T22:29:22.052Z","disposition":"Actionable","hosts":["10.10.2.42"],"observed":{"network session":1},"article_previews":{"https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/":{"title":"AI-powered espionage campaign targets Linux infrastructure","overview":"Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."}}},{"id":"ip:185.157.160.251","type":"ip","value":"185.157.160.251","articles":["https://sansec.io/research/stylesmuggler-0day"],"sources":["sansec.io"],"first_seen":"2026-09-07T14:10:56.472Z","last_seen":"2026-10-15T19:09:41.509Z","disposition":"Actionable","hosts":["10.10.1.11"],"observed":{"network session":2},"article_previews":{"https://sansec.io/research/stylesmuggler-0day":{"title":"StyleSmuggler: Magento and Adobe Commerce remote code execution","overview":"Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."}}},{"id":"ip:209.141.43.95","type":"ip","value":"209.141.43.95","articles":["https://sansec.io/research/stylesmuggler-0day"],"sources":["sansec.io"],"first_seen":"2026-09-07T14:10:56.472Z","last_seen":"2026-10-15T19:09:41.509Z","disposition":"Actionable","hosts":["10.10.1.11"],"observed":{"network session":1},"article_previews":{"https://sansec.io/research/stylesmuggler-0day":{"title":"StyleSmuggler: Magento and Adobe Commerce remote code execution","overview":"Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."}}},{"id":"ip:209.73.130.148","type":"ip","value":"209.73.130.148","articles":["https://sansec.io/research/stylesmuggler-0day"],"sources":["sansec.io"],"first_seen":"2026-09-07T14:10:56.472Z","last_seen":"2026-10-15T19:09:41.509Z","disposition":"Actionable","hosts":["10.10.1.11"],"observed":{"IDS/IPS alert":1,"network session":2},"article_previews":{"https://sansec.io/research/stylesmuggler-0day":{"title":"StyleSmuggler: Magento and Adobe Commerce remote code execution","overview":"Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."}}},{"id":"ip:99.84.67.186","type":"ip","value":"99.84.67.186","articles":["https://sansec.io/research/stylesmuggler-0day"],"sources":["sansec.io"],"first_seen":"2026-09-05T23:53:12.412Z","last_seen":"2026-10-15T19:09:41.509Z","disposition":"Actionable","hosts":["10.10.1.11"],"observed":{"network session":3},"article_previews":{"https://sansec.io/research/stylesmuggler-0day":{"title":"StyleSmuggler: Magento and Adobe Commerce remote code execution","overview":"Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."}}}]</script><script id="ioc-article-briefs" type="application/json">{}</script><div id="ioc-shade" class="ioc-shade" hidden></div><aside id="ioc-drawer" class="ioc-drawer" role="dialog" aria-modal="true" aria-label="Múcaro indicator sources" hidden><button id="ioc-close" class="ioc-close" type="button">Close</button><div class="ioc-drawer-brand">Múcaro VulnScope <span>Source intelligence</span></div><div id="ioc-drawer-body"></div></aside><script>
+(() => {
+  const data = JSON.parse(document.getElementById('ioc-provenance-data').textContent);
+  const briefs = JSON.parse(document.getElementById('ioc-article-briefs').textContent);
+  const byId = new Map(data.map(item => [item.id, item]));
+  const shade = document.getElementById('ioc-shade');
+  const drawer = document.getElementById('ioc-drawer');
+  const body = document.getElementById('ioc-drawer-body');
+  let previous = null;
+  function close() {
+    drawer.hidden = shade.hidden = true;
+    if (previous && previous.isConnected) previous.focus();
+  }
+  function open(item, trigger) {
+    previous = trigger;
+    body.replaceChildren();
+    const heading = document.createElement('h2');
+    heading.textContent = item.type.toUpperCase() + ' · ' + item.value;
+    body.append(heading);
+    const note = document.createElement('p');
+    note.textContent = 'Exact archive match. Review the source and surrounding telemetry before drawing a conclusion.';
+    body.append(note);
+    const context = document.createElement('p');
+    context.textContent = 'Observed in: ' + Object.entries(item.observed).map(([k,v]) => v + ' ' + k).join(', ')
+      + (item.hosts.length ? ' · Related hosts: ' + item.hosts.join(', ') : '');
+    body.append(context);
+    const label = document.createElement('h3'); label.textContent = 'Source articles'; body.append(label);
+    const list = document.createElement('ul');
+    item.articles.forEach(url => {
+      const li = document.createElement('li');
+      const preview = item.article_previews && item.article_previews[url];
+      const source = document.createElement('small');
+      source.textContent = new URL(url).hostname; li.append(source);
+      if (preview && preview.title) {
+        const title = document.createElement('strong');
+        title.textContent = ' · ' + preview.title; li.append(title);
+      }
+      const saved = briefs[url] && briefs[url].brief;
+      if (saved) {
+        const card = document.createElement('div'); card.className = 'ioc-brief';
+        const label = document.createElement('h4');
+        label.textContent = 'Múcaro AI Brief' + (saved.mobile_summary && saved.mobile_summary.priority
+          ? ' · ' + saved.mobile_summary.priority : ''); card.append(label);
+        const summary = document.createElement('p');
+        summary.textContent = saved.executive_summary || ''; card.append(summary);
+        const actions = saved.mobile_summary && saved.mobile_summary.what_to_do_now || [];
+        if (actions.length) {
+          const actionLabel = document.createElement('strong'); actionLabel.textContent = 'What to do now';
+          card.append(actionLabel);
+          const actionList = document.createElement('ol');
+          actions.slice(0, 3).forEach(action => {
+            const row = document.createElement('li'); row.textContent = action; actionList.append(row);
+          });
+          card.append(actionList);
+        }
+        const more = document.createElement('details');
+        const moreLabel = document.createElement('summary'); moreLabel.textContent = 'More from AI Brief';
+        more.append(moreLabel);
+        (saved.key_takeaways || []).forEach(takeaway => {
+          const row = document.createElement('p'); row.textContent = '• ' + takeaway; more.append(row);
+        });
+        const iocs = saved.iocs || {};
+        const indicatorValues = ['ips', 'domains', 'urls', 'hashes', 'cves'].flatMap(k => iocs[k] || []);
+        if (indicatorValues.length) {
+          const row = document.createElement('p');
+          row.textContent = 'Indicators reported in article: ' + indicatorValues.slice(0, 12).join(', ');
+          more.append(row);
+        }
+        card.append(more);
+        const caution = document.createElement('small');
+        caution.textContent = 'AI-generated from the article. The archive match is a lead, not proof of compromise.';
+        card.append(caution);
+        li.append(card);
+      } else if (preview && preview.overview) {
+        const summary = document.createElement('p');
+        summary.textContent = preview.overview; li.append(summary);
+      } else {
+        const unavailable = document.createElement('p');
+        unavailable.textContent = 'Short overview unavailable; the source link is still available.';
+        li.append(unavailable);
+      }
+      const link = document.createElement('a'); link.href = url; link.target = '_blank';
+      link.rel = 'noopener noreferrer'; link.textContent = 'Read full article ↗';
+      li.append(link); list.append(li);
+    });
+    body.append(list);
+    drawer.hidden = shade.hidden = false;
+    document.getElementById('ioc-close').focus();
+  }
+  document.addEventListener('click', event => {
+    const trigger = event.target.closest('[data-ioc-key]');
+    if (!trigger) return;
+    const item = byId.get(trigger.dataset.iocKey);
+    if (!item) return;
+    event.stopPropagation();
+    open(item, trigger);
+  }, true);
+  document.addEventListener('ioc:open', event => {
+    const item = byId.get(event.detail && event.detail.id);
+    if (item) open(item, document.activeElement);
+  });
+  document.getElementById('ioc-close').addEventListener('click', close);
+  shade.addEventListener('click', close);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !drawer.hidden) { event.stopPropagation(); close(); }
+  });
 })();
 </script></body></html>

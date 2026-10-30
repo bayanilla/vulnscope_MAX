@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-21T23:23:52Z",
+  "generated": "2026-10-30T22:59:36Z",
   "config": {
     "internal_nets": [
       "10.0.0.0/8",
@@ -54,36 +54,86 @@
         "missing or invalid IP": 1
       },
       "notes": []
+    },
+    {
+      "file": "dns.log",
+      "format": "zeek",
+      "read": 7,
+      "kept": 7,
+      "dropped": {},
+      "notes": [
+        "Zeek stream records preserved as events; only conn sessions and notice alerts affect scoring"
+      ]
+    },
+    {
+      "file": "flows.csv",
+      "format": "generic",
+      "read": 13,
+      "kept": 13,
+      "dropped": {},
+      "notes": []
+    },
+    {
+      "file": "notice.log",
+      "format": "zeek",
+      "read": 1,
+      "kept": 1,
+      "dropped": {},
+      "notes": [
+        "1 IPS/IDS alert(s) used as exploitation evidence"
+      ]
+    },
+    {
+      "file": "scan.csv",
+      "format": "nessus_csv",
+      "read": 1,
+      "kept": 1,
+      "dropped": {},
+      "notes": [
+        "Nessus CSV exports usually omit exploit availability; prefer the .nessus file"
+      ]
+    },
+    {
+      "file": "large_mucaro_archive.csv",
+      "format": "mucaro_ioc_archive",
+      "read": 14,
+      "kept": 14,
+      "dropped": {},
+      "notes": []
     }
   ],
   "summary": {
-    "flows": 9764,
-    "findings_total": 697,
-    "findings_scored": 447,
+    "flows": 9777,
+    "findings_total": 698,
+    "findings_scored": 448,
     "hosts_with_findings": 250,
     "priority_counts": {
-      "P1": 20,
-      "P2": 130,
+      "P1": 22,
+      "P2": 129,
       "P3": 249,
       "P4": 48
     },
-    "internet_exposed_findings": 6,
+    "internet_exposed_findings": 7,
     "exploitable_and_exposed": 28,
     "hosts_with_indicators": [
       "10.10.1.10",
+      "10.10.1.11",
       "10.10.2.25",
       "10.10.3.31"
     ],
     "hosts_corroborated": [
-      "10.10.1.10"
+      "10.10.1.10",
+      "10.10.1.11"
     ],
     "hosts_to_investigate": [],
     "hosts_possible_spread": [
       "10.10.2.25",
       "10.10.3.31"
     ],
-    "threat_alerts": 4,
-    "zeek_event_counts": {},
+    "threat_alerts": 5,
+    "zeek_event_counts": {
+      "dns": 7
+    },
     "ot_protocol_counts": {},
     "hosts_internet_exposed": 6,
     "window_start": "2026-10-12T00:01:19Z",
@@ -218,6 +268,85 @@
       "telemetry_seen": true,
       "inbound_flows": 249,
       "outbound_flows": 165
+    },
+    {
+      "host": "10.10.1.11",
+      "hostname": "web02.corp.example",
+      "os": "Linux Kernel 5.15 on Ubuntu 22.04",
+      "findings": 2,
+      "by_severity": {
+        "Critical": 1,
+        "High": 1
+      },
+      "max_score": 100,
+      "priority": "P1",
+      "internet_exposed": true,
+      "indicators": 6,
+      "blast": {
+        "reachable_count": 5,
+        "direct_count": 2,
+        "reachable": [
+          {
+            "ip": "10.10.2.30",
+            "hop": 1,
+            "ports": [
+              "8080/tcp"
+            ],
+            "max_severity": "Critical"
+          },
+          {
+            "ip": "10.10.0.53",
+            "hop": 1,
+            "ports": [
+              "53/udp"
+            ],
+            "max_severity": ""
+          },
+          {
+            "ip": "10.10.2.24",
+            "hop": 2,
+            "ports": [],
+            "max_severity": "Critical"
+          },
+          {
+            "ip": "10.10.2.21",
+            "hop": 2,
+            "ports": [],
+            "max_severity": "High"
+          },
+          {
+            "ip": "10.10.0.10",
+            "hop": 2,
+            "ports": [],
+            "max_severity": ""
+          }
+        ],
+        "vulnerable_pivots": [
+          "10.10.2.30",
+          "10.10.2.24",
+          "10.10.2.21"
+        ],
+        "lateral_protocols": {},
+        "external_destinations": 3,
+        "top_external_destinations": [
+          [
+            "99.84.67.186",
+            3
+          ],
+          [
+            "185.157.160.251",
+            2
+          ],
+          [
+            "209.141.43.95",
+            1
+          ]
+        ],
+        "factor": 1.38
+      },
+      "telemetry_seen": true,
+      "inbound_flows": 110,
+      "outbound_flows": 83
     },
     {
       "host": "10.10.1.20",
@@ -533,6 +662,14 @@
         "direct_count": 23,
         "reachable": [
           {
+            "ip": "10.10.1.11",
+            "hop": 1,
+            "ports": [
+              "22/tcp"
+            ],
+            "max_severity": "Critical"
+          },
+          {
             "ip": "10.10.2.24",
             "hop": 1,
             "ports": [
@@ -595,14 +732,6 @@
               "22/tcp"
             ],
             "max_severity": "Critical"
-          },
-          {
-            "ip": "10.10.1.11",
-            "hop": 1,
-            "ports": [
-              "22/tcp"
-            ],
-            "max_severity": "High"
           },
           {
             "ip": "10.10.1.12",
@@ -880,6 +1009,7 @@
           }
         ],
         "vulnerable_pivots": [
+          "10.10.1.11",
           "10.10.2.24",
           "10.10.2.30",
           "10.10.2.31",
@@ -888,7 +1018,6 @@
           "10.10.2.43",
           "10.10.2.44",
           "10.10.2.45",
-          "10.10.1.11",
           "10.10.1.12",
           "10.10.1.13",
           "10.10.1.14",
@@ -1596,71 +1725,6 @@
       "telemetry_seen": true,
       "inbound_flows": 148,
       "outbound_flows": 180
-    },
-    {
-      "host": "10.10.1.11",
-      "hostname": "web02.corp.example",
-      "os": "Linux Kernel 5.15 on Ubuntu 22.04",
-      "findings": 1,
-      "by_severity": {
-        "High": 1
-      },
-      "max_score": 67,
-      "priority": "P2",
-      "internet_exposed": true,
-      "indicators": 0,
-      "blast": {
-        "reachable_count": 5,
-        "direct_count": 2,
-        "reachable": [
-          {
-            "ip": "10.10.2.30",
-            "hop": 1,
-            "ports": [
-              "8080/tcp"
-            ],
-            "max_severity": "Critical"
-          },
-          {
-            "ip": "10.10.0.53",
-            "hop": 1,
-            "ports": [
-              "53/udp"
-            ],
-            "max_severity": ""
-          },
-          {
-            "ip": "10.10.2.24",
-            "hop": 2,
-            "ports": [],
-            "max_severity": "Critical"
-          },
-          {
-            "ip": "10.10.2.21",
-            "hop": 2,
-            "ports": [],
-            "max_severity": "High"
-          },
-          {
-            "ip": "10.10.0.10",
-            "hop": 2,
-            "ports": [],
-            "max_severity": ""
-          }
-        ],
-        "vulnerable_pivots": [
-          "10.10.2.30",
-          "10.10.2.24",
-          "10.10.2.21"
-        ],
-        "lateral_protocols": {},
-        "external_destinations": 0,
-        "top_external_destinations": [],
-        "factor": 1.38
-      },
-      "telemetry_seen": true,
-      "inbound_flows": 108,
-      "outbound_flows": 77
     },
     {
       "host": "10.10.1.13",
@@ -14695,13 +14759,18 @@
           "Kerberos": 3,
           "LDAP": 2
         },
-        "external_destinations": 0,
-        "top_external_destinations": [],
+        "external_destinations": 1,
+        "top_external_destinations": [
+          [
+            "103.160.59.97",
+            2
+          ]
+        ],
         "factor": 1.5
       },
       "telemetry_seen": true,
       "inbound_flows": 3,
-      "outbound_flows": 26
+      "outbound_flows": 28
     },
     {
       "host": "10.10.3.49",
@@ -28178,6 +28247,12 @@
             "max_severity": "High"
           },
           {
+            "ip": "10.10.1.11",
+            "hop": 2,
+            "ports": [],
+            "max_severity": "Critical"
+          },
+          {
             "ip": "10.10.2.24",
             "hop": 2,
             "ports": [],
@@ -28224,12 +28299,6 @@
             "hop": 2,
             "ports": [],
             "max_severity": "Critical"
-          },
-          {
-            "ip": "10.10.1.11",
-            "hop": 2,
-            "ports": [],
-            "max_severity": "High"
           },
           {
             "ip": "10.10.1.12",
@@ -28347,6 +28416,7 @@
           "10.10.3.66",
           "10.10.3.75",
           "10.10.3.84",
+          "10.10.1.11",
           "10.10.2.24",
           "10.10.2.25",
           "10.10.2.30",
@@ -28355,7 +28425,6 @@
           "10.10.2.43",
           "10.10.2.44",
           "10.10.2.45",
-          "10.10.1.11",
           "10.10.1.12",
           "10.10.1.13",
           "10.10.1.14",
@@ -42916,6 +42985,14 @@
         "direct_count": 43,
         "reachable": [
           {
+            "ip": "10.10.1.11",
+            "hop": 1,
+            "ports": [
+              "161/udp"
+            ],
+            "max_severity": "Critical"
+          },
+          {
             "ip": "10.10.1.30",
             "hop": 1,
             "ports": [
@@ -43084,14 +43161,6 @@
               "80/tcp"
             ],
             "max_severity": "Critical"
-          },
-          {
-            "ip": "10.10.1.11",
-            "hop": 1,
-            "ports": [
-              "161/udp"
-            ],
-            "max_severity": "High"
           },
           {
             "ip": "10.10.1.12",
@@ -43313,6 +43382,7 @@
           }
         ],
         "vulnerable_pivots": [
+          "10.10.1.11",
           "10.10.1.30",
           "10.10.2.24",
           "10.10.2.30",
@@ -43333,7 +43403,6 @@
           "10.10.4.67",
           "10.10.4.68",
           "10.10.4.69",
-          "10.10.1.11",
           "10.10.1.12",
           "10.10.1.13",
           "10.10.1.14",
@@ -43368,13 +43437,22 @@
           "10.10.3.84"
         ],
         "lateral_protocols": {},
-        "external_destinations": 0,
-        "top_external_destinations": [],
+        "external_destinations": 2,
+        "top_external_destinations": [
+          [
+            "104.194.158.65",
+            2
+          ],
+          [
+            "104.248.131.53",
+            1
+          ]
+        ],
         "factor": 1.5
       },
       "telemetry_seen": true,
       "inbound_flows": 2,
-      "outbound_flows": 223
+      "outbound_flows": 226
     },
     {
       "host": "10.10.3.126",
@@ -52593,6 +52671,12 @@
             "max_severity": "Medium"
           },
           {
+            "ip": "10.10.1.11",
+            "hop": 2,
+            "ports": [],
+            "max_severity": "Critical"
+          },
+          {
             "ip": "10.10.1.30",
             "hop": 2,
             "ports": [],
@@ -52701,12 +52785,6 @@
             "max_severity": "Critical"
           },
           {
-            "ip": "10.10.1.11",
-            "hop": 2,
-            "ports": [],
-            "max_severity": "High"
-          },
-          {
             "ip": "10.10.1.12",
             "hop": 2,
             "ports": [],
@@ -52793,6 +52871,7 @@
           "10.10.2.22",
           "10.10.2.23",
           "10.10.2.42",
+          "10.10.1.11",
           "10.10.1.30",
           "10.10.3.102",
           "10.10.3.129",
@@ -52811,7 +52890,6 @@
           "10.10.4.67",
           "10.10.4.68",
           "10.10.4.69",
-          "10.10.1.11",
           "10.10.1.12",
           "10.10.1.13",
           "10.10.1.14",
@@ -53061,6 +53139,126 @@
         "A public exploit is available (Metasploit).",
         "Exposure: vulnerable service reached from the internet - 224 completed sessions from 154 external and 0 internal sources.",
         "Blast radius: the host talks to 5 internal host(s) directly and 6 within 2 hops, including 4 with High/Critical findings.",
+        "Corroborated exploitation evidence (IPS alert plus host behaviour); see indicators."
+      ]
+    },
+    {
+      "host": "10.10.1.11",
+      "hostname": "web02.corp.example",
+      "os": "Linux Kernel 5.15 on Ubuntu 22.04",
+      "plugin_id": "990001",
+      "plugin_name": "Synthetic Magento StyleSmuggler finding",
+      "severity": 4,
+      "severity_name": "Critical",
+      "port": 443,
+      "proto": "tcp",
+      "service": "",
+      "cvss": 10.0,
+      "cves": [
+        "CVE-2026-75650"
+      ],
+      "exploit_available": false,
+      "exploit_frameworks": [],
+      "synopsis": "Fabricated scan finding for the source-linked web server storyline.",
+      "solution": "Apply the vendor hotfix and review host evidence.",
+      "source": "scan.csv",
+      "exposure": {
+        "label": "Vulnerable service reached from the internet",
+        "factor": 1.0,
+        "scope": "port",
+        "telemetry_seen": true,
+        "inbound_total": 92,
+        "established": 92,
+        "denied": 0,
+        "attempts": 0,
+        "internal_sources": 0,
+        "external_sources": 79,
+        "top_sources": [
+          [
+            "198.51.100.229",
+            3,
+            true
+          ],
+          [
+            "198.51.100.153",
+            2,
+            true
+          ],
+          [
+            "198.51.100.124",
+            2,
+            true
+          ],
+          [
+            "198.51.100.146",
+            2,
+            true
+          ],
+          [
+            "198.51.100.202",
+            2,
+            true
+          ],
+          [
+            "198.51.100.24",
+            2,
+            true
+          ],
+          [
+            "198.51.100.252",
+            2,
+            true
+          ],
+          [
+            "198.51.100.149",
+            2,
+            true
+          ]
+        ],
+        "first_seen": "2026-10-12T00:10:42Z",
+        "last_seen": "2026-10-18T02:34:27Z",
+        "bytes": 4238573,
+        "threat_alerts": 1,
+        "threat_blocked": 0,
+        "threat_blocked_sources": []
+      },
+      "blast_factor": 1.38,
+      "exploit_factor": 0.65,
+      "likelihood": "Medium",
+      "score": 100,
+      "priority": "P1",
+      "indicators": [
+        {
+          "type": "threat_alert",
+          "confidence": "lead",
+          "sources": [
+            [
+              "209.73.130.148",
+              1
+            ]
+          ],
+          "text": "IPS/IDS alerted 1 time(s) on traffic to this service and did not block it: Intel::Notice - Synthetic StyleSmuggler exploitation alert on the web service (from 209.73.130.148). An alert shows an attempt, not that it succeeded."
+        },
+        {
+          "type": "exfil",
+          "confidence": "lead",
+          "at": "2026-10-17T08:00:00Z",
+          "peer": "99.84.67.186",
+          "bytes": 26002060,
+          "text": "10.10.1.11 sent 24.8 MB to external address 99.84.67.186 after the flagged inbound contact at 2026-10-17T08:00:00Z."
+        },
+        {
+          "type": "corroborated",
+          "confidence": "corroborated",
+          "at": "2026-10-17T08:00:00Z",
+          "text": "Independent signals agree: the IPS/IDS alerted on traffic to this vulnerable service, and the host then showed exfil. Treat this as likely exploitation and start incident response; host forensics is still needed to confirm a compromise."
+        }
+      ],
+      "rationale": [
+        "Base severity: CVSS v3 10.0 (Critical).",
+        "No public exploit is known to the scanner.",
+        "Exposure: vulnerable service reached from the internet - 92 completed sessions from 79 external and 0 internal sources.",
+        "Blast radius: the host talks to 2 internal host(s) directly and 5 within 2 hops, including 3 with High/Critical findings.",
         "Corroborated exploitation evidence (IPS alert plus host behaviour); see indicators."
       ]
     },
@@ -53743,6 +53941,126 @@
         "Base severity: CVSS v3 10.0 (Critical).",
         "A public exploit is available.",
         "Exposure: vulnerable service reached internally by many hosts - 62 completed sessions from 0 external and 17 internal sources."
+      ]
+    },
+    {
+      "host": "10.10.1.11",
+      "hostname": "web02.corp.example",
+      "os": "Linux Kernel 5.15 on Ubuntu 22.04",
+      "plugin_id": "200206",
+      "plugin_name": "nginx 1.25.x < 1.25.4 Multiple Vulnerabilities",
+      "severity": 3,
+      "severity_name": "High",
+      "port": 443,
+      "proto": "tcp",
+      "service": "www",
+      "cvss": 7.5,
+      "cves": [
+        "CVE-2024-24989"
+      ],
+      "exploit_available": false,
+      "exploit_frameworks": [],
+      "synopsis": "The web server is affected by multiple denial of service vulnerabilities.",
+      "solution": "Upgrade to nginx 1.25.4 or later.",
+      "source": "quarterly_scan.nessus",
+      "exposure": {
+        "label": "Vulnerable service reached from the internet",
+        "factor": 1.0,
+        "scope": "port",
+        "telemetry_seen": true,
+        "inbound_total": 92,
+        "established": 92,
+        "denied": 0,
+        "attempts": 0,
+        "internal_sources": 0,
+        "external_sources": 79,
+        "top_sources": [
+          [
+            "198.51.100.229",
+            3,
+            true
+          ],
+          [
+            "198.51.100.153",
+            2,
+            true
+          ],
+          [
+            "198.51.100.124",
+            2,
+            true
+          ],
+          [
+            "198.51.100.146",
+            2,
+            true
+          ],
+          [
+            "198.51.100.202",
+            2,
+            true
+          ],
+          [
+            "198.51.100.24",
+            2,
+            true
+          ],
+          [
+            "198.51.100.252",
+            2,
+            true
+          ],
+          [
+            "198.51.100.149",
+            2,
+            true
+          ]
+        ],
+        "first_seen": "2026-10-12T00:10:42Z",
+        "last_seen": "2026-10-18T02:34:27Z",
+        "bytes": 4238573,
+        "threat_alerts": 1,
+        "threat_blocked": 0,
+        "threat_blocked_sources": []
+      },
+      "blast_factor": 1.38,
+      "exploit_factor": 0.65,
+      "likelihood": "Medium",
+      "score": 84,
+      "priority": "P1",
+      "indicators": [
+        {
+          "type": "threat_alert",
+          "confidence": "lead",
+          "sources": [
+            [
+              "209.73.130.148",
+              1
+            ]
+          ],
+          "text": "IPS/IDS alerted 1 time(s) on traffic to this service and did not block it: Intel::Notice - Synthetic StyleSmuggler exploitation alert on the web service (from 209.73.130.148). An alert shows an attempt, not that it succeeded."
+        },
+        {
+          "type": "exfil",
+          "confidence": "lead",
+          "at": "2026-10-17T08:00:00Z",
+          "peer": "99.84.67.186",
+          "bytes": 26002060,
+          "text": "10.10.1.11 sent 24.8 MB to external address 99.84.67.186 after the flagged inbound contact at 2026-10-17T08:00:00Z."
+        },
+        {
+          "type": "corroborated",
+          "confidence": "corroborated",
+          "at": "2026-10-17T08:00:00Z",
+          "text": "Independent signals agree: the IPS/IDS alerted on traffic to this vulnerable service, and the host then showed exfil. Treat this as likely exploitation and start incident response; host forensics is still needed to confirm a compromise."
+        }
+      ],
+      "rationale": [
+        "Base severity: CVSS v3 7.5 (High).",
+        "No public exploit is known to the scanner.",
+        "Exposure: vulnerable service reached from the internet - 92 completed sessions from 79 external and 0 internal sources.",
+        "Blast radius: the host talks to 2 internal host(s) directly and 5 within 2 hops, including 3 with High/Critical findings.",
+        "Corroborated exploitation evidence (IPS alert plus host behaviour); see indicators."
       ]
     },
     {
@@ -54534,99 +54852,6 @@
         "A public exploit is available (Metasploit).",
         "Exposure: host is active on the network - 148 completed sessions from 0 external and 97 internal sources.",
         "Blast radius: the host talks to 9 internal host(s) directly and 9 within 2 hops, including 8 with High/Critical findings."
-      ]
-    },
-    {
-      "host": "10.10.1.11",
-      "hostname": "web02.corp.example",
-      "os": "Linux Kernel 5.15 on Ubuntu 22.04",
-      "plugin_id": "200206",
-      "plugin_name": "nginx 1.25.x < 1.25.4 Multiple Vulnerabilities",
-      "severity": 3,
-      "severity_name": "High",
-      "port": 443,
-      "proto": "tcp",
-      "service": "www",
-      "cvss": 7.5,
-      "cves": [
-        "CVE-2024-24989"
-      ],
-      "exploit_available": false,
-      "exploit_frameworks": [],
-      "synopsis": "The web server is affected by multiple denial of service vulnerabilities.",
-      "solution": "Upgrade to nginx 1.25.4 or later.",
-      "source": "quarterly_scan.nessus",
-      "exposure": {
-        "label": "Vulnerable service reached from the internet",
-        "factor": 1.0,
-        "scope": "port",
-        "telemetry_seen": true,
-        "inbound_total": 90,
-        "established": 90,
-        "denied": 0,
-        "attempts": 0,
-        "internal_sources": 0,
-        "external_sources": 78,
-        "top_sources": [
-          [
-            "198.51.100.229",
-            3,
-            true
-          ],
-          [
-            "198.51.100.153",
-            2,
-            true
-          ],
-          [
-            "198.51.100.124",
-            2,
-            true
-          ],
-          [
-            "198.51.100.146",
-            2,
-            true
-          ],
-          [
-            "198.51.100.202",
-            2,
-            true
-          ],
-          [
-            "198.51.100.24",
-            2,
-            true
-          ],
-          [
-            "198.51.100.252",
-            2,
-            true
-          ],
-          [
-            "198.51.100.149",
-            2,
-            true
-          ]
-        ],
-        "first_seen": "2026-10-12T00:10:42Z",
-        "last_seen": "2026-10-18T02:34:27Z",
-        "bytes": 4233073,
-        "threat_alerts": 0,
-        "threat_blocked": 0,
-        "threat_blocked_sources": []
-      },
-      "blast_factor": 1.38,
-      "exploit_factor": 0.65,
-      "likelihood": "Medium",
-      "score": 67,
-      "priority": "P2",
-      "indicators": [],
-      "rationale": [
-        "Base severity: CVSS v3 7.5 (High).",
-        "No public exploit is known to the scanner.",
-        "Exposure: vulnerable service reached from the internet - 90 completed sessions from 78 external and 0 internal sources.",
-        "Blast radius: the host talks to 2 internal host(s) directly and 5 within 2 hops, including 3 with High/Critical findings."
       ]
     },
     {
@@ -77501,5 +77726,379 @@
         "Blast radius: the host talks to 2 internal host(s) directly and 3 within 2 hops, including 2 with High/Critical findings."
       ]
     }
-  ]
+  ],
+  "ioc_matches": [
+    {
+      "id": "domain:247.cdnflare.xyz",
+      "type": "domain",
+      "value": "247.cdnflare.xyz",
+      "articles": [
+        "https://sansec.io/research/stylesmuggler-0day"
+      ],
+      "sources": [
+        "sansec.io"
+      ],
+      "first_seen": "2026-09-05T23:53:12.412Z",
+      "last_seen": "2026-10-15T19:09:41.509Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.1.11"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://sansec.io/research/stylesmuggler-0day": {
+          "title": "StyleSmuggler: Magento and Adobe Commerce remote code execution",
+          "overview": "Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."
+        }
+      }
+    },
+    {
+      "id": "domain:beraskencur.site",
+      "type": "domain",
+      "value": "beraskencur.site",
+      "articles": [
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"
+      ],
+      "sources": [
+        "unit42.paloaltonetworks.com"
+      ],
+      "first_seen": "2026-10-15T22:29:22.052Z",
+      "last_seen": "2026-10-15T22:29:22.052Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.2.42"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/": {
+          "title": "AI-powered espionage campaign targets Linux infrastructure",
+          "overview": "Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."
+        }
+      }
+    },
+    {
+      "id": "domain:byveo.org",
+      "type": "domain",
+      "value": "byveo.org",
+      "articles": [
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/"
+      ],
+      "sources": [
+        "www.microsoft.com"
+      ],
+      "first_seen": "2026-09-30T14:50:48.985Z",
+      "last_seen": "2026-09-30T14:50:48.985Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.3.48"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/": {
+          "title": "Star Blizzard refines phishing and RedFlick malware delivery",
+          "overview": "Microsoft describes phishing campaigns that used RedFlick to deliver the CosmicPulse backdoor. The report explains the Windows infection flow, persistence techniques, and network indicators for investigation."
+        }
+      }
+    },
+    {
+      "id": "domain:checkout-cdn.com",
+      "type": "domain",
+      "value": "checkout-cdn.com",
+      "articles": [
+        "https://sansec.io/research/stylesmuggler-0day"
+      ],
+      "sources": [
+        "sansec.io"
+      ],
+      "first_seen": "2026-10-15T19:09:41.509Z",
+      "last_seen": "2026-10-15T19:09:41.509Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.1.11"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://sansec.io/research/stylesmuggler-0day": {
+          "title": "StyleSmuggler: Magento and Adobe Commerce remote code execution",
+          "overview": "Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."
+        }
+      }
+    },
+    {
+      "id": "domain:ntp.timesync.to",
+      "type": "domain",
+      "value": "ntp.timesync.to",
+      "articles": [
+        "https://sansec.io/research/stylesmuggler-0day"
+      ],
+      "sources": [
+        "sansec.io"
+      ],
+      "first_seen": "2026-09-07T14:10:56.472Z",
+      "last_seen": "2026-10-15T19:09:41.509Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.1.11"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://sansec.io/research/stylesmuggler-0day": {
+          "title": "StyleSmuggler: Magento and Adobe Commerce remote code execution",
+          "overview": "Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."
+        }
+      }
+    },
+    {
+      "id": "domain:secure-dns-hub.com",
+      "type": "domain",
+      "value": "secure-dns-hub.com",
+      "articles": [
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/"
+      ],
+      "sources": [
+        "www.microsoft.com"
+      ],
+      "first_seen": "2026-09-30T14:50:48.985Z",
+      "last_seen": "2026-09-30T14:50:48.985Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.3.48"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/": {
+          "title": "Star Blizzard refines phishing and RedFlick malware delivery",
+          "overview": "Microsoft describes phishing campaigns that used RedFlick to deliver the CosmicPulse backdoor. The report explains the Windows infection flow, persistence techniques, and network indicators for investigation."
+        }
+      }
+    },
+    {
+      "id": "domain:solidmonpe.com",
+      "type": "domain",
+      "value": "solidmonpe.com",
+      "articles": [
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"
+      ],
+      "sources": [
+        "unit42.paloaltonetworks.com"
+      ],
+      "first_seen": "2026-10-15T22:29:22.052Z",
+      "last_seen": "2026-10-15T22:29:22.052Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.2.42"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/": {
+          "title": "AI-powered espionage campaign targets Linux infrastructure",
+          "overview": "Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."
+        }
+      }
+    },
+    {
+      "id": "ip:103.160.59.97",
+      "type": "ip",
+      "value": "103.160.59.97",
+      "articles": [
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/"
+      ],
+      "sources": [
+        "www.microsoft.com"
+      ],
+      "first_seen": "2026-09-30T14:50:48.985Z",
+      "last_seen": "2026-09-30T14:50:48.985Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.3.48"
+      ],
+      "observed": {
+        "network session": 2
+      },
+      "article_previews": {
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/": {
+          "title": "Star Blizzard refines phishing and RedFlick malware delivery",
+          "overview": "Microsoft describes phishing campaigns that used RedFlick to deliver the CosmicPulse backdoor. The report explains the Windows infection flow, persistence techniques, and network indicators for investigation."
+        }
+      }
+    },
+    {
+      "id": "ip:104.194.158.65",
+      "type": "ip",
+      "value": "104.194.158.65",
+      "articles": [
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"
+      ],
+      "sources": [
+        "unit42.paloaltonetworks.com"
+      ],
+      "first_seen": "2026-10-15T22:29:22.052Z",
+      "last_seen": "2026-10-15T22:29:22.052Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.2.42"
+      ],
+      "observed": {
+        "network session": 2
+      },
+      "article_previews": {
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/": {
+          "title": "AI-powered espionage campaign targets Linux infrastructure",
+          "overview": "Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."
+        }
+      }
+    },
+    {
+      "id": "ip:104.248.131.53",
+      "type": "ip",
+      "value": "104.248.131.53",
+      "articles": [
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"
+      ],
+      "sources": [
+        "unit42.paloaltonetworks.com"
+      ],
+      "first_seen": "2026-10-15T22:29:22.052Z",
+      "last_seen": "2026-10-15T22:29:22.052Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.2.42"
+      ],
+      "observed": {
+        "network session": 1
+      },
+      "article_previews": {
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/": {
+          "title": "AI-powered espionage campaign targets Linux infrastructure",
+          "overview": "Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."
+        }
+      }
+    },
+    {
+      "id": "ip:185.157.160.251",
+      "type": "ip",
+      "value": "185.157.160.251",
+      "articles": [
+        "https://sansec.io/research/stylesmuggler-0day"
+      ],
+      "sources": [
+        "sansec.io"
+      ],
+      "first_seen": "2026-09-07T14:10:56.472Z",
+      "last_seen": "2026-10-15T19:09:41.509Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.1.11"
+      ],
+      "observed": {
+        "network session": 2
+      },
+      "article_previews": {
+        "https://sansec.io/research/stylesmuggler-0day": {
+          "title": "StyleSmuggler: Magento and Adobe Commerce remote code execution",
+          "overview": "Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."
+        }
+      }
+    },
+    {
+      "id": "ip:209.141.43.95",
+      "type": "ip",
+      "value": "209.141.43.95",
+      "articles": [
+        "https://sansec.io/research/stylesmuggler-0day"
+      ],
+      "sources": [
+        "sansec.io"
+      ],
+      "first_seen": "2026-09-07T14:10:56.472Z",
+      "last_seen": "2026-10-15T19:09:41.509Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.1.11"
+      ],
+      "observed": {
+        "network session": 1
+      },
+      "article_previews": {
+        "https://sansec.io/research/stylesmuggler-0day": {
+          "title": "StyleSmuggler: Magento and Adobe Commerce remote code execution",
+          "overview": "Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."
+        }
+      }
+    },
+    {
+      "id": "ip:209.73.130.148",
+      "type": "ip",
+      "value": "209.73.130.148",
+      "articles": [
+        "https://sansec.io/research/stylesmuggler-0day"
+      ],
+      "sources": [
+        "sansec.io"
+      ],
+      "first_seen": "2026-09-07T14:10:56.472Z",
+      "last_seen": "2026-10-15T19:09:41.509Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.1.11"
+      ],
+      "observed": {
+        "IDS/IPS alert": 1,
+        "network session": 2
+      },
+      "article_previews": {
+        "https://sansec.io/research/stylesmuggler-0day": {
+          "title": "StyleSmuggler: Magento and Adobe Commerce remote code execution",
+          "overview": "Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."
+        }
+      }
+    },
+    {
+      "id": "ip:99.84.67.186",
+      "type": "ip",
+      "value": "99.84.67.186",
+      "articles": [
+        "https://sansec.io/research/stylesmuggler-0day"
+      ],
+      "sources": [
+        "sansec.io"
+      ],
+      "first_seen": "2026-09-05T23:53:12.412Z",
+      "last_seen": "2026-10-15T19:09:41.509Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.1.11"
+      ],
+      "observed": {
+        "network session": 3
+      },
+      "article_previews": {
+        "https://sansec.io/research/stylesmuggler-0day": {
+          "title": "StyleSmuggler: Magento and Adobe Commerce remote code execution",
+          "overview": "Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."
+        }
+      }
+    }
+  ],
+  "ioc_archive": {
+    "files": [
+      "large_mucaro_archive.csv"
+    ],
+    "indicators": 14,
+    "matches": 14
+  }
 }

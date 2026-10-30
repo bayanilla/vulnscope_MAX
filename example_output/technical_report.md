@@ -1,6 +1,6 @@
-# Technical Analysis: Vulnerability and Network Telemetry Correlation
+# Múcaro VulnScope: Technical Analysis
 
-Generated 2026-10-21T23:23:52Z. Telemetry window 2026-10-12T00:01:19Z to 2026-10-18T03:11:38Z.
+Generated 2026-10-30T22:59:36Z. Telemetry window 2026-10-12T00:01:19Z to 2026-10-18T03:11:38Z.
 
 ## 1. Inputs and data quality
 
@@ -10,8 +10,15 @@ Generated 2026-10-21T23:23:52Z. Telemetry window 2026-10-12T00:01:19Z to 2026-10
 | paloalto_traffic.csv | paloalto | 2285 | 1315 | 970 missing or invalid IP | firewall timestamps are assumed to be UTC; 4 IPS/IDS alert(s) used as exploitation evidence |
 | quarterly_scan.nessus | nessus | 697 | 697 | 0 |  |
 | zeek_conn.log | zeek | 8343 | 8342 | 1 missing or invalid IP |  |
+| dns.log | zeek | 7 | 7 | 0 | Zeek stream records preserved as events; only conn sessions and notice alerts affect scoring |
+| flows.csv | generic | 13 | 13 | 0 |  |
+| notice.log | zeek | 1 | 1 | 0 | 1 IPS/IDS alert(s) used as exploitation evidence |
+| scan.csv | nessus_csv | 1 | 1 | 0 | Nessus CSV exports usually omit exploit availability; prefer the .nessus file |
+| large_mucaro_archive.csv | mucaro_ioc_archive | 14 | 14 | 0 |  |
 
-Exact duplicate sessions removed: 1. Duplicate findings merged across scans: 0. IPS/IDS alerts loaded: 4. Internal address space: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, fc00::/7, fe80::/10, ::1/128.
+Exact duplicate sessions removed: 1. Duplicate findings merged across scans: 0. IPS/IDS alerts loaded: 5. Internal address space: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, fc00::/7, fe80::/10, ::1/128.
+
+Zeek stream events preserved (separate from connection sessions and alerts): dns 7.
 
 ## 2. Method
 
@@ -28,6 +35,7 @@ Each finding is scored 0-100 as `CVSS x 10 x Exploit x Exposure x BlastRadius`, 
 | Pri | Score | Host | Vulnerability | Port | CVSS | Exploit | Exposure | Blast | Likelihood |
 |---|---|---|---|---|---|---|---|---|---|
 | P1 | 100 | web01.corp.example (10.10.1.10) | Apache 2.4.49 < 2.4.51 Path Traversal and RCE (153884) | 443/tcp (www) | 9.8 | Yes | Vulnerable service reached from the internet | x1.5 | High |
+| P1 | 100 | web02.corp.example (10.10.1.11) | Synthetic Magento StyleSmuggler finding (990001) | 443/tcp | 10.0 | No | Vulnerable service reached from the internet | x1.38 | Medium |
 | P1 | 100 | app01.corp.example (10.10.1.20) | Apache Tomcat AJP Connector Request Injection (Ghostcat) (134862) | 8009/tcp (ajp13) | 9.8 | Yes | Vulnerable service reached internally | x1.24 | High |
 | P1 | 100 | app02.corp.example (10.10.2.30) | Apache Log4j < 2.15.0 Remote Code Execution (Log4Shell) (156057) | 8080/tcp (www) | 10.0 | Yes | Vulnerable service reached internally by many hosts | x1.48 | High |
 | P1 | 100 | app03.corp.example (10.10.2.31) | Apache Log4j < 2.15.0 Remote Code Execution (Log4Shell) (156057) | 8080/tcp (www) | 10.0 | Yes | Vulnerable service reached internally by many hosts | x1.26 | High |
@@ -36,6 +44,7 @@ Each finding is scored 0-100 as `CVSS x 10 x Exploit x Exposure x BlastRadius`, 
 | P1 | 93 | backup01.corp.example (10.10.2.41) | Veeam Backup & Replication Credential Disclosure (CVE-2023-27532) (173914) | 9401/tcp (veeam) | 7.5 | Yes | Vulnerable service reached internally | x1.5 | High |
 | P1 | 89 | ws-031.corp.example (10.10.3.31) | Microsoft RDP RCE (CVE-2019-0708) (BlueKeep) (125313) | 3389/tcp (msrdp) | 9.8 | Yes | Vulnerable service reached internally | x1.0 | High |
 | P1 | 85 | git01.corp.example (10.10.2.44) | GitLab 16.1 < 16.7.2 Account Takeover via Password Reset (187600) | 443/tcp (www) | 10.0 | Yes | Vulnerable service reached internally by many hosts | x1.0 | High |
+| P1 | 84 | web02.corp.example (10.10.1.11) | nginx 1.25.x < 1.25.4 Multiple Vulnerabilities (200206) | 443/tcp (www) | 7.5 | No | Vulnerable service reached from the internet | x1.38 | Medium |
 | P1 | 83 | fs01.corp.example (10.10.2.25) | MS17-010: Security Update for Microsoft Windows SMB Server (ETERNALBLUE) (97833) | 445/tcp (cifs) | 8.1 | Yes | Vulnerable service reached internally by many hosts | x1.0 | High |
 | P1 | 81 | cam-60.corp.example (10.10.4.60) | Hikvision IP Camera Command Injection (CVE-2021-36260) (153600) | 80/tcp (www) | 9.8 | Yes | Vulnerable service reached internally | x1.0 | High |
 | P1 | 81 | cam-61.corp.example (10.10.4.61) | Hikvision IP Camera Command Injection (CVE-2021-36260) (153600) | 80/tcp (www) | 9.8 | Yes | Vulnerable service reached internally | x1.0 | High |
@@ -48,7 +57,6 @@ Each finding is scored 0-100 as `CVSS x 10 x Exploit x Exposure x BlastRadius`, 
 | P1 | 81 | cam-68.corp.example (10.10.4.68) | Hikvision IP Camera Command Injection (CVE-2021-36260) (153600) | 80/tcp (www) | 9.8 | Yes | Vulnerable service reached internally | x1.0 | High |
 | P1 | 81 | cam-69.corp.example (10.10.4.69) | Hikvision IP Camera Command Injection (CVE-2021-36260) (153600) | 80/tcp (www) | 9.8 | Yes | Vulnerable service reached internally | x1.0 | High |
 | P2 | 73 | print01.corp.example (10.10.2.43) | Windows Print Spooler Service Enabled (PrintNightmare) (151440) | host-level | 8.8 | Yes | Host is active on the network | x1.5 | Medium |
-| P2 | 67 | web02.corp.example (10.10.1.11) | nginx 1.25.x < 1.25.4 Multiple Vulnerabilities (200206) | 443/tcp (www) | 7.5 | No | Vulnerable service reached from the internet | x1.38 | Medium |
 | P2 | 67 | web04.corp.example (10.10.1.13) | nginx 1.25.x < 1.25.4 Multiple Vulnerabilities (200206) | 443/tcp (www) | 7.5 | No | Vulnerable service reached from the internet | x1.38 | Medium |
 | P2 | 66 | ws-102.corp.example (10.10.3.102) | Google Chrome < 128.0.6613.84 Multiple Vulnerabilities (206722) | host-level | 8.8 | Yes | Host is active on the network | x1.5 | Medium |
 | P2 | 66 | ws-103.corp.example (10.10.3.103) | Microsoft Edge (Chromium) < 129.0.2792.52 Multiple Vulnerabilities (207053) | host-level | 8.8 | Yes | Host is active on the network | x1.5 | Medium |
@@ -527,6 +535,52 @@ Reachable hosts with High/Critical findings: 10.10.1.20, 10.10.2.25, 10.10.3.31,
 
 Outbound to 1 external address(es); top: 203.0.113.45 x2.
 
+### web02.corp.example (10.10.1.11) - P1 - act now
+
+- Operating system: Linux Kernel 5.15 on Ubuntu 22.04
+- Findings: 1 Critical, 1 High
+- Seen in telemetry: yes (110 inbound, 83 outbound sessions)
+- Internet-exposed vulnerable service: yes
+
+**Exploitation indicators** (leads unless marked corroborated)
+
+- [lead] IPS/IDS alerted 1 time(s) on traffic to this service and did not block it: Intel::Notice - Synthetic StyleSmuggler exploitation alert on the web service (from 209.73.130.148). An alert shows an attempt, not that it succeeded.
+- [lead] 10.10.1.11 sent 24.8 MB to external address 99.84.67.186 after the flagged inbound contact at 2026-10-17T08:00:00Z.
+- [corroborated] Independent signals agree: the IPS/IDS alerted on traffic to this vulnerable service, and the host then showed exfil. Treat this as likely exploitation and start incident response; host forensics is still needed to confirm a compromise.
+
+**Findings and exposure evidence**
+
+#### P1 (100) Synthetic Magento StyleSmuggler finding
+
+- Plugin 990001, Critical, CVSS 10.0, port 443/tcp, CVE-2026-75650
+- Why this score: Base severity: CVSS v3 10.0 (Critical). No public exploit is known to the scanner. Exposure: vulnerable service reached from the internet - 92 completed sessions from 79 external and 0 internal sources. Blast radius: the host talks to 2 internal host(s) directly and 5 within 2 hops, including 3 with High/Critical findings. Corroborated exploitation evidence (IPS alert plus host behaviour); see indicators.
+- Traffic to service: 92 completed, 0 attempts, 0 blocked; first 2026-10-12T00:10:42Z, last 2026-10-18T02:34:27Z; top sources: 198.51.100.229 (ext) x3, 198.51.100.153 (ext) x2, 198.51.100.124 (ext) x2, 198.51.100.146 (ext) x2, 198.51.100.202 (ext) x2, 198.51.100.24 (ext) x2, 198.51.100.252 (ext) x2, 198.51.100.149 (ext) x2
+- Synopsis: Fabricated scan finding for the source-linked web server storyline.
+- Remediation: Apply the vendor hotfix and review host evidence.
+
+#### P1 (84) nginx 1.25.x < 1.25.4 Multiple Vulnerabilities
+
+- Plugin 200206, High, CVSS 7.5, port 443/tcp (www), CVE-2024-24989
+- Why this score: Base severity: CVSS v3 7.5 (High). No public exploit is known to the scanner. Exposure: vulnerable service reached from the internet - 92 completed sessions from 79 external and 0 internal sources. Blast radius: the host talks to 2 internal host(s) directly and 5 within 2 hops, including 3 with High/Critical findings. Corroborated exploitation evidence (IPS alert plus host behaviour); see indicators.
+- Traffic to service: 92 completed, 0 attempts, 0 blocked; first 2026-10-12T00:10:42Z, last 2026-10-18T02:34:27Z; top sources: 198.51.100.229 (ext) x3, 198.51.100.153 (ext) x2, 198.51.100.124 (ext) x2, 198.51.100.146 (ext) x2, 198.51.100.202 (ext) x2, 198.51.100.24 (ext) x2, 198.51.100.252 (ext) x2, 198.51.100.149 (ext) x2
+- Synopsis: The web server is affected by multiple denial of service vulnerabilities.
+- Remediation: Upgrade to nginx 1.25.4 or later.
+
+**Blast radius**
+
+Completed sessions to 2 internal host(s) directly, 5 within 2 hops.
+Reachable hosts with High/Critical findings: 10.10.2.30, 10.10.2.24, 10.10.2.21.
+
+| Reachable host | Hops | Ports used | Worst finding |
+|---|---|---|---|
+| 10.10.2.30 | 1 | 8080/tcp | Critical |
+| 10.10.0.53 | 1 | 53/udp | - |
+| 10.10.2.24 | 2 |  | Critical |
+| 10.10.2.21 | 2 |  | High |
+| 10.10.0.10 | 2 |  | - |
+
+Outbound to 3 external address(es); top: 99.84.67.186 x3, 185.157.160.251 x2, 209.141.43.95 x1.
+
 ### app01.corp.example (10.10.1.20) - P1 - act now
 
 - Operating system: Linux Kernel 5.15 on Ubuntu 22.04
@@ -695,10 +749,11 @@ Outbound to 29 external address(es); top: 104.16.24.149 x2, 104.16.24.41 x1, 104
 
 Completed sessions to 23 internal host(s) directly, 50 within 2 hops.
 Lateral-movement protocols used: SSH (38), SMB (8).
-Reachable hosts with High/Critical findings: 10.10.2.24, 10.10.2.30, 10.10.2.31, 10.10.2.32, 10.10.2.40, 10.10.2.43, 10.10.2.44, 10.10.2.45, 10.10.1.11, 10.10.1.12, 10.10.1.13, 10.10.1.14, 10.10.1.40, 10.10.2.21, 10.10.2.22, 10.10.2.23, 10.10.3.102, 10.10.3.129, 10.10.3.138, 10.10.3.156, 10.10.3.183, 10.10.3.192, 10.10.3.93, 10.10.3.111, 10.10.3.120, 10.10.3.147, 10.10.3.165, 10.10.3.174, 10.10.3.48, 10.10.3.57, 10.10.3.66, 10.10.3.75, 10.10.3.84, 10.10.4.51, 10.10.4.52, 10.10.4.53, 10.10.4.54, 10.10.4.55, 10.10.4.56, 10.10.4.57, 10.10.4.58.
+Reachable hosts with High/Critical findings: 10.10.1.11, 10.10.2.24, 10.10.2.30, 10.10.2.31, 10.10.2.32, 10.10.2.40, 10.10.2.43, 10.10.2.44, 10.10.2.45, 10.10.1.12, 10.10.1.13, 10.10.1.14, 10.10.1.40, 10.10.2.21, 10.10.2.22, 10.10.2.23, 10.10.3.102, 10.10.3.129, 10.10.3.138, 10.10.3.156, 10.10.3.183, 10.10.3.192, 10.10.3.93, 10.10.3.111, 10.10.3.120, 10.10.3.147, 10.10.3.165, 10.10.3.174, 10.10.3.48, 10.10.3.57, 10.10.3.66, 10.10.3.75, 10.10.3.84, 10.10.4.51, 10.10.4.52, 10.10.4.53, 10.10.4.54, 10.10.4.55, 10.10.4.56, 10.10.4.57, 10.10.4.58.
 
 | Reachable host | Hops | Ports used | Worst finding |
 |---|---|---|---|
+| 10.10.1.11 | 1 | 22/tcp | Critical |
 | 10.10.2.24 | 1 | 445/tcp | Critical |
 | 10.10.2.30 | 1 | 22/tcp | Critical |
 | 10.10.2.31 | 1 | 22/tcp | Critical |
@@ -707,7 +762,6 @@ Reachable hosts with High/Critical findings: 10.10.2.24, 10.10.2.30, 10.10.2.31,
 | 10.10.2.43 | 1 | 445/tcp | Critical |
 | 10.10.2.44 | 1 | 22/tcp | Critical |
 | 10.10.2.45 | 1 | 22/tcp | Critical |
-| 10.10.1.11 | 1 | 22/tcp | High |
 | 10.10.1.12 | 1 | 22/tcp | High |
 | 10.10.1.13 | 1 | 22/tcp | High |
 | 10.10.1.14 | 1 | 22/tcp | High |
@@ -1053,36 +1107,6 @@ Reachable hosts with High/Critical findings: 10.10.4.51, 10.10.4.52, 10.10.4.53,
 | 10.10.4.57 | 1 | 9100/tcp | High |
 | 10.10.4.58 | 1 | 9100/tcp | High |
 | 10.10.0.10 | 1 | 389/tcp | - |
-
-### web02.corp.example (10.10.1.11) - P2 - this cycle
-
-- Operating system: Linux Kernel 5.15 on Ubuntu 22.04
-- Findings: 1 High
-- Seen in telemetry: yes (108 inbound, 77 outbound sessions)
-- Internet-exposed vulnerable service: yes
-
-**Findings and exposure evidence**
-
-#### P2 (67) nginx 1.25.x < 1.25.4 Multiple Vulnerabilities
-
-- Plugin 200206, High, CVSS 7.5, port 443/tcp (www), CVE-2024-24989
-- Why this score: Base severity: CVSS v3 7.5 (High). No public exploit is known to the scanner. Exposure: vulnerable service reached from the internet - 90 completed sessions from 78 external and 0 internal sources. Blast radius: the host talks to 2 internal host(s) directly and 5 within 2 hops, including 3 with High/Critical findings.
-- Traffic to service: 90 completed, 0 attempts, 0 blocked; first 2026-10-12T00:10:42Z, last 2026-10-18T02:34:27Z; top sources: 198.51.100.229 (ext) x3, 198.51.100.153 (ext) x2, 198.51.100.124 (ext) x2, 198.51.100.146 (ext) x2, 198.51.100.202 (ext) x2, 198.51.100.24 (ext) x2, 198.51.100.252 (ext) x2, 198.51.100.149 (ext) x2
-- Synopsis: The web server is affected by multiple denial of service vulnerabilities.
-- Remediation: Upgrade to nginx 1.25.4 or later.
-
-**Blast radius**
-
-Completed sessions to 2 internal host(s) directly, 5 within 2 hops.
-Reachable hosts with High/Critical findings: 10.10.2.30, 10.10.2.24, 10.10.2.21.
-
-| Reachable host | Hops | Ports used | Worst finding |
-|---|---|---|---|
-| 10.10.2.30 | 1 | 8080/tcp | Critical |
-| 10.10.0.53 | 1 | 53/udp | - |
-| 10.10.2.24 | 2 |  | Critical |
-| 10.10.2.21 | 2 |  | High |
-| 10.10.0.10 | 2 |  | - |
 
 ### web04.corp.example (10.10.1.13) - P2 - this cycle
 
@@ -3650,7 +3674,7 @@ Reachable hosts with High/Critical findings: 10.10.2.32, 10.10.2.40, 10.10.1.40,
 
 - Operating system: Microsoft Windows 11 Enterprise
 - Findings: 2 High, 1 Medium
-- Seen in telemetry: yes (3 inbound, 26 outbound sessions)
+- Seen in telemetry: yes (3 inbound, 28 outbound sessions)
 - Internet-exposed vulnerable service: no
 
 **Findings and exposure evidence**
@@ -3703,6 +3727,8 @@ Reachable hosts with High/Critical findings: 10.10.2.30, 10.10.2.40, 10.10.1.40,
 | 10.10.3.192 | 2 |  | Critical |
 | 10.10.3.93 | 2 |  | Critical |
 | ... 10 more | | | |
+
+Outbound to 1 external address(es); top: 103.160.59.97 x2.
 
 ### ws-049.corp.example (10.10.3.49) - P2 - this cycle
 
@@ -6640,7 +6666,7 @@ No completed internal sessions from this host were observed.
 
 Completed sessions to 18 internal host(s) directly, 43 within 2 hops.
 Lateral-movement protocols used: SMB (34), RPC (17).
-Reachable hosts with High/Critical findings: 10.10.2.41, 10.10.3.102, 10.10.3.129, 10.10.3.138, 10.10.3.156, 10.10.3.183, 10.10.3.192, 10.10.3.93, 10.10.3.111, 10.10.3.120, 10.10.3.147, 10.10.3.165, 10.10.3.174, 10.10.3.48, 10.10.3.57, 10.10.3.66, 10.10.3.75, 10.10.3.84, 10.10.2.24, 10.10.2.25, 10.10.2.30, 10.10.2.31, 10.10.2.32, 10.10.2.43, 10.10.2.44, 10.10.2.45, 10.10.1.11, 10.10.1.12, 10.10.1.13, 10.10.1.14, 10.10.1.40, 10.10.2.21, 10.10.2.22, 10.10.2.23.
+Reachable hosts with High/Critical findings: 10.10.2.41, 10.10.3.102, 10.10.3.129, 10.10.3.138, 10.10.3.156, 10.10.3.183, 10.10.3.192, 10.10.3.93, 10.10.3.111, 10.10.3.120, 10.10.3.147, 10.10.3.165, 10.10.3.174, 10.10.3.48, 10.10.3.57, 10.10.3.66, 10.10.3.75, 10.10.3.84, 10.10.1.11, 10.10.2.24, 10.10.2.25, 10.10.2.30, 10.10.2.31, 10.10.2.32, 10.10.2.43, 10.10.2.44, 10.10.2.45, 10.10.1.12, 10.10.1.13, 10.10.1.14, 10.10.1.40, 10.10.2.21, 10.10.2.22, 10.10.2.23.
 
 | Reachable host | Hops | Ports used | Worst finding |
 |---|---|---|---|
@@ -9616,7 +9642,7 @@ Reachable hosts with High/Critical findings: 10.10.2.22.
 
 - Operating system: Linux Kernel 5.15 on Ubuntu 22.04
 - Findings: 1 High
-- Seen in telemetry: yes (2 inbound, 223 outbound sessions)
+- Seen in telemetry: yes (2 inbound, 226 outbound sessions)
 - Internet-exposed vulnerable service: no
 
 **Findings and exposure evidence**
@@ -9631,10 +9657,11 @@ Reachable hosts with High/Critical findings: 10.10.2.22.
 **Blast radius**
 
 Completed sessions to 43 internal host(s) directly, 62 within 2 hops.
-Reachable hosts with High/Critical findings: 10.10.1.30, 10.10.2.24, 10.10.2.30, 10.10.2.31, 10.10.2.32, 10.10.2.40, 10.10.2.41, 10.10.2.43, 10.10.2.44, 10.10.2.45, 10.10.4.60, 10.10.4.61, 10.10.4.62, 10.10.4.63, 10.10.4.64, 10.10.4.65, 10.10.4.66, 10.10.4.67, 10.10.4.68, 10.10.4.69, 10.10.1.11, 10.10.1.12, 10.10.1.13, 10.10.1.14, 10.10.1.40, 10.10.2.21, 10.10.2.22, 10.10.2.23, 10.10.4.51, 10.10.4.52, 10.10.4.53, 10.10.4.54, 10.10.4.55, 10.10.4.56, 10.10.4.57, 10.10.4.58, 10.10.3.102, 10.10.3.129, 10.10.3.138, 10.10.3.156, 10.10.3.183, 10.10.3.192, 10.10.3.93, 10.10.3.111, 10.10.3.120, 10.10.3.147, 10.10.3.165, 10.10.3.174, 10.10.3.48, 10.10.3.57, 10.10.3.66, 10.10.3.75, 10.10.3.84.
+Reachable hosts with High/Critical findings: 10.10.1.11, 10.10.1.30, 10.10.2.24, 10.10.2.30, 10.10.2.31, 10.10.2.32, 10.10.2.40, 10.10.2.41, 10.10.2.43, 10.10.2.44, 10.10.2.45, 10.10.4.60, 10.10.4.61, 10.10.4.62, 10.10.4.63, 10.10.4.64, 10.10.4.65, 10.10.4.66, 10.10.4.67, 10.10.4.68, 10.10.4.69, 10.10.1.12, 10.10.1.13, 10.10.1.14, 10.10.1.40, 10.10.2.21, 10.10.2.22, 10.10.2.23, 10.10.4.51, 10.10.4.52, 10.10.4.53, 10.10.4.54, 10.10.4.55, 10.10.4.56, 10.10.4.57, 10.10.4.58, 10.10.3.102, 10.10.3.129, 10.10.3.138, 10.10.3.156, 10.10.3.183, 10.10.3.192, 10.10.3.93, 10.10.3.111, 10.10.3.120, 10.10.3.147, 10.10.3.165, 10.10.3.174, 10.10.3.48, 10.10.3.57, 10.10.3.66, 10.10.3.75, 10.10.3.84.
 
 | Reachable host | Hops | Ports used | Worst finding |
 |---|---|---|---|
+| 10.10.1.11 | 1 | 161/udp | Critical |
 | 10.10.1.30 | 1 | 161/udp | Critical |
 | 10.10.2.24 | 1 | 161/udp | Critical |
 | 10.10.2.30 | 1 | 161/udp | Critical |
@@ -9649,8 +9676,9 @@ Reachable hosts with High/Critical findings: 10.10.1.30, 10.10.2.24, 10.10.2.30,
 | 10.10.4.61 | 1 | 554/tcp, 80/tcp | Critical |
 | 10.10.4.62 | 1 | 554/tcp, 80/tcp | Critical |
 | 10.10.4.63 | 1 | 554/tcp, 80/tcp | Critical |
-| 10.10.4.64 | 1 | 554/tcp, 80/tcp | Critical |
 | ... 47 more | | | |
+
+Outbound to 2 external address(es); top: 104.194.158.65 x2, 104.248.131.53 x1.
 
 ### ws-126.corp.example (10.10.3.126) - P3 - scheduled
 
@@ -11245,7 +11273,7 @@ No completed internal sessions from this host were observed.
 
 Completed sessions to 19 internal host(s) directly, 62 within 2 hops.
 Lateral-movement protocols used: SSH (63), RDP (26).
-Reachable hosts with High/Critical findings: 10.10.2.24, 10.10.2.30, 10.10.2.31, 10.10.2.32, 10.10.2.40, 10.10.2.41, 10.10.2.43, 10.10.2.44, 10.10.2.45, 10.10.2.21, 10.10.2.22, 10.10.2.23, 10.10.2.42, 10.10.1.30, 10.10.3.102, 10.10.3.129, 10.10.3.138, 10.10.3.156, 10.10.3.183, 10.10.3.192, 10.10.3.93, 10.10.4.60, 10.10.4.61, 10.10.4.62, 10.10.4.63, 10.10.4.64, 10.10.4.65, 10.10.4.66, 10.10.4.67, 10.10.4.68, 10.10.4.69, 10.10.1.11, 10.10.1.12, 10.10.1.13, 10.10.1.14, 10.10.1.40, 10.10.3.111, 10.10.3.120, 10.10.3.147, 10.10.3.165, 10.10.3.174, 10.10.3.48, 10.10.3.57, 10.10.3.66, 10.10.3.75, 10.10.3.84, 10.10.4.51, 10.10.4.52, 10.10.4.53, 10.10.4.54, 10.10.4.55, 10.10.4.56, 10.10.4.57, 10.10.4.58.
+Reachable hosts with High/Critical findings: 10.10.2.24, 10.10.2.30, 10.10.2.31, 10.10.2.32, 10.10.2.40, 10.10.2.41, 10.10.2.43, 10.10.2.44, 10.10.2.45, 10.10.2.21, 10.10.2.22, 10.10.2.23, 10.10.2.42, 10.10.1.11, 10.10.1.30, 10.10.3.102, 10.10.3.129, 10.10.3.138, 10.10.3.156, 10.10.3.183, 10.10.3.192, 10.10.3.93, 10.10.4.60, 10.10.4.61, 10.10.4.62, 10.10.4.63, 10.10.4.64, 10.10.4.65, 10.10.4.66, 10.10.4.67, 10.10.4.68, 10.10.4.69, 10.10.1.12, 10.10.1.13, 10.10.1.14, 10.10.1.40, 10.10.3.111, 10.10.3.120, 10.10.3.147, 10.10.3.165, 10.10.3.174, 10.10.3.48, 10.10.3.57, 10.10.3.66, 10.10.3.75, 10.10.3.84, 10.10.4.51, 10.10.4.52, 10.10.4.53, 10.10.4.54, 10.10.4.55, 10.10.4.56, 10.10.4.57, 10.10.4.58.
 
 | Reachable host | Hops | Ports used | Worst finding |
 |---|---|---|---|
@@ -11320,3 +11348,24 @@ Reachable hosts with High/Critical findings: 10.10.3.31, 10.10.2.20.
 - `normalized/flows.csv`, `normalized/findings.csv`: cleaned inputs in the common schema
 - `normalized/zeek_events.jsonl`: other Zeek streams with stream identity and source fields
 - `normalized/ot_events.jsonl`: industrial protocol records with operation and message direction
+
+## Múcaro IOC matches
+
+Exact matches to the imported IOC Archive are leads for review, not proof of malicious activity.
+
+| Indicator | Type | Related hosts | Observed in | Source articles |
+|---|---|---|---|---|
+| 247.cdnflare.xyz | domain | 10.10.1.11 | 1 dns event | https://sansec.io/research/stylesmuggler-0day |
+| beraskencur.site | domain | 10.10.2.42 | 1 dns event | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| byveo.org | domain | 10.10.3.48 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
+| checkout-cdn.com | domain | 10.10.1.11 | 1 dns event | https://sansec.io/research/stylesmuggler-0day |
+| ntp.timesync.to | domain | 10.10.1.11 | 1 dns event | https://sansec.io/research/stylesmuggler-0day |
+| secure-dns-hub.com | domain | 10.10.3.48 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
+| solidmonpe.com | domain | 10.10.2.42 | 1 dns event | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| 103.160.59.97 | ip | 10.10.3.48 | 2 network session | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
+| 104.194.158.65 | ip | 10.10.2.42 | 2 network session | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| 104.248.131.53 | ip | 10.10.2.42 | 1 network session | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| 185.157.160.251 | ip | 10.10.1.11 | 2 network session | https://sansec.io/research/stylesmuggler-0day |
+| 209.141.43.95 | ip | 10.10.1.11 | 1 network session | https://sansec.io/research/stylesmuggler-0day |
+| 209.73.130.148 | ip | 10.10.1.11 | 1 IDS/IPS alert, 2 network session | https://sansec.io/research/stylesmuggler-0day |
+| 99.84.67.186 | ip | 10.10.1.11 | 3 network session | https://sansec.io/research/stylesmuggler-0day |
