@@ -50,6 +50,28 @@ or `--article-preview-cache /path/to/previews.json` to reuse saved overviews off
 cannot be read, its link remains available. An IOC match is a lead for review, not confirmation
 of compromise. This import uses a CSV snapshot; automated API retrieval is a separate step.
 
+### Múcaro article AI briefs
+
+On the local upload page, open **AI analyst settings**, choose OpenAI, and enter your model and
+OpenAI API key. After analyzing a run with Múcaro archive matches, choose **Generate article briefs
+with OpenAI** on its results page. VulnScope reads each unique matched source article, sends its
+text through a bundled copy of Múcaro's article prompt and structured output schema, and saves
+the resulting brief in `results.json` and the standalone executive, technical, and Explorer HTML
+pages. Click a matched indicator to see a concise AI brief, action list, and the full article link.
+The whole-report AI analyst brief remains a separate feature. No article is sent until you
+explicitly generate its brief. The API key remains in the local server's memory, while generated
+briefs stay with the report after the server stops. Unreadable articles retain their original
+short overview and source link. A matched IP is a source lead, not proof that a host is compromised.
+
+For an existing command-line output folder, run:
+
+```bash
+python3 -m vulnflow article-briefs out --llm-provider openai --llm-model gpt-4.1-mini
+```
+
+The command prompts for the API key in a terminal if it is not in `OPENAI_API_KEY`.
+Article briefs need exact IOCs from source text, so IP/hostname redaction must be off for this action.
+
 See [the synthetic Múcaro cases](demo/README.md) for repeatable small and 250-host demos with
 multiple source-linked indicators.
 

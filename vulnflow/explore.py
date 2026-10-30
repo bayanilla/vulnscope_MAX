@@ -264,6 +264,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         "nodes": [nodes[n] for n in keep],
         "links": [[a, b, w] for (a, b), w in sorted(links.items(), key=lambda kv: -kv[1])[:3000]],
         "focus": focus, "ioc_matches": res.get("ioc_matches", []),
+        "article_briefs": res.get("article_briefs", {}),
         "start": res["hosts"][0]["host"] if res["hosts"] else None,
     }
 
@@ -283,4 +284,4 @@ def html(data: dict) -> str:
             + _read("explorer.html")
             + f'<script id="vf-data" type="application/json">{blob}</script>'
             + "<script>" + _read("explorer.js") + "</script>"
-            + ioc_archive.drawer_html(data["ioc_matches"]) + "</body></html>\n")
+            + ioc_archive.drawer_html(data["ioc_matches"], data.get("article_briefs")) + "</body></html>\n")

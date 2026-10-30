@@ -1,6 +1,8 @@
 # Third-party notices
 
-The Múcaro browser tab icon at `vulnflow/static/mucaro-icon.svg` comes from
+The Múcaro browser tab icon at `vulnflow/static/mucaro-icon.svg`, the article
+brief prompt at `vulnflow/mucaro_article_prompt.txt`, and the structured output
+schema at `vulnflow/mucaro_article_schema.json` come from
 [Múcaro Threat Monitor](https://github.com/b0rik3n/mucaro-threat-monitor),
 which is distributed under the MIT License:
 

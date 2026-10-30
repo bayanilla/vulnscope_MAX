@@ -1,0 +1,458 @@
+{
+  "name": "mucaro_threat_analysis",
+  "strict": true,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "executive_summary",
+      "key_takeaways",
+      "mobile_summary",
+      "attack_behavior_summary",
+      "soc_action_panel",
+      "mitre_mapping_warnings",
+      "confidence",
+      "uncertainties",
+      "iocs",
+      "mitre_techniques",
+      "apt_attribution",
+      "source"
+    ],
+    "properties": {
+      "executive_summary": {
+        "type": "string"
+      },
+      "key_takeaways": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "minItems": 3,
+        "maxItems": 7
+      },
+      "mobile_summary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "priority",
+          "why_it_matters",
+          "affected",
+          "what_to_do_now",
+          "key_indicators",
+          "confidence_note",
+          "source_note"
+        ],
+        "properties": {
+          "priority": {
+            "type": "string",
+            "enum": [
+              "P1",
+              "P2",
+              "P3"
+            ]
+          },
+          "why_it_matters": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 3
+          },
+          "affected": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 3
+          },
+          "what_to_do_now": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 4
+          },
+          "key_indicators": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5
+          },
+          "confidence_note": {
+            "type": "string"
+          },
+          "source_note": {
+            "type": "string"
+          }
+        }
+      },
+      "attack_behavior_summary": {
+        "type": "string"
+      },
+      "soc_action_panel": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mission_assessment",
+          "observed_maneuver",
+          "operational_impact",
+          "immediate_actions_0_15m",
+          "investigation_questions",
+          "detection_hunt_starters",
+          "defensive_friction",
+          "dependencies",
+          "future_maneuver",
+          "attack_mapping_confidence"
+        ],
+        "properties": {
+          "mission_assessment": {
+            "type": "string"
+          },
+          "observed_maneuver": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "phase",
+                "assessment",
+                "evidence_level"
+              ],
+              "properties": {
+                "phase": {
+                  "type": "string"
+                },
+                "assessment": {
+                  "type": "string"
+                },
+                "evidence_level": {
+                  "type": "string",
+                  "enum": [
+                    "observed",
+                    "inferred",
+                    "not_evidenced"
+                  ]
+                }
+              }
+            }
+          },
+          "operational_impact": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 5
+          },
+          "immediate_actions_0_15m": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 5
+          },
+          "investigation_questions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6
+          },
+          "detection_hunt_starters": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defensive_friction": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "interrupts",
+              "slows",
+              "detects_only"
+            ],
+            "properties": {
+              "interrupts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 5
+              },
+              "slows": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 5
+              },
+              "detects_only": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 5
+              }
+            }
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8
+          },
+          "future_maneuver": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "most_likely",
+              "alternative",
+              "confidence"
+            ],
+            "properties": {
+              "most_likely": {
+                "type": "string"
+              },
+              "alternative": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              }
+            }
+          },
+          "attack_mapping_confidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "mitre_mapping_warnings": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "confidence": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "level",
+          "score",
+          "rationale"
+        ],
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "rationale": {
+            "type": "string"
+          }
+        }
+      },
+      "uncertainties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "iocs": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ips",
+          "domains",
+          "urls",
+          "hashes",
+          "cves",
+          "ioc_context"
+        ],
+        "properties": {
+          "ips": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hashes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cves": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ioc_context": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "high_confidence_count",
+              "extraction_source",
+              "defanging_detected",
+              "notes"
+            ],
+            "properties": {
+              "high_confidence_count": {
+                "type": "number"
+              },
+              "extraction_source": {
+                "type": "string",
+                "enum": [
+                  "dedicated_section",
+                  "inline",
+                  "mixed"
+                ]
+              },
+              "defanging_detected": {
+                "type": "boolean"
+              },
+              "notes": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "mitre_techniques": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "name",
+            "tactic",
+            "evidence",
+            "confidence"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "tactic": {
+              "type": "string"
+            },
+            "evidence": {
+              "type": "string"
+            },
+            "confidence": {
+              "type": "string",
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ]
+            }
+          }
+        }
+      },
+      "apt_attribution": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "actor",
+          "aliases",
+          "confidence",
+          "rationale",
+          "evidence"
+        ],
+        "properties": {
+          "actor": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "none"
+            ]
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "source": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "url",
+          "title",
+          "publisher",
+          "published_at"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "publisher": {
+            "type": "string"
+          },
+          "published_at": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

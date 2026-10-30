@@ -7,6 +7,7 @@ import html
 import json
 import os
 import re
+import tempfile
 
 from .correlate import PRIORITY_LABELS
 from .branding import PRODUCT_NAME, icon_data_uri
@@ -439,7 +440,8 @@ def md_body(md: str, inserts: dict | None = None) -> str:
 
 
 def md_to_html(md: str, title: str, inserts: dict | None = None,
-               ioc_matches: list[dict] | None = None) -> str:
+               ioc_matches: list[dict] | None = None,
+               article_briefs: dict | None = None) -> str:
     """Standalone HTML page. With `inserts` (the reports) the visual layer is added: badges,
     tiles, diagrams and the interactive findings table."""
     from . import visual
@@ -455,7 +457,7 @@ def md_to_html(md: str, title: str, inserts: dict | None = None,
             f"<title>{html.escape(title)} · {PRODUCT_NAME}</title><link rel=\"icon\" href=\"{icon_data_uri()}\">{THEME_INIT}<style>{CSS}{visual.VISUAL_CSS}"
             f"{ioc_archive.CSS if ioc_matches else ''}</style></head><body>"
             + theme_control()
-            + body + script + ioc_archive.drawer_html(ioc_matches or []) + "</body></html>\n")
+            + body + script + ioc_archive.drawer_html(ioc_matches or [], article_briefs) + "</body></html>\n")
 
 
 # ---------------------------------------------------------------- write all
@@ -481,10 +483,10 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
     from . import visual
     from .diagram import hostile_activity_svg
     w("executive_summary.html", md_to_html(ex, "Executive Summary", visual.executive_inserts(res),
-                                           res.get("ioc_matches")))
+                                           res.get("ioc_matches"), res.get("article_briefs")))
     w("technical_report.md", tech)
     w("technical_report.html", md_to_html(tech, "Technical Analysis", visual.technical_inserts(res),
-                                         res.get("ioc_matches")))
+                                         res.get("ioc_matches"), res.get("article_briefs")))
     w("hostile_activity.svg", hostile_activity_svg(res, standalone=True))
     from . import explore
     w("explorer.html", explore.html(explore.build(res, ds)))
@@ -539,3 +541,35 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
                 fh.write(json.dumps(row, default=str, ensure_ascii=False) + "\n")
         paths["normalized/" + name] = p
     return paths
+
+
+def save_article_briefs(res: dict, outdir: str) -> None:
+    """Refresh standalone pages after briefs are generated for an existing run."""
+    from . import explore, visual
+
+    pages = {}
+    for name, title, inserts in (
+        ("executive_summary", "Executive Summary", visual.executive_inserts(res)),
+        ("technical_report", "Technical Analysis", visual.technical_inserts(res)),
+    ):
+        with open(os.path.join(outdir, name + ".md"), encoding="utf-8") as fh:
+            markdown = fh.read()
+        pages[name + ".html"] = md_to_html(markdown, title, inserts,
+                                            res.get("ioc_matches"), res.get("article_briefs"))
+
+    with open(os.path.join(outdir, "explorer.html"), encoding="utf-8") as fh:
+        previous = fh.read()
+    match = re.search(r'<script id="vf-data" type="application/json">(.*?)</script>', previous, re.S)
+    if not match:
+        raise ValueError("Cannot find the saved Explorer data for this run.")
+    explorer_data = json.loads(match.group(1))
+    explorer_data["article_briefs"] = res.get("article_briefs", {})
+    explorer_data["ioc_matches"] = res.get("ioc_matches", [])
+    pages["explorer.html"] = explore.html(explorer_data)
+    pages["results.json"] = json.dumps(res, indent=2, default=str)
+
+    for name, content in pages.items():
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=outdir, delete=False) as fh:
+            fh.write(content)
+            temporary = fh.name
+        os.replace(temporary, os.path.join(outdir, name))

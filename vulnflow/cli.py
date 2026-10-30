@@ -112,6 +112,10 @@ def main(argv=None) -> int:
     b.add_argument("outdir")
     _llm_flags(b)
 
+    ab = sub.add_parser("article-briefs", help="generate Múcaro AI briefs for matched source articles")
+    ab.add_argument("outdir")
+    _llm_flags(ab)
+
     q = sub.add_parser("ask", help="ask the AI analyst about an output folder (interactive without a question)")
     q.add_argument("outdir")
     q.add_argument("question", nargs="*")
@@ -164,11 +168,22 @@ def main(argv=None) -> int:
         serve(args.host, args.port, args.data_dir, _cfg(args), llm_cfg=llm_cfg,
               max_upload=args.max_upload_mb * 1024 * 1024)
         return 0
-    if args.cmd in ("brief", "ask"):
+    if args.cmd in ("brief", "article-briefs", "ask"):
         from .llm import Analyst, LLMError, load_results, write_brief
         try:
             cfg = _llm_cfg(args)
             res = load_results(args.outdir)
+            if args.cmd == "article-briefs":
+                from .article_brief import generate_article_briefs
+                from .report import save_article_briefs
+                summary = generate_article_briefs(res, cfg)
+                if summary["generated"]:
+                    save_article_briefs(res, args.outdir)
+                print(f"Generated {summary['generated']} article brief(s); "
+                      f"{summary['saved']} saved, {summary['unavailable']} source(s) unavailable.")
+                for error in summary["errors"]:
+                    print(f"warning: {error}", file=sys.stderr)
+                return 0 if summary["saved"] else 2
             if args.cmd == "brief":
                 print(write_brief(res, args.outdir, cfg))
                 return 0

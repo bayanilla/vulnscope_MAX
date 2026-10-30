@@ -11,6 +11,7 @@ from urllib.parse import urljoin, urlsplit
 
 MAX_BYTES = 800_000
 MAX_PREVIEWS = 60
+MAX_BRIEF_BYTES = 1_500_000
 
 
 class _Article(HTMLParser):
@@ -50,6 +51,88 @@ class _Article(HTMLParser):
                 self.paragraphs.append(text)
             self._tag = ""
             self._text = []
+
+
+class _ArticleText(HTMLParser):
+    """Extract article text for the model without keeping page markup or scripts."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.title = ""
+        self.parts: list[str] = []
+        self._title = False
+        self._ignored = 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("script", "style", "noscript", "nav", "footer"):
+            self._ignored += 1
+        if tag == "title":
+            self._title = True
+        if tag in ("p", "li", "h1", "h2", "h3", "br", "tr", "pre"):
+            self.parts.append("\n")
+
+    def handle_data(self, data):
+        if self._ignored:
+            return
+        text = " ".join(data.split())
+        if not text:
+            return
+        if self._title and not self.title:
+            self.title = text
+        if not self._title:
+            self.parts.append(text + " ")
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style", "noscript", "nav", "footer") and self._ignored:
+            self._ignored -= 1
+        if tag == "title":
+            self._title = False
+        if tag in ("p", "li", "h1", "h2", "h3", "tr", "pre"):
+            self.parts.append("\n")
+
+
+def fetch_article_text(url: str) -> dict:
+    """Read a public article for an explicit AI-brief request; reject private targets."""
+    current = url
+    for _ in range(5):
+        target = _public_address(current)
+        if not target:
+            break
+        host, port, address, path = target
+        conn_type = http.client.HTTPSConnection if urlsplit(current).scheme == "https" else http.client.HTTPConnection
+        conn = conn_type(host, port, timeout=8)
+        conn._create_connection = lambda _dest, timeout, source_address=None: socket.create_connection(
+            (address, port), timeout, source_address)
+        try:
+            conn.request("GET", path, headers={"Host": host, "User-Agent": "Mucaro-VulnScope-ArticleBrief/1.0",
+                                               "Accept-Encoding": "identity"})
+            response = conn.getresponse()
+            if response.status in (301, 302, 303, 307, 308):
+                location = response.headers.get("Location")
+                if not location:
+                    break
+                current = urljoin(current, location)
+                continue
+            if response.status != 200:
+                break
+            content_type = response.headers.get_content_type()
+            if content_type not in ("text/html", "text/plain", "application/xhtml+xml"):
+                break
+            raw = response.read(MAX_BRIEF_BYTES + 1)
+            if len(raw) > MAX_BRIEF_BYTES:
+                break
+            page = raw.decode(response.headers.get_content_charset() or "utf-8", errors="replace")
+            if content_type == "text/plain":
+                return {"title": "", "text": page[:60_000]}
+            parser = _ArticleText()
+            parser.feed(page)
+            text = "\n".join(" ".join(line.split()) for line in "".join(parser.parts).splitlines())
+            return {"title": parser.title[:200], "text": text[:60_000]}
+        except (OSError, UnicodeError, ValueError):
+            break
+        finally:
+            conn.close()
+    return {}
 
 
 def _short(text: str, limit=320) -> str:

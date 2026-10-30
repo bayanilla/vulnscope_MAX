@@ -4,6 +4,7 @@ GET  /            upload form
 POST /analyze     run the workflow on the uploaded files
 GET  /runs/<id>/  links to a run's reports; files under it are served read-only
 POST /runs/<id>/brief  generate the AI analyst brief (when an LLM is configured)
+POST /runs/<id>/article-briefs  generate Múcaro article briefs from matched sources
 POST /runs/<id>/ask    JSON {question, history} -> {answer, answer_html}
 GET/POST /settings     choose the AI provider and enter its API key (kept in memory only)
 """
@@ -29,9 +30,10 @@ from dataclasses import replace
 from urllib.parse import parse_qs
 
 from .llm import PROVIDER_NAMES, Analyst, LLMConfig, LLMError, load_results, log_qa, write_brief
+from .article_brief import generate_article_briefs
 from .parsers import FORMATS
 from .pipeline import run
-from .report import CSS, THEME_INIT, md_body, theme_control
+from .report import CSS, THEME_INIT, md_body, save_article_briefs, theme_control
 from .cli import _input_files
 
 MAX_UPLOAD = 1024 * 1024 * 1024   # default cap; uploads stream to disk, so this is about disk and run time
@@ -408,7 +410,29 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                          '<button type="submit">Generate AI analyst brief</button>'
                          ' <span class="hint">Takes a minute or two.</span></form>')
                 ai = CHAT.format(where=_where(cfg).replace("{next}", here), brief=brief)
-            body = (f"<style>{CHAT_CSS}</style><h1>Results</h1>{items}{ai}"
+            article_ui = ""
+            try:
+                result = load_results(run_dir)
+                article_urls = {url for match in result.get("ioc_matches", []) for url in match.get("articles", [])}
+                saved_urls = set(result.get("article_briefs", {}))
+                if article_urls:
+                    remaining = len(article_urls - saved_urls)
+                    article_ui = (f"<h2>Múcaro article briefs</h2><p>{len(saved_urls & article_urls)} saved; "
+                                  f"{remaining} matched article(s) without a saved brief.</p>")
+                    if remaining and cfg is not None and cfg.provider == "openai" and cfg.redact:
+                        article_ui += (f'<p><a href="/settings?next={here}">Turn off IP/hostname redaction</a>'
+                                       ' to include exact source indicators in article briefs.</p>')
+                    elif remaining and cfg is not None and cfg.provider == "openai" and cfg.api_key:
+                        article_ui += (f'<form method="post" action="article-briefs">'
+                                       f'<input type="hidden" name="csrf" value="{csrf}">'
+                                       '<button type="submit">Generate article briefs with OpenAI</button>'
+                                       ' <span class="hint">Sends matched article text to OpenAI using your configured key.</span></form>')
+                    elif remaining and cfg is not None:
+                        article_ui += (f'<p><a href="/settings?next={here}">Choose OpenAI and enter an API key</a>'
+                                       ' to generate these article briefs.</p>')
+            except (OSError, ValueError):
+                pass
+            body = (f"<style>{CHAT_CSS}</style><h1>Results</h1>{items}{article_ui}{ai}"
                     f"<p><a href=\"/\">New analysis</a></p>")
             self._send(200, _page("Results", body))
 
@@ -424,11 +448,23 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return self._json(400, {"error": "No AI provider selected. Open AI settings to choose one."})
             try:
                 res = load_results(run_dir)
-                if action == "brief":
+                if action in ("brief", "article-briefs"):
                     length = int(self.headers.get("Content-Length") or 0)
                     form = parse_qs(self.rfile.read(min(length, 10000)).decode(errors="replace"))
                     if form.get("csrf", [""])[0] != csrf:
                         return self._send(403, "Forbidden", "text/plain")
+                    if action == "article-briefs":
+                        summary = generate_article_briefs(res, cfg)
+                        if summary["generated"]:
+                            save_article_briefs(res, run_dir)
+                        notes = (f'<h1>Article briefs</h1><p>Generated {summary["generated"]} brief(s); '
+                                 f'{summary["saved"]} saved with this report; '
+                                 f'{summary["unavailable"]} article(s) could not be read.</p>')
+                        if summary["errors"]:
+                            notes += ("<p>Some briefs could not be generated:</p><ul>" +
+                                      "".join(f"<li>{html.escape(error)}</li>" for error in summary["errors"]) + "</ul>")
+                        notes += f'<p><a href="/runs/{run_id}/">Open updated reports and Explorer</a></p>'
+                        return self._send(200, _page("Article briefs", notes))
                     write_brief(res, run_dir, cfg)
                     return self._send(303, "", headers={"Location": f"/runs/{run_id}/ai_analyst_brief.html"})
                 if "application/json" not in self.headers.get("Content-Type", ""):
@@ -443,11 +479,15 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 log_qa(run_dir, cfg, question, answer)
                 return self._json(200, {"answer": answer, "answer_html": md_body(answer)})
             except LLMError as exc:
-                if action == "brief":
+                if action in ("brief", "article-briefs"):
                     return self._send(502, _page("AI brief failed", f"<h1>AI brief failed</h1><p>{html.escape(str(exc))}</p>"
                                                  f"<p><a href=\"/runs/{run_id}/\">Back</a></p>"))
                 return self._json(502, {"error": str(exc)})
-            except (ValueError, json.JSONDecodeError):
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                if action == "article-briefs":
+                    return self._send(500, _page("Article briefs failed",
+                        f"<h1>Article briefs failed</h1><p>{html.escape(str(exc))}</p>"
+                        f'<p><a href="/runs/{run_id}/">Back</a></p>'))
                 return self._json(400, {"error": "Malformed request."})
 
         def _settings(self, nxt, error="", code=200):
@@ -507,7 +547,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return self._send(403, "Cross-origin request refused", "text/plain")
             if self.path == "/settings":
                 return self._save_settings()
-            m = re.fullmatch(r"/runs/([a-f0-9]{16})/(brief|ask)", self.path)
+            m = re.fullmatch(r"/runs/([a-f0-9]{16})/(brief|article-briefs|ask)", self.path)
             if m:
                 return self._ai(m[1], m[2])
             if self.path == "/analyze-folder":

@@ -187,12 +187,16 @@ box-shadow:-16px 0 45px #0009;font:14px/1.5 system-ui,sans-serif}
 .ioc-drawer .ioc-close{float:right;background:#253a4d;color:#fff;border:1px solid #54728d;
 border-radius:6px;padding:5px 10px;cursor:pointer}
 .ioc-drawer a{color:#79dce7;overflow-wrap:anywhere}.ioc-drawer li{margin:8px 0}
+.ioc-brief{margin:12px 0;padding:12px;border:1px solid #42637c;border-radius:8px;background:#172a3c}
+.ioc-brief h4{margin:0 0 6px;color:#79dce7}.ioc-brief ol{padding-left:20px;margin:6px 0}
+.ioc-brief details{margin-top:10px}.ioc-brief summary{cursor:pointer;color:#79dce7}
 @media print{.ioc-shade,.ioc-drawer{display:none!important}}
 """
 
 SCRIPT = """<script>
 (() => {
   const data = JSON.parse(document.getElementById('ioc-provenance-data').textContent);
+  const briefs = JSON.parse(document.getElementById('ioc-article-briefs').textContent);
   const byId = new Map(data.map(item => [item.id, item]));
   const shade = document.getElementById('ioc-shade');
   const drawer = document.getElementById('ioc-drawer');
@@ -226,7 +230,43 @@ SCRIPT = """<script>
         const title = document.createElement('strong');
         title.textContent = ' · ' + preview.title; li.append(title);
       }
-      if (preview && preview.overview) {
+      const saved = briefs[url] && briefs[url].brief;
+      if (saved) {
+        const card = document.createElement('div'); card.className = 'ioc-brief';
+        const label = document.createElement('h4');
+        label.textContent = 'Múcaro AI Brief' + (saved.mobile_summary && saved.mobile_summary.priority
+          ? ' · ' + saved.mobile_summary.priority : ''); card.append(label);
+        const summary = document.createElement('p');
+        summary.textContent = saved.executive_summary || ''; card.append(summary);
+        const actions = saved.mobile_summary && saved.mobile_summary.what_to_do_now || [];
+        if (actions.length) {
+          const actionLabel = document.createElement('strong'); actionLabel.textContent = 'What to do now';
+          card.append(actionLabel);
+          const actionList = document.createElement('ol');
+          actions.slice(0, 3).forEach(action => {
+            const row = document.createElement('li'); row.textContent = action; actionList.append(row);
+          });
+          card.append(actionList);
+        }
+        const more = document.createElement('details');
+        const moreLabel = document.createElement('summary'); moreLabel.textContent = 'More from AI Brief';
+        more.append(moreLabel);
+        (saved.key_takeaways || []).forEach(takeaway => {
+          const row = document.createElement('p'); row.textContent = '• ' + takeaway; more.append(row);
+        });
+        const iocs = saved.iocs || {};
+        const indicatorValues = ['ips', 'domains', 'urls', 'hashes', 'cves'].flatMap(k => iocs[k] || []);
+        if (indicatorValues.length) {
+          const row = document.createElement('p');
+          row.textContent = 'Indicators reported in article: ' + indicatorValues.slice(0, 12).join(', ');
+          more.append(row);
+        }
+        card.append(more);
+        const caution = document.createElement('small');
+        caution.textContent = 'AI-generated from the article. The archive match is a lead, not proof of compromise.';
+        card.append(caution);
+        li.append(card);
+      } else if (preview && preview.overview) {
         const summary = document.createElement('p');
         summary.textContent = preview.overview; li.append(summary);
       } else {
@@ -263,11 +303,13 @@ SCRIPT = """<script>
 </script>"""
 
 
-def drawer_html(matches: list[dict]) -> str:
+def drawer_html(matches: list[dict], article_briefs: dict | None = None) -> str:
     if not matches:
         return ""
     blob = json.dumps(matches, separators=(",", ":")).replace("<", "\\u003c")
+    brief_blob = json.dumps(article_briefs or {}, separators=(",", ":")).replace("<", "\\u003c")
     return (f'<script id="ioc-provenance-data" type="application/json">{blob}</script>'
+            f'<script id="ioc-article-briefs" type="application/json">{brief_blob}</script>'
             '<div id="ioc-shade" class="ioc-shade" hidden></div>'
             '<aside id="ioc-drawer" class="ioc-drawer" role="dialog" aria-modal="true" '
             'aria-label="Múcaro indicator sources" hidden>'
