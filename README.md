@@ -22,11 +22,9 @@ local files; GitHub's source preview does not run the interactive HTML. AI-gener
 briefs require a user-provided OpenAI key and the separate generation step below.
 
 ```bash
-# 1. Rebuild the included indicator demo (250 hosts, about 9,800 sessions)
-python3 -m vulnflow samples samples
-python3 -m vulnflow analyze samples demo/large_mucaro_case \
-    --ioc-archive demo/large_mucaro_archive.csv \
-    --article-preview-cache demo/article_previews.json -o example_output
+# 1. Analyze the bundled 250-host demo with 28 source-linked IOC matches
+python3 -m vulnflow analyze samples \
+    --article-preview-cache samples/article_previews.json -o example_output
 
 # 2. Run on real data (files or recursively scanned folders, any mix of formats)
 python3 -m vulnflow analyze /path/to/log-bundle -o out \
@@ -44,6 +42,10 @@ python3 -m vulnflow serve --port 8080          # http://127.0.0.1:8080/
 ```
 
 Run tests with `python3 -m unittest discover -s tests` (no model or network needed).
+
+For the same demo in the upload page, select the `samples` folder under **Analyze files with
+Múcaro VulnScope** and click **Analyze folder**. The folder already contains its telemetry, scan,
+and Múcaro IOC Archive CSV. See [the sample guide](samples/README.md) for the synthetic scenario.
 
 ### Múcaro IOC Archive links
 
@@ -82,8 +84,8 @@ python3 -m vulnflow article-briefs out --llm-provider openai --llm-model gpt-4.1
 The command prompts for the API key in a terminal if it is not in `OPENAI_API_KEY`.
 Article briefs need exact IOCs from source text, so IP/hostname redaction must be off for this action.
 
-See [the synthetic Múcaro cases](demo/README.md) for repeatable small and 250-host demos with
-multiple source-linked indicators.
+See [the synthetic Múcaro sample](samples/README.md) for the repeatable 250-host case with
+source-linked indicators.
 
 ## Supported inputs (auto-detected)
 

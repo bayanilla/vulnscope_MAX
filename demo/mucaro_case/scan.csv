@@ -1,3 +1,0 @@
-Plugin ID,CVE,CVSS v3.0 Base Score,Risk,Host,Protocol,Port,Name,Synopsis,Solution
-900001,,2.0,Low,10.10.1.21,tcp,443,Synthetic commerce server inventory,Demo inventory record for a web service.,Review the associated network events.
-900002,,2.0,Low,10.10.3.25,tcp,22,Synthetic developer workstation inventory,Demo inventory record for a remote login service.,Review the associated network events.
