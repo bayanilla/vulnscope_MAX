@@ -1,21 +1,33 @@
 # Múcaro VulnScope synthetic demos
 
 The repository download already includes a built version of the large demo in
-`example_output/`. Open `example_output/explorer.html` locally to click the 14
+`example_output/`. Open `example_output/explorer.html` locally to click the 28
 matched indicators, or open its executive and technical HTML reports. The
 commands below regenerate equivalent pages from the bundled synthetic inputs.
 
-## 250-host, three-article demo
+## 250-host, five-article demo
 
-This combines the existing 250-host sample with fabricated events on three of its hosts. A web server
+This combines the existing 250-host sample with fabricated events on five of its hosts. A web server
 receives a synthetic exploitation alert, then contacts addresses reported in [Sansec's StyleSmuggler
 research](https://sansec.io/research/stylesmuggler-0day), including a large outbound transfer to a
 reported C2 address. A Linux server matches indicators from [Unit 42's Linux campaign
 research](https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/), and a Windows
 workstation matches [Microsoft's RedFlick research](https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/).
+Another Windows host has DNS matches from [Microsoft's remote management abuse
+research](https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/),
+and a second workstation matches delivery indicators from [Cisco Talos's Antino
+research](https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/).
 The original web01 exploitation and outbound-upload storyline remains in the baseline sample.
 
-The bundled `large_mucaro_archive.csv` is a **14-indicator, source-reviewed subset** of the supplied
+| Demo host | Exact archive matches | Source article |
+| --- | ---: | --- |
+| web02 (10.10.1.11) | 7 | Sansec StyleSmuggler |
+| mon01 (10.10.2.42) | 7 | Unit 42 Linux campaign |
+| ws-048 (10.10.3.48) | 6 | Microsoft RedFlick |
+| fs01 (10.10.2.25) | 4 | Microsoft remote management abuse |
+| ws-049 (10.10.3.49) | 4 | Cisco Talos Antino |
+
+The bundled `large_mucaro_archive.csv` is a **28-indicator, source-reviewed subset** of the supplied
 60-day Múcaro export. It keeps this demo reproducible after the live 60-day window rotates. The
 telemetry, scan result, and large transfer are fictional: the source articles do not document activity
 on these demo hosts, and a large transfer is an investigation lead rather than proof of exfiltration.
@@ -27,9 +39,12 @@ python3 -m vulnflow analyze samples demo/large_mucaro_case \
   -o demo/large_mucaro_output
 ```
 
-The result has 250 scanned hosts and 14 exact IOC matches across three source articles. The web server
+The result has 250 scanned hosts and 28 exact IOC matches across five source articles. The web server
 is a clearly labeled synthetic corroborated-exploitation scenario. Source links and short overviews
-are saved in the executive report, technical report, and VulnScope Explorer.
+are saved in the executive report, technical report, and VulnScope Explorer. In Explorer, cyan rings
+mark linked IP traffic nodes. Domain matches appear as cyan `D` markers above the selected host;
+their dashed lines represent observed DNS queries, not confirmed connections. Click either marker to
+open the saved article overview.
 
 ## Two-host quick demo
 

@@ -14,7 +14,7 @@ AI analyst needs `pip install anthropic` only if you choose Anthropic.
 ## Quick start
 
 **Want to see the indicators immediately?** The download includes a ready-made, synthetic
-250-host demo with 14 exact Múcaro archive matches from three articles. Open
+250-host demo with 28 exact Múcaro archive matches from five articles on five hosts. Open
 `example_output/explorer.html` in your browser, or open
 `example_output/executive_summary.html` and `example_output/technical_report.html`.
 Click an indicator to see its saved article overview and source link. These pages work as

@@ -1,6 +1,6 @@
 # Múcaro VulnScope: Technical Analysis
 
-Generated 2026-10-30T22:59:36Z. Telemetry window 2026-10-12T00:01:19Z to 2026-10-18T03:11:38Z.
+Generated 2026-10-31T10:56:29Z. Telemetry window 2026-10-12T00:01:19Z to 2026-10-18T03:11:38Z.
 
 ## 1. Inputs and data quality
 
@@ -10,15 +10,15 @@ Generated 2026-10-30T22:59:36Z. Telemetry window 2026-10-12T00:01:19Z to 2026-10
 | paloalto_traffic.csv | paloalto | 2285 | 1315 | 970 missing or invalid IP | firewall timestamps are assumed to be UTC; 4 IPS/IDS alert(s) used as exploitation evidence |
 | quarterly_scan.nessus | nessus | 697 | 697 | 0 |  |
 | zeek_conn.log | zeek | 8343 | 8342 | 1 missing or invalid IP |  |
-| dns.log | zeek | 7 | 7 | 0 | Zeek stream records preserved as events; only conn sessions and notice alerts affect scoring |
-| flows.csv | generic | 13 | 13 | 0 |  |
+| dns.log | zeek | 16 | 16 | 0 | Zeek stream records preserved as events; only conn sessions and notice alerts affect scoring |
+| flows.csv | generic | 18 | 18 | 0 |  |
 | notice.log | zeek | 1 | 1 | 0 | 1 IPS/IDS alert(s) used as exploitation evidence |
 | scan.csv | nessus_csv | 1 | 1 | 0 | Nessus CSV exports usually omit exploit availability; prefer the .nessus file |
-| large_mucaro_archive.csv | mucaro_ioc_archive | 14 | 14 | 0 |  |
+| large_mucaro_archive.csv | mucaro_ioc_archive | 28 | 28 | 0 |  |
 
 Exact duplicate sessions removed: 1. Duplicate findings merged across scans: 0. IPS/IDS alerts loaded: 5. Internal address space: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, fc00::/7, fe80::/10, ::1/128.
 
-Zeek stream events preserved (separate from connection sessions and alerts): dns 7.
+Zeek stream events preserved (separate from connection sessions and alerts): dns 16.
 
 ## 2. Method
 
@@ -3674,7 +3674,7 @@ Reachable hosts with High/Critical findings: 10.10.2.32, 10.10.2.40, 10.10.1.40,
 
 - Operating system: Microsoft Windows 11 Enterprise
 - Findings: 2 High, 1 Medium
-- Seen in telemetry: yes (3 inbound, 28 outbound sessions)
+- Seen in telemetry: yes (3 inbound, 30 outbound sessions)
 - Internet-exposed vulnerable service: no
 
 **Findings and exposure evidence**
@@ -3728,13 +3728,13 @@ Reachable hosts with High/Critical findings: 10.10.2.30, 10.10.2.40, 10.10.1.40,
 | 10.10.3.93 | 2 |  | Critical |
 | ... 10 more | | | |
 
-Outbound to 1 external address(es); top: 103.160.59.97 x2.
+Outbound to 3 external address(es); top: 103.160.59.97 x2, 103.245.231.248 x1, 2.57.241.246 x1.
 
 ### ws-049.corp.example (10.10.3.49) - P2 - this cycle
 
 - Operating system: Microsoft Windows 11 Enterprise
 - Findings: 2 High
-- Seen in telemetry: yes (0 inbound, 32 outbound sessions)
+- Seen in telemetry: yes (0 inbound, 33 outbound sessions)
 - Internet-exposed vulnerable service: no
 
 **Findings and exposure evidence**
@@ -3777,6 +3777,8 @@ Reachable hosts with High/Critical findings: 10.10.2.40, 10.10.2.43, 10.10.1.40,
 | 10.10.3.183 | 2 |  | Critical |
 | 10.10.3.192 | 2 |  | Critical |
 | ... 20 more | | | |
+
+Outbound to 1 external address(es); top: 103.27.110.220 x1.
 
 ### ws-050.corp.example (10.10.3.50) - P2 - this cycle
 
@@ -9642,7 +9644,7 @@ Reachable hosts with High/Critical findings: 10.10.2.22.
 
 - Operating system: Linux Kernel 5.15 on Ubuntu 22.04
 - Findings: 1 High
-- Seen in telemetry: yes (2 inbound, 226 outbound sessions)
+- Seen in telemetry: yes (2 inbound, 228 outbound sessions)
 - Internet-exposed vulnerable service: no
 
 **Findings and exposure evidence**
@@ -9678,7 +9680,7 @@ Reachable hosts with High/Critical findings: 10.10.1.11, 10.10.1.30, 10.10.2.24,
 | 10.10.4.63 | 1 | 554/tcp, 80/tcp | Critical |
 | ... 47 more | | | |
 
-Outbound to 2 external address(es); top: 104.194.158.65 x2, 104.248.131.53 x1.
+Outbound to 4 external address(es); top: 104.194.158.65 x2, 104.248.131.53 x1, 109.224.53.140 x1, 138.68.244.146 x1.
 
 ### ws-126.corp.example (10.10.3.126) - P3 - scheduled
 
@@ -11356,16 +11358,30 @@ Exact matches to the imported IOC Archive are leads for review, not proof of mal
 | Indicator | Type | Related hosts | Observed in | Source articles |
 |---|---|---|---|---|
 | 247.cdnflare.xyz | domain | 10.10.1.11 | 1 dns event | https://sansec.io/research/stylesmuggler-0day |
+| adsaw.cfd | domain | 10.10.2.25 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/ |
+| adswre.cfd | domain | 10.10.2.25 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/ |
 | beraskencur.site | domain | 10.10.2.42 | 1 dns event | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| bunstar.harej.si | domain | 10.10.2.25 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/ |
 | byveo.org | domain | 10.10.3.48 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
 | checkout-cdn.com | domain | 10.10.1.11 | 1 dns event | https://sansec.io/research/stylesmuggler-0day |
+| groy.cc | domain | 10.10.3.48 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
+| magento.ink | domain | 10.10.2.42 | 1 dns event | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| microsoft-flash.com | domain | 10.10.3.49 | 1 dns event | https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/ |
+| my-662ylt3w.pages.dev | domain | 10.10.3.49 | 1 dns event | https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/ |
 | ntp.timesync.to | domain | 10.10.1.11 | 1 dns event | https://sansec.io/research/stylesmuggler-0day |
 | secure-dns-hub.com | domain | 10.10.3.48 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
 | solidmonpe.com | domain | 10.10.2.42 | 1 dns event | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| trews.cfd | domain | 10.10.2.25 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/ |
+| wps-cn.com | domain | 10.10.3.49 | 1 dns event | https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/ |
 | 103.160.59.97 | ip | 10.10.3.48 | 2 network session | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
+| 103.245.231.248 | ip | 10.10.3.48 | 1 network session | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
+| 103.27.110.220 | ip | 10.10.3.49 | 1 network session | https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/ |
 | 104.194.158.65 | ip | 10.10.2.42 | 2 network session | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
 | 104.248.131.53 | ip | 10.10.2.42 | 1 network session | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| 109.224.53.140 | ip | 10.10.2.42 | 1 network session | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| 138.68.244.146 | ip | 10.10.2.42 | 1 network session | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
 | 185.157.160.251 | ip | 10.10.1.11 | 2 network session | https://sansec.io/research/stylesmuggler-0day |
+| 2.57.241.246 | ip | 10.10.3.48 | 1 network session | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
 | 209.141.43.95 | ip | 10.10.1.11 | 1 network session | https://sansec.io/research/stylesmuggler-0day |
 | 209.73.130.148 | ip | 10.10.1.11 | 1 IDS/IPS alert, 2 network session | https://sansec.io/research/stylesmuggler-0day |
 | 99.84.67.186 | ip | 10.10.1.11 | 3 network session | https://sansec.io/research/stylesmuggler-0day |

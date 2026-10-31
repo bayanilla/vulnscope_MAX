@@ -5,6 +5,7 @@ const cv = document.getElementById('stage'), ctx = cv.getContext('2d');
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const iocIds = new Set((D.ioc_matches || []).map(item => item.id));
+const iocCounts = D.ioc_counts || {};
 const iocButton = (type, value, label = value) => {
   const key = type + ':' + (type === 'cve' ? String(value).toUpperCase() : value);
   return iocIds.has(key) ? `<button type="button" class="ioc-link" data-ioc-key="${esc(key)}">${esc(label)}</button>` : esc(label);
@@ -84,6 +85,17 @@ function extNode(a) {
   n.info = a; n.color = KIND[a.kind];
   return n;
 }
+function domainNode(match) {
+  const id = match.id;
+  let n = nodes.get(id);
+  if (!n) {
+    n = {d: {id: match.value, name: '', scanned: false, sev: ''}, id, x: 0, y: 0, tx: 0, ty: 0, ox: 0, oy: 0, a: 0, ta: 0,
+      r: 7, tr: 7, color: '#2ee6d6', ext: false, domain: true, born: 0, info: match};
+    nodes.set(id, n);
+  }
+  n.info = match;
+  return n;
+}
 const LABELED = 24;                // nodes per side drawn large and labelled; the rest are packed beyond them
 const SIDE_MAX = 400;              // nodes drawn per side; the panel lists every one
 function arc(list, dir) {
@@ -116,11 +128,22 @@ function focus(id, push = true) {
   const center = nodes.get(id);
   const keep = new Set([id]);
   // background nodes drift outward and fade
-  nodes.forEach(n => { n.gap = 0; n.small = false; if (n.ext) { n.ta = 0; } else { n.ta = 0.05; n.tx = n.ox * 2.4; n.ty = n.oy * 2.4; n.tr = n.r; } });
+  nodes.forEach(n => { n.gap = 0; n.small = false; if (n.ext || n.domain) { n.ta = 0; } else { n.ta = 0.05; n.tx = n.ox * 2.4; n.ty = n.oy * 2.4; n.tr = n.r; } });
   center.tx = 0; center.ty = 0; center.ta = 1; center.tr = 22;
   const atk = F.attackers.slice(0, SIDE_MAX).map(extNode);
   arc(atk, -1);
   atk.forEach(n => { n.ta = 1; n.tr = n.small ? 3.5 : 5 + Math.min(7, Math.log2(1 + n.info.sessions + n.info.out_sessions + 3 * n.info.alerts)); keep.add(n.id); });
+  // DNS matches are source-linked IOCs without a corresponding outside IP node.
+  // Show them separately above the host; the dashed edge means an observed query, not an IP session.
+  const domains = (D.ioc_matches || []).filter(item => item.type === 'domain' && item.hosts.includes(id)).slice(0, 8).map(domainNode);
+  const domainCols = domains.length <= 4 ? 2 : 3;
+  const domainRows = Math.ceil(domains.length / domainCols);
+  domains.forEach((n, i) => {
+    const row = Math.floor(i / domainCols), inRow = Math.min(domainCols, domains.length - row * domainCols), col = i % domainCols;
+    n.tx = (col - (inRow - 1) / 2) * 300;
+    n.ty = -190 - (domainRows - 1) * 45 + row * 90;
+    n.ta = 1; n.tr = 7; n.gap = 90; keep.add(n.id);
+  });
   const peers = F.peers.slice(0, SIDE_MAX).map(p => { const n = peerNode(p.ip); n.info = p; return n; });
   arc(peers, 1);
   peers.forEach(n => { n.ta = n.info.band === 'None' ? 0.75 : 1; n.tr = n.small ? 3.5 : (n.d.scanned ? 8 : 6) + n.info.p * 6; keep.add(n.id); });
@@ -143,6 +166,7 @@ function focus(id, push = true) {
     edges.push(mkEdge(n, center, KIND[a.kind], Math.max(a.sessions, a.alerts + a.alerts_blocked), a.kind === 'blocked' || a.kind === 'attempt', 'atk', a, false, sm));
     if (a.out_sessions) edges.push(mkEdge(center, n, RETURN, a.out_sessions, !a.out_established, 'ret', a, true, sm));
   });
+  domains.forEach(n => edges.push(mkEdge(center, n, '#2ee6d6', 1, true, 'dns', n.info, false, false)));
   F.peers.slice(0, SIDE_MAX).forEach(p => {
     const n = nodes.get(p.ip), sm = n.small, c = BAND[p.band], none = p.band === 'None';
     if (p.out_tries) edges.push(mkEdge(center, n, c, none ? p.out_tries : p.out, none || !p.out, 'out', p, false, sm));
@@ -171,7 +195,7 @@ function overview() {
   state.mode = 'overview'; state.focus = null; state.history = [];
   document.body.classList.remove('focused');
   history.replaceState(null, '', '#');
-  nodes.forEach(n => { if (n.ext) n.ta = 0; else { n.ta = 1; n.tx = n.ox; n.ty = n.oy; n.tr = n.r; } });
+  nodes.forEach(n => { if (n.ext || n.domain) n.ta = 0; else { n.ta = 1; n.tx = n.ox; n.ty = n.oy; n.tr = n.r; } });
   edges = [];
   fitOverview();
   $('panel').hidden = true;
@@ -179,7 +203,7 @@ function overview() {
 }
 function fitOverview() {
   let minX = 0, maxX = 0, minY = 0, maxY = 0;
-  nodes.forEach(n => { if (!n.ext) { minX = Math.min(minX, n.ox); maxX = Math.max(maxX, n.ox); minY = Math.min(minY, n.oy); maxY = Math.max(maxY, n.oy); } });
+  nodes.forEach(n => { if (!n.ext && !n.domain) { minX = Math.min(minX, n.ox); maxX = Math.max(maxX, n.ox); minY = Math.min(minY, n.oy); maxY = Math.max(maxY, n.oy); } });
   const railW = W > 900 ? 280 : 0;
   cam.tz = Math.min(1.5, Math.max(0.2, Math.min((W - railW - 80) / (maxX - minX + 200), (H - 200) / (maxY - minY + 200))));
   cam.tx = (minX + maxX) / 2 - railW / 2 / cam.tz; cam.ty = (minY + maxY) / 2;
@@ -254,7 +278,7 @@ function frame(now) {
     ctx.shadowColor = e.color; ctx.shadowBlur = e.dashed || e.small ? 0 : 8;
     ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.quadraticCurveTo(p[2], p[3], p[4], p[5]); ctx.stroke();
     ctx.setLineDash([]); ctx.shadowBlur = 0;
-    if (!e.small || (hl && lit)) arrow(p, e.color, al * (lit ? 1 : 0.2), e.b.r * cam.z);
+    if (e.kind !== 'dns' && (!e.small || (hl && lit))) arrow(p, e.color, al * (lit ? 1 : 0.2), e.b.r * cam.z);
     if (e.parts.length) {
       ctx.globalCompositeOperation = 'lighter';
       e.parts.forEach((t, i) => {
@@ -306,6 +330,10 @@ function arrow(p, color, al, rb) {
   ctx.lineTo(ax - 9 * Math.cos(ang - 0.4), ay - 9 * Math.sin(ang - 0.4));
   ctx.lineTo(ax - 9 * Math.cos(ang + 0.4), ay - 9 * Math.sin(ang + 0.4)); ctx.closePath(); ctx.fill();
 }
+function nodeLabel(n) {
+  if (n.domain) return n.d.id.length > 24 ? n.d.id.slice(0, 23) + '…' : n.d.id;
+  return n.ext ? n.d.id : (n.d.name ? n.d.name.split('.')[0] : n.d.id);
+}
 function drawNode(n, T) {
   const [x, y] = toS(n.x, n.y), r = Math.max(2, n.r * cam.z);
   if (x < -80 || y < -80 || x > W + 80 || y > H + 80) return;
@@ -325,7 +353,14 @@ function drawNode(n, T) {
     ctx.globalAlpha = n.a;
   }
   ctx.shadowColor = n.color; ctx.shadowBlur = (sel ? 30 : hov ? 22 : 12);
-  if (n.ext) {   // outside sources are diamonds
+  if (n.domain) { // source-linked DNS observations are separate from network traffic nodes
+    ctx.fillStyle = 'rgba(8,40,48,.95)'; ctx.strokeStyle = '#2ee6d6'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#2ee6d6'; ctx.font = '700 10px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center';
+    ctx.fillText('D', x, y + 3);
+  } else if (n.ext) {   // outside sources are diamonds
     ctx.fillStyle = n.info.kind === 'blocked' ? 'rgba(20,30,46,.9)' : n.color;
     ctx.strokeStyle = n.color; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(x, y - r * 1.25); ctx.lineTo(x + r * 1.25, y); ctx.lineTo(x, y + r * 1.25); ctx.lineTo(x - r * 1.25, y); ctx.closePath();
@@ -349,9 +384,9 @@ function drawNode(n, T) {
   // labels
   const show = state.labels && (sel || hov || (state.mode === 'focus' ? n.a > 0.5 && !n.small : (n.d.scanned && (cam.z > 0.55 || n.d.pri === 'P1'))));
   if (show) {
-    const name = n.ext ? n.d.id : (n.d.name ? n.d.name.split('.')[0] : n.d.id);
+    const name = nodeLabel(n);
     ctx.font = (sel ? '600 14px' : '12px') + ' system-ui,-apple-system,Segoe UI,sans-serif';
-    const side = n.ext ? 'right' : (state.mode === 'focus' && n.id !== state.focus && n.info) ? 'left' : 'center';
+    const side = n.domain ? 'center' : n.ext ? 'right' : (state.mode === 'focus' && n.id !== state.focus && n.info) ? 'left' : 'center';
     ctx.textAlign = side;
     const lx = side === 'right' ? x - r - 8 : side === 'left' ? x + r + 8 : x, ly = side === 'center' ? y + r + 15 : y + 4;
     ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(3,6,12,.85)'; ctx.strokeText(name, lx, ly);
@@ -402,9 +437,14 @@ function pick(sx, sy) {
     if (n.a < 0.3) return;
     const [x, y] = toS(n.x, n.y), d = Math.hypot(x - sx, y - sy), r = Math.max(8, n.r * cam.z + 6);
     const labelRight = x - r - 8;
-    const labelHit = n.ext && state.mode === 'focus' && state.labels && !n.small && n.a > 0.5
+    const extLabelHit = n.ext && state.mode === 'focus' && state.labels && !n.small && n.a > 0.5
       && sx >= labelRight - n.d.id.length * 7.5 && sx <= labelRight
       && Math.abs(sy - (y + 4)) < 12;
+    const domainWidth = nodeLabel(n).length * 7.5;
+    const domainLabelHit = n.domain && state.mode === 'focus' && state.labels && n.a > 0.5
+      && sx >= x - domainWidth / 2 && sx <= x + domainWidth / 2
+      && Math.abs(sy - (y + Math.max(2, n.r * cam.z) + 15)) < 12;
+    const labelHit = extLabelHit || domainLabelHit;
     const score = labelHit ? 0 : d;
     if ((d < r || labelHit) && score < bd) { bd = score; best = n; }
   });
@@ -431,6 +471,10 @@ cv.addEventListener('pointerup', e => {
   if (wasDrag) return;
   const n = pick(e.clientX, e.clientY) || startNode;
   if (!n) return;
+  if (n.domain) {
+    document.dispatchEvent(new CustomEvent('ioc:open', {detail: {id: n.id}}));
+    return;
+  }
   if (n.ext) {
     const key = 'ip:' + n.d.id;
     if (iocIds.has(key)) document.dispatchEvent(new CustomEvent('ioc:open', {detail: {id: key}}));
@@ -450,7 +494,12 @@ function tip(n, x, y) {
   const el = $('tip');
   if (!n) { el.hidden = true; return; }
   let h;
-  if (n.ext) {
+  if (n.domain) {
+    const observed = n.info.observed && n.info.observed['dns event'];
+    h = `<b>${esc(n.d.id)}</b> <span class="m">domain IOC · ${observed ? 'observed DNS query' : 'observed domain match'}</span>` +
+      '<br>Exact Múcaro archive match. A DNS query alone does not prove a connection or compromise.' +
+      '<br><span style="color:#2ee6d6">Click for report overview</span>';
+  } else if (n.ext) {
     const a = n.info;
     h = `<b>${esc(a.ip)}</b> <span class="m">outside address · north/south</span><br>${esc(KIND_TXT[a.kind])}` +
       (a.dir !== 'out' ? `<br><span class="m">Inbound: ${a.sessions} session(s), ${a.established} completed, ${a.blocked} blocked` +
@@ -460,7 +509,7 @@ function tip(n, x, y) {
       (a.alerts || a.alerts_blocked ? `<br>IPS: ${a.alerts} not blocked, ${a.alerts_blocked} blocked` : '') +
       (a.signatures.length ? `<br><span class="m">${esc(a.signatures.join('; '))}</span>` : '') +
       (a.returned && a.dir === 'both' ? '<br><span style="color:#b98cff">The host also connected out to this address (lead)</span>' : '') +
-      (iocIds.has('ip:' + a.ip) ? '<br><span style="color:#2ee6d6">Click for Múcaro article overview</span>' : '');
+      (iocIds.has('ip:' + a.ip) ? '<br><span style="color:#2ee6d6">Click for Múcaro report overview</span>' : '');
   } else {
     const d = n.d, info = state.mode === 'focus' && n.info && n.id !== state.focus ? n.info : null;
     h = `<b>${esc(d.name || d.id)}</b>${d.name ? ` <span class="m">${esc(d.id)}</span>` : ''}<br>` +
@@ -497,17 +546,32 @@ function hostOrder() {
 function renderList() {
   const q = $('search').value.trim().toLowerCase();
   const rows = hostOrder().filter(id => {
+    if (iocOnly && !iocCounts[id]) return false;
     if (!q) return true;
     const d = nodes.get(id).d, F = D.focus[id];
     return (id + ' ' + d.name + ' ' + d.os + ' ' + F.findings.map(f => f.name + ' ' + f.cves.join(' ')).join(' ')).toLowerCase().includes(q);
   });
   $('hostlist').innerHTML = rows.map(id => {
     const d = nodes.get(id).d, F = D.focus[id];
+    const iocCount = iocCounts[id] || 0;
+    const iocHint = iocCount ? `<span class="ioc-host-badge" title="${iocCount} exact Múcaro archive indicator match${iocCount === 1 ? '' : 'es'}; review the source and traffic" aria-label="${iocCount} IOC match${iocCount === 1 ? '' : 'es'}">IOC ${iocCount}</span>` : '';
     return `<div class="hrow${id === state.focus ? ' on' : ''}" role="listitem" tabindex="0" data-id="${esc(id)}">` +
-      `<span class="pill ${esc(d.pri)}">${esc(d.pri)}</span><span class="nm">${esc((d.name || id).split('.')[0])}` +
+      `<span class="pill ${esc(d.pri)}">${esc(d.pri)}</span><span class="nm">${esc((d.name || id).split('.')[0])} ${iocHint}` +
       `<br><span class="ip">${esc(id)} · ${F.attackers_total} N/S · ${F.peers_total} E/W</span></span>` +
       (d.ev ? `<span class="tag ${d.ev}">${d.ev === 'likely' ? 'LIKELY' : 'LEAD'}</span>` : '') + '</div>';
-  }).join('') || '<div class="hrow">No match</div>';
+  }).join('') || `<div class="hrow">${iocOnly ? 'No IOC hosts match' : 'No match'}</div>`;
+}
+let iocOnly = false;
+const iocHostTotal = Object.values(iocCounts).filter(count => count > 0).length;
+if (iocHostTotal) {
+  $('ioc-filter').hidden = false;
+  $('ioc-host-count').textContent = `(${iocHostTotal})`;
+  $('ioc-filter').title = 'Show only hosts with exact Múcaro archive indicator matches';
+  $('ioc-filter').addEventListener('click', () => {
+    iocOnly = !iocOnly;
+    $('ioc-filter').setAttribute('aria-pressed', String(iocOnly));
+    renderList();
+  });
 }
 $('hostlist').addEventListener('click', e => { const r = e.target.closest('.hrow[data-id]'); if (r) { focus(r.dataset.id); } });
 $('hostlist').addEventListener('keydown', e => { const r = e.target.closest('.hrow[data-id]'); if (r && e.key === 'Enter') { focus(r.dataset.id); } });
@@ -520,7 +584,7 @@ function renderPanel(id) {
   const atk = F.attackers.map(a =>
     `<div class="row" data-k="atk" data-ip="${esc(a.ip)}"><span class="kind k-${a.kind}" title="${esc(KIND_TXT[a.kind])}"></span>` +
     `<span class="ip">${iocButton('ip', a.ip)}</span><span class="lk">${a.sessions ? '← ' + a.sessions : ''}${a.sessions && a.out_sessions ? '  ' : ''}${a.out_sessions ? '→ ' + a.out_sessions : ''}${a.alerts ? ' · ' + a.alerts + ' IPS' : ''}</span>` +
-    `<span class="sub">${esc(KIND_TXT[a.kind])}${iocIds.has('ip:' + a.ip) ? ' · ' + iocButton('ip', a.ip, 'Article summary') : ''}${a.ports.length ? ' · ports ' + esc(a.ports.join(', ')) : ''}` +
+    `<span class="sub">${esc(KIND_TXT[a.kind])}${iocIds.has('ip:' + a.ip) ? ' · ' + iocButton('ip', a.ip, 'Report overview') : ''}${a.ports.length ? ' · ports ' + esc(a.ports.join(', ')) : ''}` +
     `${a.alerts_blocked ? ' · ' + a.alerts_blocked + ' IPS blocked' : ''}` +
     `${a.dir === 'both' && a.out_sessions ? ' · <span style="color:var(--violet)">host also connected out' + (a.out_ports.length ? ' on ' + esc(a.out_ports.join(', ')) : '') + '</span>' : ''}` +
     `${a.dir === 'out' && a.out_ports.length ? ' · ports ' + esc(a.out_ports.join(', ')) : ''}` +
@@ -607,7 +671,7 @@ $('legend').innerHTML =
   `<span><i style="background:${KIND.reached}"></i>Reached the host</span>` +
   `<span><i style="background:repeating-linear-gradient(90deg,#5b6b82 0 5px,transparent 5px 9px)"></i>Blocked or failed, no session</span>` +
   `<span><i style="background:${RETURN}"></i>Host connected out</span>` +
-  `<span><span class="sw" style="background:transparent;border:2px solid #2ee6d6"></span>Click outlined IOC for article overview</span>` +
+  `<span><span class="sw" style="background:transparent;border:2px solid #2ee6d6"></span>Click outlined IP or domain IOC for report overview</span>` +
   `<span><i style="background:${BAND.High}"></i><i style="background:${BAND.Medium};width:12px"></i><i style="background:${BAND.Low};width:12px"></i>Blast-radius likelihood high / medium / low</span>` +
   `<span><span class="sw" style="background:${SEV.Critical}"></span>Critical <span class="sw" style="background:${SEV.High}"></span>High <span class="sw" style="background:${SEV.Medium}"></span>Medium <span class="sw" style="background:${SEV.Low}"></span>Low</span>` +
   `<span class="cal">Leads and estimates, not confirmed compromise</span>`;

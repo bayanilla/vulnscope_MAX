@@ -256,6 +256,11 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     for n in keep:
         nodes[n]["ext"] = ext_count.get(n, 0)
         nodes[n]["alert"] = ext_alert.get(n, False)
+    ioc_by_host = defaultdict(set)
+    for match in res.get("ioc_matches", []):
+        for host in match.get("hosts", []):
+            if host in focus:
+                ioc_by_host[host].add(match["id"])
     s = res["summary"]
     return {
         "generated": res["generated"], "window": [s.get("window_start"), s.get("window_end")],
@@ -264,6 +269,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         "nodes": [nodes[n] for n in keep],
         "links": [[a, b, w] for (a, b), w in sorted(links.items(), key=lambda kv: -kv[1])[:3000]],
         "focus": focus, "ioc_matches": res.get("ioc_matches", []),
+        "ioc_counts": {host: len(ids) for host, ids in ioc_by_host.items()},
         "article_briefs": res.get("article_briefs", {}),
         "start": res["hosts"][0]["host"] if res["hosts"] else None,
     }

@@ -23,6 +23,9 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 #search{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--glass);color:var(--fg);
 font:inherit;backdrop-filter:blur(8px)}
 #hostlist{overflow:auto;flex:1;background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:6px;backdrop-filter:blur(8px)}
+#ioc-filter:not([hidden]){align-self:flex-start;padding:4px 10px;border:1px solid var(--cyan);border-radius:999px;background:var(--glass);color:var(--cyan);font:700 11px var(--mono);cursor:pointer}
+#ioc-filter:hover,#ioc-filter[aria-pressed="true"]{background:rgba(46,230,214,.16)}
+.ioc-host-badge{display:inline-block;margin-left:3px;padding:1px 5px;border:1px solid var(--cyan);border-radius:999px;color:var(--cyan);font:700 10px var(--mono);vertical-align:1px}
 .hrow{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px}
 .hrow:hover,.hrow.on{background:rgba(46,230,214,.1)}.hrow.on{box-shadow:inset 2px 0 0 var(--cyan)}
 .hrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

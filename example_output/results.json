@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-30T22:59:36Z",
+  "generated": "2026-10-31T10:56:29Z",
   "config": {
     "internal_nets": [
       "10.0.0.0/8",
@@ -58,8 +58,8 @@
     {
       "file": "dns.log",
       "format": "zeek",
-      "read": 7,
-      "kept": 7,
+      "read": 16,
+      "kept": 16,
       "dropped": {},
       "notes": [
         "Zeek stream records preserved as events; only conn sessions and notice alerts affect scoring"
@@ -68,8 +68,8 @@
     {
       "file": "flows.csv",
       "format": "generic",
-      "read": 13,
-      "kept": 13,
+      "read": 18,
+      "kept": 18,
       "dropped": {},
       "notes": []
     },
@@ -96,14 +96,14 @@
     {
       "file": "large_mucaro_archive.csv",
       "format": "mucaro_ioc_archive",
-      "read": 14,
-      "kept": 14,
+      "read": 28,
+      "kept": 28,
       "dropped": {},
       "notes": []
     }
   ],
   "summary": {
-    "flows": 9777,
+    "flows": 9782,
     "findings_total": 698,
     "findings_scored": 448,
     "hosts_with_findings": 250,
@@ -132,7 +132,7 @@
     ],
     "threat_alerts": 5,
     "zeek_event_counts": {
-      "dns": 7
+      "dns": 16
     },
     "ot_protocol_counts": {},
     "hosts_internet_exposed": 6,
@@ -14759,18 +14759,26 @@
           "Kerberos": 3,
           "LDAP": 2
         },
-        "external_destinations": 1,
+        "external_destinations": 3,
         "top_external_destinations": [
           [
             "103.160.59.97",
             2
+          ],
+          [
+            "103.245.231.248",
+            1
+          ],
+          [
+            "2.57.241.246",
+            1
           ]
         ],
         "factor": 1.5
       },
       "telemetry_seen": true,
       "inbound_flows": 3,
-      "outbound_flows": 28
+      "outbound_flows": 30
     },
     {
       "host": "10.10.3.49",
@@ -15052,13 +15060,18 @@
           "LDAP": 4,
           "Kerberos": 2
         },
-        "external_destinations": 0,
-        "top_external_destinations": [],
+        "external_destinations": 1,
+        "top_external_destinations": [
+          [
+            "103.27.110.220",
+            1
+          ]
+        ],
         "factor": 1.5
       },
       "telemetry_seen": true,
       "inbound_flows": 0,
-      "outbound_flows": 32
+      "outbound_flows": 33
     },
     {
       "host": "10.10.3.50",
@@ -43437,7 +43450,7 @@
           "10.10.3.84"
         ],
         "lateral_protocols": {},
-        "external_destinations": 2,
+        "external_destinations": 4,
         "top_external_destinations": [
           [
             "104.194.158.65",
@@ -43446,13 +43459,21 @@
           [
             "104.248.131.53",
             1
+          ],
+          [
+            "109.224.53.140",
+            1
+          ],
+          [
+            "138.68.244.146",
+            1
           ]
         ],
         "factor": 1.5
       },
       "telemetry_seen": true,
       "inbound_flows": 2,
-      "outbound_flows": 226
+      "outbound_flows": 228
     },
     {
       "host": "10.10.3.126",
@@ -77755,6 +77776,58 @@
       }
     },
     {
+      "id": "domain:adsaw.cfd",
+      "type": "domain",
+      "value": "adsaw.cfd",
+      "articles": [
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/"
+      ],
+      "sources": [
+        "www.microsoft.com"
+      ],
+      "first_seen": "2026-09-30T18:56:47.981Z",
+      "last_seen": "2026-09-30T18:56:47.981Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.2.25"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/": {
+          "title": "Phishing abuses remote management tools for persistent access",
+          "overview": "Microsoft describes phishing campaigns that disguised a legitimate MSP360 remote management installer, then used it to install ScreenConnect for continued access. The report lists domains contacted by ScreenConnect clients in observed malicious sessions and suggests ways to investigate unauthorized remote management\u2026"
+        }
+      }
+    },
+    {
+      "id": "domain:adswre.cfd",
+      "type": "domain",
+      "value": "adswre.cfd",
+      "articles": [
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/"
+      ],
+      "sources": [
+        "www.microsoft.com"
+      ],
+      "first_seen": "2026-09-30T18:56:47.981Z",
+      "last_seen": "2026-09-30T18:56:47.981Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.2.25"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/": {
+          "title": "Phishing abuses remote management tools for persistent access",
+          "overview": "Microsoft describes phishing campaigns that disguised a legitimate MSP360 remote management installer, then used it to install ScreenConnect for continued access. The report lists domains contacted by ScreenConnect clients in observed malicious sessions and suggests ways to investigate unauthorized remote management\u2026"
+        }
+      }
+    },
+    {
       "id": "domain:beraskencur.site",
       "type": "domain",
       "value": "beraskencur.site",
@@ -77777,6 +77850,32 @@
         "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/": {
           "title": "AI-powered espionage campaign targets Linux infrastructure",
           "overview": "Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."
+        }
+      }
+    },
+    {
+      "id": "domain:bunstar.harej.si",
+      "type": "domain",
+      "value": "bunstar.harej.si",
+      "articles": [
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/"
+      ],
+      "sources": [
+        "www.microsoft.com"
+      ],
+      "first_seen": "2026-09-30T18:56:47.981Z",
+      "last_seen": "2026-09-30T18:56:47.981Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.2.25"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/": {
+          "title": "Phishing abuses remote management tools for persistent access",
+          "overview": "Microsoft describes phishing campaigns that disguised a legitimate MSP360 remote management installer, then used it to install ScreenConnect for continued access. The report lists domains contacted by ScreenConnect clients in observed malicious sessions and suggests ways to investigate unauthorized remote management\u2026"
         }
       }
     },
@@ -77829,6 +77928,110 @@
         "https://sansec.io/research/stylesmuggler-0day": {
           "title": "StyleSmuggler: Magento and Adobe Commerce remote code execution",
           "overview": "Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."
+        }
+      }
+    },
+    {
+      "id": "domain:groy.cc",
+      "type": "domain",
+      "value": "groy.cc",
+      "articles": [
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/"
+      ],
+      "sources": [
+        "www.microsoft.com"
+      ],
+      "first_seen": "2026-09-30T14:50:48.985Z",
+      "last_seen": "2026-09-30T14:50:48.985Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.3.48"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/": {
+          "title": "Star Blizzard refines phishing and RedFlick malware delivery",
+          "overview": "Microsoft describes phishing campaigns that used RedFlick to deliver the CosmicPulse backdoor. The report explains the Windows infection flow, persistence techniques, and network indicators for investigation."
+        }
+      }
+    },
+    {
+      "id": "domain:magento.ink",
+      "type": "domain",
+      "value": "magento.ink",
+      "articles": [
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"
+      ],
+      "sources": [
+        "unit42.paloaltonetworks.com"
+      ],
+      "first_seen": "2026-10-15T22:29:22.052Z",
+      "last_seen": "2026-10-15T22:29:22.052Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.2.42"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/": {
+          "title": "AI-powered espionage campaign targets Linux infrastructure",
+          "overview": "Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."
+        }
+      }
+    },
+    {
+      "id": "domain:microsoft-flash.com",
+      "type": "domain",
+      "value": "microsoft-flash.com",
+      "articles": [
+        "https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/"
+      ],
+      "sources": [
+        "blog.talosintelligence.com"
+      ],
+      "first_seen": "2026-09-30T15:14:19.741Z",
+      "last_seen": "2026-09-30T15:14:19.741Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.3.49"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/": {
+          "title": "Talos investigates the Antino backdoor campaign",
+          "overview": "Cisco Talos describes a Windows backdoor delivered through targeted phishing and staged downloads. Its source report identifies delivery domains and a historical payload-serving IP; the backdoor later used Microsoft 365 for command and control."
+        }
+      }
+    },
+    {
+      "id": "domain:my-662ylt3w.pages.dev",
+      "type": "domain",
+      "value": "my-662ylt3w.pages.dev",
+      "articles": [
+        "https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/"
+      ],
+      "sources": [
+        "blog.talosintelligence.com"
+      ],
+      "first_seen": "2026-09-30T15:14:19.741Z",
+      "last_seen": "2026-09-30T15:14:19.741Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.3.49"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/": {
+          "title": "Talos investigates the Antino backdoor campaign",
+          "overview": "Cisco Talos describes a Windows backdoor delivered through targeted phishing and staged downloads. Its source report identifies delivery domains and a historical payload-serving IP; the backdoor later used Microsoft 365 for command and control."
         }
       }
     },
@@ -77911,6 +78114,58 @@
       }
     },
     {
+      "id": "domain:trews.cfd",
+      "type": "domain",
+      "value": "trews.cfd",
+      "articles": [
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/"
+      ],
+      "sources": [
+        "www.microsoft.com"
+      ],
+      "first_seen": "2026-09-30T18:56:47.981Z",
+      "last_seen": "2026-09-30T18:56:47.981Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.2.25"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/": {
+          "title": "Phishing abuses remote management tools for persistent access",
+          "overview": "Microsoft describes phishing campaigns that disguised a legitimate MSP360 remote management installer, then used it to install ScreenConnect for continued access. The report lists domains contacted by ScreenConnect clients in observed malicious sessions and suggests ways to investigate unauthorized remote management\u2026"
+        }
+      }
+    },
+    {
+      "id": "domain:wps-cn.com",
+      "type": "domain",
+      "value": "wps-cn.com",
+      "articles": [
+        "https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/"
+      ],
+      "sources": [
+        "blog.talosintelligence.com"
+      ],
+      "first_seen": "2026-09-30T15:14:19.741Z",
+      "last_seen": "2026-09-30T15:14:19.741Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.3.49"
+      ],
+      "observed": {
+        "dns event": 1
+      },
+      "article_previews": {
+        "https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/": {
+          "title": "Talos investigates the Antino backdoor campaign",
+          "overview": "Cisco Talos describes a Windows backdoor delivered through targeted phishing and staged downloads. Its source report identifies delivery domains and a historical payload-serving IP; the backdoor later used Microsoft 365 for command and control."
+        }
+      }
+    },
+    {
       "id": "ip:103.160.59.97",
       "type": "ip",
       "value": "103.160.59.97",
@@ -77933,6 +78188,58 @@
         "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/": {
           "title": "Star Blizzard refines phishing and RedFlick malware delivery",
           "overview": "Microsoft describes phishing campaigns that used RedFlick to deliver the CosmicPulse backdoor. The report explains the Windows infection flow, persistence techniques, and network indicators for investigation."
+        }
+      }
+    },
+    {
+      "id": "ip:103.245.231.248",
+      "type": "ip",
+      "value": "103.245.231.248",
+      "articles": [
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/"
+      ],
+      "sources": [
+        "www.microsoft.com"
+      ],
+      "first_seen": "2026-09-30T14:50:48.985Z",
+      "last_seen": "2026-09-30T14:50:48.985Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.3.48"
+      ],
+      "observed": {
+        "network session": 1
+      },
+      "article_previews": {
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/": {
+          "title": "Star Blizzard refines phishing and RedFlick malware delivery",
+          "overview": "Microsoft describes phishing campaigns that used RedFlick to deliver the CosmicPulse backdoor. The report explains the Windows infection flow, persistence techniques, and network indicators for investigation."
+        }
+      }
+    },
+    {
+      "id": "ip:103.27.110.220",
+      "type": "ip",
+      "value": "103.27.110.220",
+      "articles": [
+        "https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/"
+      ],
+      "sources": [
+        "blog.talosintelligence.com"
+      ],
+      "first_seen": "2026-09-30T15:14:19.741Z",
+      "last_seen": "2026-09-30T15:14:19.741Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.3.49"
+      ],
+      "observed": {
+        "network session": 1
+      },
+      "article_previews": {
+        "https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/": {
+          "title": "Talos investigates the Antino backdoor campaign",
+          "overview": "Cisco Talos describes a Windows backdoor delivered through targeted phishing and staged downloads. Its source report identifies delivery domains and a historical payload-serving IP; the backdoor later used Microsoft 365 for command and control."
         }
       }
     },
@@ -77989,6 +78296,58 @@
       }
     },
     {
+      "id": "ip:109.224.53.140",
+      "type": "ip",
+      "value": "109.224.53.140",
+      "articles": [
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"
+      ],
+      "sources": [
+        "unit42.paloaltonetworks.com"
+      ],
+      "first_seen": "2026-10-15T22:29:22.052Z",
+      "last_seen": "2026-10-15T22:29:22.052Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.2.42"
+      ],
+      "observed": {
+        "network session": 1
+      },
+      "article_previews": {
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/": {
+          "title": "AI-powered espionage campaign targets Linux infrastructure",
+          "overview": "Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."
+        }
+      }
+    },
+    {
+      "id": "ip:138.68.244.146",
+      "type": "ip",
+      "value": "138.68.244.146",
+      "articles": [
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/"
+      ],
+      "sources": [
+        "unit42.paloaltonetworks.com"
+      ],
+      "first_seen": "2026-10-15T22:29:22.052Z",
+      "last_seen": "2026-10-15T22:29:22.052Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.2.42"
+      ],
+      "observed": {
+        "network session": 1
+      },
+      "article_previews": {
+        "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/": {
+          "title": "AI-powered espionage campaign targets Linux infrastructure",
+          "overview": "Unit 42 reports a campaign against Linux infrastructure involving web shells, custom backdoors, reconnaissance, and attempts to extract sensitive data. The report lists associated network indicators and discusses defensive investigation steps."
+        }
+      }
+    },
+    {
       "id": "ip:185.157.160.251",
       "type": "ip",
       "value": "185.157.160.251",
@@ -78011,6 +78370,32 @@
         "https://sansec.io/research/stylesmuggler-0day": {
           "title": "StyleSmuggler: Magento and Adobe Commerce remote code execution",
           "overview": "Sansec reports active exploitation of a Magento and Adobe Commerce remote-code-execution flaw. Its investigation describes backdoor processes, command-and-control traffic over TLS and NTP-looking UDP, and recommended patching and compromise checks."
+        }
+      }
+    },
+    {
+      "id": "ip:2.57.241.246",
+      "type": "ip",
+      "value": "2.57.241.246",
+      "articles": [
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/"
+      ],
+      "sources": [
+        "www.microsoft.com"
+      ],
+      "first_seen": "2026-09-30T14:50:48.985Z",
+      "last_seen": "2026-09-30T14:50:48.985Z",
+      "disposition": "Actionable",
+      "hosts": [
+        "10.10.3.48"
+      ],
+      "observed": {
+        "network session": 1
+      },
+      "article_previews": {
+        "https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/": {
+          "title": "Star Blizzard refines phishing and RedFlick malware delivery",
+          "overview": "Microsoft describes phishing campaigns that used RedFlick to deliver the CosmicPulse backdoor. The report explains the Windows infection flow, persistence techniques, and network indicators for investigation."
         }
       }
     },
@@ -78098,7 +78483,7 @@
     "files": [
       "large_mucaro_archive.csv"
     ],
-    "indicators": 14,
-    "matches": 14
+    "indicators": 28,
+    "matches": 28
   }
 }

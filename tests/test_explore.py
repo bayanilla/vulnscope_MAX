@@ -62,6 +62,19 @@ class ExploreTests(unittest.TestCase):
         self.assertIn("10.10.1.10", json.loads(m.group(1))["focus"])
         self.assertIn("not confirmed compromise", page)
 
+    def test_ioc_host_hints_count_distinct_matches(self):
+        res = dict(self.res)
+        res["ioc_matches"] = [
+            {"id": "ip:203.0.113.45", "hosts": ["10.10.1.10", "10.10.2.25"]},
+            {"id": "ip:203.0.113.45", "hosts": ["10.10.1.10"]},
+            {"id": "domain:example.test", "hosts": ["10.10.1.10", "203.0.113.45"]},
+        ]
+        data = explore.build(res, self.ds)
+        self.assertEqual(data["ioc_counts"], {"10.10.1.10": 2, "10.10.2.25": 1})
+        page = explore.html(data)
+        self.assertIn('id="ioc-filter"', page)
+        self.assertIn('"ioc_counts":{"10.10.1.10":2,"10.10.2.25":1}', page)
+
     def test_write_all_includes_explorer(self):
         out = os.path.join(self.tmp, "out")
         write_all(self.res, self.ds, out)

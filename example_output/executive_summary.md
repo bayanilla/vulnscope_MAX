@@ -1,6 +1,6 @@
 # Múcaro VulnScope: Executive Summary
 
-Prepared 2026-10-30. Network activity analysed from 2026-10-12T00:01:19Z to 2026-10-18T03:11:38Z.
+Prepared 2026-10-31. Network activity analysed from 2026-10-12T00:01:19Z to 2026-10-18T03:11:38Z.
 
 ## Bottom line
 
@@ -16,7 +16,7 @@ Of 448 vulnerabilities reported by the scanner, 48 sit on services with no obser
 
 4 active servers seen on the network were not in the scan, so their risk is unknown.
 
-14 observed indicators matched the imported Múcaro IOC Archive. Review the source reports and surrounding telemetry; a match alone does not confirm malicious activity.
+28 observed indicators matched the imported Múcaro IOC Archive. Review the source reports and surrounding telemetry; a match alone does not confirm malicious activity.
 
 ## Key numbers
 
@@ -24,13 +24,13 @@ Of 448 vulnerabilities reported by the scanner, 48 sit on services with no obser
 |---|---|
 | Systems scanned | 250 |
 | Systems with vulnerabilities (Low and above) | 250 |
-| Network sessions analysed | 9,777 |
+| Network sessions analysed | 9,782 |
 | Priority 1 / 2 / 3 / 4 findings | 22 / 129 / 249 / 48 |
 | Vulnerable services reached from the internet | 7 |
 | Exploitable vulnerabilities with observed traffic | 28 |
 | Systems with corroborated evidence / to investigate / possible next targets | 2 / 0 / 2 |
 | Active servers missing from the scan | 4 |
-| Múcaro IOC Archive matches | 14 |
+| Múcaro IOC Archive matches | 28 |
 
 ## Top risks
 
@@ -51,7 +51,7 @@ Of 448 vulnerabilities reported by the scanner, 48 sit on services with no obser
 
 ## How confident is this?
 
-The assessment combines the vulnerability scan with 9,777 observed network sessions. 249 of 250 scanned systems appeared in the network data. A system with no observed traffic is scored as "unknown" rather than safe. Telemetry only shows what the sensors could see, so absence of traffic is not proof that a service is unreachable.
+The assessment combines the vulnerability scan with 9,782 observed network sessions. 249 of 250 scanned systems appeared in the network data. A system with no observed traffic is scored as "unknown" rather than safe. Telemetry only shows what the sensors could see, so absence of traffic is not proof that a service is unreachable.
 
 Full evidence for every finding is in the technical report.
 
@@ -62,16 +62,30 @@ Exact matches to the imported IOC Archive are leads for review, not proof of mal
 | Indicator | Type | Related hosts | Observed in | Source articles |
 |---|---|---|---|---|
 | 247.cdnflare.xyz | domain | 10.10.1.11 | 1 dns event | https://sansec.io/research/stylesmuggler-0day |
+| adsaw.cfd | domain | 10.10.2.25 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/ |
+| adswre.cfd | domain | 10.10.2.25 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/ |
 | beraskencur.site | domain | 10.10.2.42 | 1 dns event | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| bunstar.harej.si | domain | 10.10.2.25 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/ |
 | byveo.org | domain | 10.10.3.48 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
 | checkout-cdn.com | domain | 10.10.1.11 | 1 dns event | https://sansec.io/research/stylesmuggler-0day |
+| groy.cc | domain | 10.10.3.48 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
+| magento.ink | domain | 10.10.2.42 | 1 dns event | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| microsoft-flash.com | domain | 10.10.3.49 | 1 dns event | https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/ |
+| my-662ylt3w.pages.dev | domain | 10.10.3.49 | 1 dns event | https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/ |
 | ntp.timesync.to | domain | 10.10.1.11 | 1 dns event | https://sansec.io/research/stylesmuggler-0day |
 | secure-dns-hub.com | domain | 10.10.3.48 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
 | solidmonpe.com | domain | 10.10.2.42 | 1 dns event | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| trews.cfd | domain | 10.10.2.25 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/ |
+| wps-cn.com | domain | 10.10.3.49 | 1 dns event | https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/ |
 | 103.160.59.97 | ip | 10.10.3.48 | 2 network session | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
+| 103.245.231.248 | ip | 10.10.3.48 | 1 network session | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
+| 103.27.110.220 | ip | 10.10.3.49 | 1 network session | https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/ |
 | 104.194.158.65 | ip | 10.10.2.42 | 2 network session | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
 | 104.248.131.53 | ip | 10.10.2.42 | 1 network session | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| 109.224.53.140 | ip | 10.10.2.42 | 1 network session | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
+| 138.68.244.146 | ip | 10.10.2.42 | 1 network session | https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure/ |
 | 185.157.160.251 | ip | 10.10.1.11 | 2 network session | https://sansec.io/research/stylesmuggler-0day |
+| 2.57.241.246 | ip | 10.10.3.48 | 1 network session | https://www.microsoft.com/en-us/security/blog/2026/09/29/star-blizzard-refines-phishing-and-malware-delivery-with-the-redflick-technique/ |
 | 209.141.43.95 | ip | 10.10.1.11 | 1 network session | https://sansec.io/research/stylesmuggler-0day |
 | 209.73.130.148 | ip | 10.10.1.11 | 1 IDS/IPS alert, 2 network session | https://sansec.io/research/stylesmuggler-0day |
 | 99.84.67.186 | ip | 10.10.1.11 | 3 network session | https://sansec.io/research/stylesmuggler-0day |
