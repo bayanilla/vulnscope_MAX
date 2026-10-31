@@ -160,7 +160,7 @@ worst severity. Click a host, or pick it from the list on the left, and the came
 - **Panel:** the same lists with session counts, ports and the reasons behind each estimate, plus the
   host's Nessus findings. Click any internal peer to pivot to it; Esc goes back.
 
-Fly-Through flies to the next P1/P2 host on each click (Shift+click goes back); it never moves on its own. L toggles labels, M toggles motion, `/` searches.
+Use the host list or `/` to find a host. L toggles labels and M toggles motion.
 Deep links work: `explorer.html#host=10.0.1.10`.
 
 **How the blast-radius likelihood is estimated.** It is a heuristic for triage, not a measurement:
@@ -169,8 +169,8 @@ when only the peer connects in, and 0 otherwise. Weakness is the strongest of: a
 the selected host already uses (CVSS/10, x1.0 with a public exploit, x0.55 without), any other High or
 Critical finding (CVSS/10 x0.45 with exploit, x0.25 without), an admin or lateral-movement protocol in
 use (0.5), or a 0.1 baseline. Unscanned peers get at least 0.3 because their exposure is unknown. Bands:
-High at 0.6 or more, Medium at 0.35 or more, otherwise Low. Two hops out multiplies the two steps. Treat
-every line as a lead to check, not as confirmed compromise.
+High at 0.6 or more, Medium at 0.35 or more, otherwise Low. For possible onward connections, the estimate
+multiplies the two steps. Treat every line as a lead to check, not as confirmed compromise.
 
 ## Upload page
 

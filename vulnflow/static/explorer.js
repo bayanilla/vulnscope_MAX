@@ -608,10 +608,12 @@ function renderPanel(id) {
       `<ul class="why" hidden>${q.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>`;
   }).join('') || '<div class="row"><span></span><span class="sub">No east/west traffic to or from this host in the telemetry.</span></div>';
   const h2list = F.hop2.filter(q => q.p >= 0.05).slice(0, 12);
-  const hop2 = h2list.length ? `<h3>Two hops out</h3>` + h2list.map(q =>
-    `<div class="row peer" data-k="peer" data-ip="${esc(q.ip)}"><div class="bar b-${q.band}"><i style="width:${Math.round(q.p * 100)}%"></i></div>` +
-    `<span class="ip">${esc(q.ip)}</span><span class="lk" style="color:${BAND[q.band]}">${Math.round(q.p * 100)}%</span>` +
-    `<span class="sub">via ${esc(q.via)}</span><ul class="why" hidden>${q.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>`).join('') : '';
+  const hop2 = h2list.length ? `<h3>Possible onward connections</h3>` +
+    `<p class="onward-note">Each path follows observed connections through a directly connected internal host. These scores are investigation leads, not confirmed compromise.</p>` +
+    h2list.map(q =>
+      `<div class="row peer" data-k="peer" data-ip="${esc(q.ip)}"><div class="bar b-${q.band}"><i style="width:${Math.round(q.p * 100)}%"></i></div>` +
+      `<span class="ip">${esc(q.ip)}</span><span class="lk" style="color:${BAND[q.band]}">${Math.round(q.p * 100)}%</span>` +
+      `<span class="sub">via ${esc(q.via)}</span><ul class="why" hidden>${q.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>`).join('') : '';
   const fds = F.findings.map(f =>
     `<div class="fd"><span class="pill ${esc(f.pri)}">${esc(f.pri)}</span> <b>${esc(f.name)}</b>` +
     `<div class="meta">${f.port ? esc(f.port + '/' + f.proto) : 'host-level'} · ${esc(f.sev)} · CVSS ${Number(f.cvss).toFixed(1)}` +
@@ -623,8 +625,7 @@ function renderPanel(id) {
     `<div style="text-align:right"><span class="pill ${esc(d.pri)}">${esc(d.pri)}</span><div class="ipline">score ${d.score}</div>` +
     (d.ev ? `<span class="tag ${d.ev}">${d.ev === 'likely' ? 'LIKELY EXPLOITATION' : 'LEAD'}</span>` : '') + `</div></div>` +
     `<div class="stats"><div class="stat red"><b>${F.attackers_total}</b><span>outside addresses (N/S)${nAlert ? `, ${nAlert} with IPS alerts` : ''}</span></div>` +
-    `<div class="stat pink"><b>${F.peers_total}</b><span>internal hosts (E/W) · ${F.blast.high} high, ${F.blast.medium} med</span></div>` +
-    `<div class="stat"><b>${F.hop2.length}</b><span>more two hops out</span></div></div>` +
+    `<div class="stat pink"><b>${F.peers_total}</b><span>internal hosts (E/W) · ${F.blast.high} high, ${F.blast.medium} med</span></div></div>` +
     (state.history.length ? `<p style="margin:10px 0 0"><button id="btn-back">← Back to ${esc(state.history[state.history.length - 1])}</button></p>` : '') +
     `<h3>North / south: outside addresses</h3>${atk}` +
     (F.attackers_total > F.attackers.length ? `<div class="row"><span></span><span class="sub">${F.attackers_total - F.attackers.length} more not shown</span></div>` : '') +
@@ -663,13 +664,6 @@ function toggleMotion() {
 $('btn-overview').onclick = () => { overview(); };
 $('btn-labels').onclick = toggleLabels;
 $('btn-motion').onclick = toggleMotion;
-// Fly-Through: each click flies to the next P1/P2 host (Shift+click goes back); it never advances on its own
-$('btn-tour').onclick = e => {
-  const ids = hostOrder().filter(id => ['P1', 'P2'].includes(nodes.get(id).d.pri));
-  const list = ids.length ? ids : hostOrder();
-  const at = list.indexOf(state.focus);
-  focus(list[at < 0 ? 0 : (at + (e.shiftKey ? list.length - 1 : 1)) % list.length]);
-};
 if (!state.motion) $('btn-motion').setAttribute('aria-pressed', 'false');
 
 $('legend').innerHTML =
