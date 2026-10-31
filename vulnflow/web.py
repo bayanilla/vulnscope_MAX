@@ -146,48 +146,30 @@ def _page(title, body):
             f"<body>{theme_control()}{body}</body></html>")
 
 
-CHAT = """<h2>AI analyst</h2>
+CHAT = """<section class="analyst-chat" data-ai-chat data-ask-url="ask"><h2>AI analyst</h2>
 <p class="hint">{where}</p>
 {brief}
-<div id="chat"></div>
-<form id="askform"><label for="q">Ask about these results</label>
-<textarea id="q" rows="3" placeholder="e.g. Why is fs01 a P1? How do I confirm the callback from web01 in Zeek?"></textarea>
-<button type="submit" id="askbtn">Ask</button> <span id="busy" class="hint"></span></form>
-<script>
-const hist = [];
-const chat = document.getElementById('chat'), q = document.getElementById('q');
-function add(cls, html) {{ const d = document.createElement('div'); d.className = 'msg ' + cls; d.innerHTML = html; chat.appendChild(d); d.scrollIntoView({{block: 'end'}}); }}
-function esc(t) {{ const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }}
-document.getElementById('askform').addEventListener('submit', async (e) => {{
-  e.preventDefault();
-  const question = q.value.trim(); if (!question) return;
-  add('you', '<strong>You</strong><p>' + esc(question) + '</p>'); q.value = '';
-  document.getElementById('askbtn').disabled = true; document.getElementById('busy').textContent = 'Thinking...';
-  try {{
-    const r = await fetch('ask', {{method: 'POST', headers: {{'Content-Type': 'application/json'}},
-                                  body: JSON.stringify({{question, history: hist}})}});
-    const j = await r.json();
-    if (j.error) add('err', esc(j.error));
-    else {{ add('ai', '<strong>AI analyst</strong>' + j.answer_html);
-            hist.push({{role: 'user', content: question}}, {{role: 'assistant', content: j.answer}}); }}
-  }} catch (err) {{ add('err', 'Request failed: ' + esc(String(err))); }}
-  document.getElementById('askbtn').disabled = false; document.getElementById('busy').textContent = '';
-}});
-</script>"""
-CHAT_CSS = """textarea{width:100%;font:inherit;padding:8px;box-sizing:border-box;border:1px solid var(--line);
-background:var(--bg);color:var(--fg);border-radius:6px} label{display:block;font-weight:600;margin:12px 0 4px}
-button{margin-top:8px;padding:7px 16px;cursor:pointer}
-button:disabled{opacity:.6} .hint{color:var(--muted);font-size:.9rem}
-.msg{border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin:10px 0}
-.msg.you{background:var(--head)} .msg.err{color:#c0392b}"""
+<div class="ai-chat-log" role="log" aria-label="AI analyst conversation" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
+<form class="ai-chat-form"><label for="q">Ask about these results</label>
+<textarea id="q" rows="3" maxlength="4000" placeholder="e.g. Why is fs01 a P1? How do I confirm the callback from web01 in Zeek?"></textarea>
+<button type="submit" class="ai-chat-submit">Ask</button> <span class="ai-chat-busy hint" role="status"></span></form></section>"""
+
+
+def _chat_asset(name: str) -> str:
+    with open(os.path.join(os.path.dirname(__file__), "static", name), encoding="utf-8") as fh:
+        return fh.read()
 
 
 def _where(cfg: LLMConfig) -> str:
+    return (html.escape(_where_text(cfg)) +
+            ' <a href="/settings?next={next}">Change</a>. Answers are AI-generated; verify before acting.')
+
+
+def _where_text(cfg: LLMConfig) -> str:
     dest = ("nothing leaves this machine" if cfg.provider == "mock" else
             f"correlated results (not raw logs) are sent to {cfg.destination()}")
     red = "; IPs and hostnames are replaced with tokens first" if cfg.redact else ""
-    return (f"Model: {html.escape(cfg.label())}: {html.escape(dest + red)}. "
-            f'<a href="/settings?next={{next}}">Change</a>. Answers are AI-generated; verify before acting.')
+    return f"Model: {cfg.label()}: {dest + red}."
 
 
 SETTINGS = """<style>{css}</style><h1>AI analyst settings</h1>
@@ -366,6 +348,14 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             if not m:
                 return self._send(404, "Not found", "text/plain")
             run_dir = os.path.realpath(os.path.join(data_dir, m[1], "out"))
+            if m[2] == "ai-status":
+                if not os.path.isdir(run_dir):
+                    return self._send(404, "Not found", "text/plain")
+                cfg = self._llm()
+                return self._send(200, json.dumps({
+                    "enabled": cfg is not None, "ready": bool(cfg and cfg.ready),
+                    "description": _where_text(cfg) if cfg and cfg.ready else "No AI provider selected yet.",
+                }), "application/json", {"Cache-Control": "no-store"})
             if not m[2]:
                 return self._run_index(m[1], run_dir)
             target = os.path.realpath(os.path.join(run_dir, m[2]))
@@ -432,8 +422,10 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                                        ' to generate these article briefs.</p>')
             except (OSError, ValueError):
                 pass
-            body = (f"<style>{CHAT_CSS}</style><h1>Results</h1>{items}{article_ui}{ai}"
-                    f"<p><a href=\"/\">New analysis</a></p>")
+            chat_style = f"<style>{_chat_asset('analyst_chat.css')}</style>" if ai and cfg and cfg.ready else ""
+            chat_script = f"<script>{_chat_asset('analyst_chat.js')}</script>" if chat_style else ""
+            body = (f"{chat_style}<h1>Results</h1>{items}{article_ui}{ai}"
+                    f"<p><a href=\"/\">New analysis</a></p>{chat_script}")
             self._send(200, _page("Results", body))
 
         def _json(self, code, obj):

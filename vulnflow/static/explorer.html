@@ -9,6 +9,7 @@
   <button id="btn-tour" title="Fly to the next highest-priority host (Shift+click: previous)">Fly-Through</button>
   <button id="btn-labels" aria-pressed="true" title="Show or hide labels (L)">Labels</button>
   <button id="btn-motion" aria-pressed="true" title="Animated traffic (M)">Motion</button>
+  <button id="btn-ai" type="button" aria-controls="analyst-chat" aria-expanded="false" hidden>AI Analyst</button>
 </div>
 <aside id="rail">
   <input id="search" type="search" placeholder="Find host, IP, CVE  ( / )" aria-label="Find a host" autocomplete="off">
@@ -16,6 +17,18 @@
   <div id="hostlist" role="list"></div>
 </aside>
 <aside id="panel" aria-live="polite" hidden></aside>
+<section id="analyst-chat" class="analyst-chat ai-chat-overlay" data-ai-chat data-ask-url="ask"
+  role="dialog" aria-modal="false" aria-labelledby="ai-chat-title" hidden>
+  <div class="ai-chat-header"><h2 id="ai-chat-title">AI Analyst</h2>
+    <button type="button" class="ai-chat-close" aria-label="Close AI Analyst">Close</button></div>
+  <p class="ai-chat-status"></p><a class="ai-chat-settings" href="#">Change provider</a>
+  <div class="ai-chat-log" role="log" aria-label="AI analyst conversation" aria-live="polite"
+    aria-relevant="additions" tabindex="0"></div>
+  <form class="ai-chat-form"><label for="ai-question">Ask about these results</label>
+    <textarea id="ai-question" rows="2" maxlength="4000" placeholder="Ask about a host, finding, or next step"></textarea>
+    <div class="ai-chat-actions"><button type="submit" class="ai-chat-submit">Ask</button>
+      <span class="ai-chat-busy" role="status"></span></div></form>
+</section>
 <div id="legend"></div>
 <div id="tip" role="tooltip" hidden></div>
 <div id="hint">Click a host to see who is targeting it and how far a compromise could reach.</div>

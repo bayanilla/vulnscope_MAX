@@ -177,9 +177,12 @@ function focus(id, push = true) {
   let minX = -60, maxX = 60, minY = -60, maxY = 60;
   keep.forEach(k => { const n = nodes.get(k); minX = Math.min(minX, n.tx); maxX = Math.max(maxX, n.tx); minY = Math.min(minY, n.ty); maxY = Math.max(maxY, n.ty); });
   minX -= 130; maxX += 110;           // room for the labels beside the outer nodes
-  const panelW = W > 900 ? 420 : 0, railW = W > 900 ? 280 : 0, mobileH = W > 900 ? 0 : H * 0.52;
+  const drawerW = document.body.classList.contains('ai-chat-open') && W > 1100 ? $('analyst-chat').getBoundingClientRect().width : 0;
+  const panelW = drawerW ? drawerW + Math.min(100, W * 0.06) : (W > 900 ? 420 : 0);
+  const railW = W > 900 ? 280 : 0, mobileH = W > 900 ? 0 : H * 0.52;
   const availW = W - panelW - railW - 60, availH = H - 170 - mobileH;
-  cam.tz = Math.min(1.6, Math.max(0.25, Math.min(availW / (maxX - minX + 160), availH / (maxY - minY + 120))));
+  cam.tz = Math.min(1.6, Math.max(drawerW ? 0.12 : 0.25,
+    Math.min(availW / (maxX - minX + 160), availH / (maxY - minY + 120))));
   cam.tx = (minX + maxX) / 2 - (railW - panelW) / 2 / cam.tz;
   cam.ty = (minY + maxY) / 2 + mobileH / 2 / cam.tz;
   if (!state.motion) snap();
@@ -205,8 +208,11 @@ function fitOverview() {
   let minX = 0, maxX = 0, minY = 0, maxY = 0;
   nodes.forEach(n => { if (!n.ext && !n.domain) { minX = Math.min(minX, n.ox); maxX = Math.max(maxX, n.ox); minY = Math.min(minY, n.oy); maxY = Math.max(maxY, n.oy); } });
   const railW = W > 900 ? 280 : 0;
-  cam.tz = Math.min(1.5, Math.max(0.2, Math.min((W - railW - 80) / (maxX - minX + 200), (H - 200) / (maxY - minY + 200))));
-  cam.tx = (minX + maxX) / 2 - railW / 2 / cam.tz; cam.ty = (minY + maxY) / 2;
+  const drawerW = document.body.classList.contains('ai-chat-open') && W > 1100 ? $('analyst-chat').getBoundingClientRect().width : 0;
+  const rightInset = drawerW ? drawerW + Math.min(100, W * 0.06) : 0;
+  cam.tz = Math.min(1.5, Math.max(drawerW ? 0.12 : 0.2,
+    Math.min((W - railW - rightInset - 80) / (maxX - minX + 200), (H - 200) / (maxY - minY + 200))));
+  cam.tx = (minX + maxX) / 2 - (railW - rightInset) / 2 / cam.tz; cam.ty = (minY + maxY) / 2;
 }
 function snap() { nodes.forEach(n => { n.x = n.tx; n.y = n.ty; n.a = n.ta; n.r = n.tr; }); cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; }
 
@@ -524,6 +530,7 @@ function tip(n, x, y) {
   el.style.left = Math.min(W - r.width - 10, x + 16) + 'px'; el.style.top = Math.min(H - r.height - 10, y + 16) + 'px';
 }
 addEventListener('keydown', e => {
+  if (e.target.closest('#analyst-chat') || e.target.closest('#btn-ai')) return;
   if (e.target.tagName === 'INPUT') { if (e.key === 'Escape') e.target.blur(); return; }
   if (e.key === 'Escape') { state.history.length ? focus(state.history.pop(), false) : overview(); }
   else if (e.key === '/') { e.preventDefault(); $('search').focus(); }

@@ -221,7 +221,17 @@ class WebTests(Base):
     def test_ask_endpoint_with_mock(self):
         host, run = self._server(LLMConfig.from_env(provider="mock"))
         with urllib.request.urlopen(host + run) as resp:
-            self.assertIn("Ask about these results", resp.read().decode())
+            page = resp.read().decode()
+            self.assertIn("Ask about these results", page)
+            self.assertIn('class="ai-chat-log" role="log"', page)
+            self.assertIn("overflow-y:auto", page)
+            self.assertIn("log.scrollTop = log.scrollHeight", page)
+        with urllib.request.urlopen(host + run + "ai-status") as resp:
+            self.assertEqual(resp.headers["Cache-Control"], "no-store")
+            status = json.load(resp)
+            self.assertTrue(status["enabled"])
+            self.assertTrue(status["ready"])
+            self.assertIn("nothing leaves this machine", status["description"])
         status, body = self._post(host + run + "ask", json.dumps({"question": "<b>fs01?</b>", "history": []}),
                                   {"Content-Type": "application/json"})
         j = json.loads(body)
@@ -229,6 +239,19 @@ class WebTests(Base):
         self.assertNotIn("<b>", j["answer_html"])
         with open(os.path.join(self.out, "ai_chat_log.md")) as fh:
             self.assertIn("fs01?", fh.read())
+
+    def test_explorer_uses_same_run_chat_and_hides_it_when_ai_is_off(self):
+        host, run = self._server(LLMConfig.from_env(provider="mock"))
+        with urllib.request.urlopen(host + run + "explorer.html") as resp:
+            page = resp.read().decode()
+        self.assertIn('id="btn-ai"', page)
+        self.assertIn('data-ai-chat data-ask-url="ask"', page)
+        self.assertIn("ai-status", page)
+        self.assertIn("/explorer\\.html", page)
+        self.assertIn("analyst-chat", page)
+        disabled_host, disabled_run = self._server(None)
+        with urllib.request.urlopen(disabled_host + disabled_run + "ai-status") as resp:
+            self.assertFalse(json.load(resp)["enabled"])
 
     def test_choose_provider_and_key_in_browser(self):
         import re
@@ -254,6 +277,8 @@ class WebTests(Base):
                 page = resp.read().decode()
             self.assertNotIn("sk-secret-abcd", page)
             self.assertIn("…abcd", page)
+            with urllib.request.urlopen(host + run + "ai-status") as resp:
+                self.assertNotIn("sk-secret-abcd", resp.read().decode())
             status, _ = self._post(host + "/settings", urlencode({**form, "csrf": "wrong"}))
             self.assertEqual(status, 403)
             status, _ = self._post(host + "/settings", urlencode(form),
