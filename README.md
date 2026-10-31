@@ -11,6 +11,8 @@ writes an **executive summary** and a **technical report** for system owners.
 Pure Python 3.10+ standard library. Nothing to install for the core workflow; the optional
 AI analyst needs `pip install anthropic` only if you choose Anthropic.
 
+Browse the [screenshot gallery](screenshots/README.md) for the upload workflow, reports, Explorer, and AI Analyst.
+
 ## Quick start
 
 **Want to see the indicators immediately?** The download includes a ready-made, synthetic
@@ -162,6 +164,7 @@ worst severity. Click a host, or pick it from the list on the left, and the came
 
 Use the host list or `/` to find a host. L toggles labels and M toggles motion.
 Deep links work: `explorer.html#host=10.0.1.10`.
+See the [Explorer AI Analyst screenshot](screenshots/explorer_ai_analyst.png).
 
 **How the blast-radius likelihood is estimated.** It is a heuristic for triage, not a measurement:
 `p = reach x weakness`. Reach is 1.0 when the selected host opened completed sessions to the peer, 0.35
