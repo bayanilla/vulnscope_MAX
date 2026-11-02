@@ -39,7 +39,7 @@ class ParserTests(Base):
         self.assertEqual(got, {"zeek_conn.log": "zeek", "paloalto_traffic.csv": "paloalto",
                                "netflow_segment6.csv": "generic", "quarterly_scan.nessus": "nessus"})
 
-    def test_mucaro_archive_links_survive_standalone_reports(self):
+    def test_ioc_csv_links_survive_standalone_reports(self):
         archive = self.write("mucaro-archive.csv",
             "indicatorType,indicator,articleUrls,sources,disposition,firstSeenAt,lastSeenAt\n"
             "cve,CVE-2024-21887,https://research.example/report,Research,Actionable,2026-10-01,2026-10-20\n"
@@ -49,7 +49,7 @@ class ParserTests(Base):
         with patch("vulnflow.article_preview.fetch_preview",
                    return_value={"title": "Source report", "overview": "A short source-backed overview."}):
             res, paths = run(self.samples + [archive], output)
-        self.assertEqual(res["ioc_archive"]["indicators"], 2)
+        self.assertEqual(res["ioc_archive"]["indicators"], 3)
         self.assertIn("CVE-2024-21887", [m["value"] for m in res["ioc_matches"]])
         self.assertIn("8.8.8.8", [m["value"] for m in res["ioc_matches"]])
         for name in ("executive_summary.html", "technical_report.html", "explorer.html"):
@@ -59,6 +59,13 @@ class ParserTests(Base):
             self.assertIn("https://research.example/report", page)
             self.assertIn("A short source-backed overview.", page)
             self.assertNotIn("javascript:alert(1)", page)
+
+    def test_ioc_csv_without_source_links_matches_scan(self):
+        indicators = self.write("plain-indicators.csv", "type,indicator\ncve,CVE-2024-21887\n")
+        res, _ = run(self.samples + [indicators], os.path.join(self.tmp, "plain-ioc-output"))
+        match = next(item for item in res["ioc_matches"] if item["value"] == "CVE-2024-21887")
+        self.assertEqual(match["articles"], [])
+        self.assertEqual(res["ioc_archive"]["indicators"], 1)
 
     def test_article_preview_reads_short_source_description(self):
         from vulnflow.article_preview import fetch_preview, _public_address

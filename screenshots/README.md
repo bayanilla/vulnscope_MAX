@@ -26,11 +26,17 @@ Outside addresses appear to the left, connected internal hosts to the right, and
 
 <a href="upload_current.jpg"><img src="upload_current.jpg" alt="Current Múcaro VulnScope upload page" width="600"></a>
 
-The upload page accepts a local folder or selected telemetry, scan, and Múcaro IOC Archive files.
+The upload page accepts a local folder or selected telemetry, scan, and IOC CSV files.
 
-<a href="results_current.jpg"><img src="results_current.jpg" alt="Results page with report links and Security Assistant controls" width="600"></a>
+<a href="upload_olive_drab.jpg"><img src="upload_olive_drab.jpg" alt="Upload page with the Olive Drab map background" width="600"></a>
 
-The results page links to the reports and Explorer and offers Security Assistant controls.
+Olive Drab uses a subdued map backdrop; SOC Dark and Matrix use signal lines, while Light uses a soft gradient.
+
+<a href="results_current.jpg"><img src="results_current.jpg" alt="Results page with report links and Security Assistant button" width="600"></a>
+
+The results page links to the reports and Explorer and opens Security Assistant in a right-side drawer.
+
+<a href="results_assistant_drawer.jpg"><img src="results_assistant_drawer.jpg" alt="Results page with the Security Assistant drawer open" width="600"></a>
 
 <a href="executive_dark.png"><img src="executive_dark.png" alt="Dark-themed executive summary report" width="400"></a>
 

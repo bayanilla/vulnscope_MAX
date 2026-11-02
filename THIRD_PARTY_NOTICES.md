@@ -1,5 +1,10 @@
 # Third-party notices
 
+The Olive Drab map at `vulnflow/static/world_map.svg` is derived from
+[Natural Earth 1:110m land and country boundaries](https://github.com/nvkelso/natural-earth-vector/tree/master/geojson).
+Natural Earth [places its vector map data in the public domain](https://www.naturalearthdata.com/about/terms-of-use/).
+The build script is `scripts/build_world_map.py`.
+
 The Múcaro browser tab icon at `vulnflow/static/mucaro-icon.svg`, the article
 brief prompt at `vulnflow/mucaro_article_prompt.txt`, and the structured output
 schema at `vulnflow/mucaro_article_schema.json` come from

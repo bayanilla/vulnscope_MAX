@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-31T10:56:29Z",
+  "generated": "2026-11-02T12:48:20Z",
   "config": {
     "internal_nets": [
       "10.0.0.0/8",
@@ -17,12 +17,64 @@
   },
   "inputs": [
     {
+      "file": "README.md",
+      "format": "generic",
+      "read": 55,
+      "kept": 0,
+      "dropped": {
+        "unmapped columns": 55
+      },
+      "notes": [
+        "could not find source/destination IP columns; header was: #, m\u00facaro, vulnscope, synthetic, sample"
+      ]
+    },
+    {
+      "file": "article_previews.json",
+      "format": "generic",
+      "read": 25,
+      "kept": 0,
+      "dropped": {
+        "unmapped columns": 25
+      },
+      "notes": [
+        "could not find source/destination IP columns; header was: {"
+      ]
+    },
+    {
+      "file": "dns.log",
+      "format": "zeek",
+      "read": 16,
+      "kept": 16,
+      "dropped": {},
+      "notes": [
+        "Zeek stream records preserved as events; only conn sessions and notice alerts affect scoring"
+      ]
+    },
+    {
+      "file": "flows.csv",
+      "format": "generic",
+      "read": 18,
+      "kept": 18,
+      "dropped": {},
+      "notes": []
+    },
+    {
       "file": "netflow_segment6.csv",
       "format": "generic",
       "read": 112,
       "kept": 112,
       "dropped": {},
       "notes": []
+    },
+    {
+      "file": "notice.log",
+      "format": "zeek",
+      "read": 1,
+      "kept": 1,
+      "dropped": {},
+      "notes": [
+        "1 IPS/IDS alert(s) used as exploitation evidence"
+      ]
     },
     {
       "file": "paloalto_traffic.csv",
@@ -46,44 +98,6 @@
       "notes": []
     },
     {
-      "file": "zeek_conn.log",
-      "format": "zeek",
-      "read": 8343,
-      "kept": 8342,
-      "dropped": {
-        "missing or invalid IP": 1
-      },
-      "notes": []
-    },
-    {
-      "file": "dns.log",
-      "format": "zeek",
-      "read": 16,
-      "kept": 16,
-      "dropped": {},
-      "notes": [
-        "Zeek stream records preserved as events; only conn sessions and notice alerts affect scoring"
-      ]
-    },
-    {
-      "file": "flows.csv",
-      "format": "generic",
-      "read": 18,
-      "kept": 18,
-      "dropped": {},
-      "notes": []
-    },
-    {
-      "file": "notice.log",
-      "format": "zeek",
-      "read": 1,
-      "kept": 1,
-      "dropped": {},
-      "notes": [
-        "1 IPS/IDS alert(s) used as exploitation evidence"
-      ]
-    },
-    {
       "file": "scan.csv",
       "format": "nessus_csv",
       "read": 1,
@@ -94,8 +108,18 @@
       ]
     },
     {
-      "file": "large_mucaro_archive.csv",
-      "format": "mucaro_ioc_archive",
+      "file": "zeek_conn.log",
+      "format": "zeek",
+      "read": 8343,
+      "kept": 8342,
+      "dropped": {
+        "missing or invalid IP": 1
+      },
+      "notes": []
+    },
+    {
+      "file": "ioc_indicators.csv",
+      "format": "ioc_csv",
       "read": 28,
       "kept": 28,
       "dropped": {},
@@ -78481,7 +78505,7 @@
   ],
   "ioc_archive": {
     "files": [
-      "large_mucaro_archive.csv"
+      "ioc_indicators.csv"
     ],
     "indicators": 28,
     "matches": 28

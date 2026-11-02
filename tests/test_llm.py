@@ -247,7 +247,7 @@ class WebTests(Base):
         self.assertIn('id="btn-ai"', page)
         self.assertIn('data-ai-chat data-ask-url="ask"', page)
         self.assertIn("ai-status", page)
-        self.assertIn("/explorer\\.html", page)
+        self.assertIn("(?:explorer\\.html)?", page)
         self.assertIn("analyst-chat", page)
         disabled_host, disabled_run = self._server(None)
         with urllib.request.urlopen(disabled_host + disabled_run + "ai-status") as resp:

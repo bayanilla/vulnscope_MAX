@@ -98,8 +98,9 @@ def main(argv=None) -> int:
     a.add_argument("-o", "--out", default="vulnflow_out")
     a.add_argument("--format", action="append", default=[], metavar="FILE=FORMAT",
                    help=f"force a file's format ({', '.join(FORMATS)})")
-    a.add_argument("--ioc-archive", action="append", default=[], metavar="CSV",
-                   help="Múcaro IOC Archive CSV export (repeatable; also detected inside input folders)")
+    a.add_argument("--ioc-csv", dest="ioc_archive", action="append", default=[], metavar="CSV",
+                   help="typed IOC CSV (repeatable; also detected inside input folders)")
+    a.add_argument("--ioc-archive", dest="ioc_archive", action="append", help=argparse.SUPPRESS)
     a.add_argument("--no-article-preview", action="store_true",
                    help="skip fetching short source previews for matched archive articles")
     a.add_argument("--article-preview-cache", metavar="JSON",
@@ -112,7 +113,7 @@ def main(argv=None) -> int:
     b.add_argument("outdir")
     _llm_flags(b)
 
-    ab = sub.add_parser("article-briefs", help="generate Múcaro AI briefs for matched source articles")
+    ab = sub.add_parser("article-briefs", help="generate AI briefs for matched source articles")
     ab.add_argument("outdir")
     _llm_flags(ab)
 
@@ -138,8 +139,9 @@ def main(argv=None) -> int:
     x.add_argument("--host", dest="focus", metavar="IP", help="open focused on this host")
     x.add_argument("--no-open", action="store_true", help="write the explorer without opening a browser")
     x.add_argument("--format", action="append", default=[], metavar="FILE=FORMAT", help=argparse.SUPPRESS)
-    x.add_argument("--ioc-archive", action="append", default=[], metavar="CSV",
-                   help="Múcaro IOC Archive CSV export")
+    x.add_argument("--ioc-csv", dest="ioc_archive", action="append", default=[], metavar="CSV",
+                   help="typed IOC CSV")
+    x.add_argument("--ioc-archive", dest="ioc_archive", action="append", help=argparse.SUPPRESS)
     x.add_argument("--no-article-preview", action="store_true",
                    help="skip fetching short source previews")
     x.add_argument("--article-preview-cache", metavar="JSON",
@@ -220,7 +222,7 @@ def main(argv=None) -> int:
     print(f"corroborated exploitation evidence: {', '.join(s['hosts_corroborated']) or 'none'}; "
           f"leads to investigate: {', '.join(s['hosts_to_investigate'] + s['hosts_possible_spread']) or 'none'}")
     if "ioc_matches" in res:
-        print(f"Múcaro IOC Archive matches for source review: {len(res['ioc_matches'])}")
+        print(f"IOC CSV matches for review: {len(res['ioc_matches'])}")
     if args.cmd == "explore":
         url = "file://" + os.path.abspath(paths["explorer.html"]) + (f"#host={args.focus}" if args.focus else "")
         print(f"\nExplorer: {url}")

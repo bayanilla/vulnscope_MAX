@@ -1,4 +1,4 @@
-"""Import Múcaro IOC Archive CSV snapshots and retain article provenance."""
+"""Import typed IOC CSV files and retain optional source provenance."""
 from __future__ import annotations
 
 import csv
@@ -11,7 +11,14 @@ from urllib.parse import urlsplit
 from .schema import ParseStats
 
 TYPES = {"ip", "domain", "url", "hash", "cve", "package"}
-REQUIRED = {"indicatorType", "indicator", "articleUrls"}
+KIND_COLUMNS = ("indicatorType", "type", "ioc_type")
+VALUE_COLUMNS = ("indicator", "value", "ioc")
+ARTICLE_COLUMNS = ("articleUrls", "sourceUrls", "source_url", "sourceUrl")
+
+
+def _column(fieldnames, choices):
+    names = {name.strip().lower(): name for name in fieldnames or [] if name}
+    return next((names[choice.lower()] for choice in choices if choice.lower() in names), None)
 
 
 def is_archive(path: str) -> bool:
@@ -19,7 +26,8 @@ def is_archive(path: str) -> bool:
         return False
     try:
         with open(path, newline="", encoding="utf-8-sig") as fh:
-            return REQUIRED.issubset(set(next(csv.reader(fh), [])))
+            header = next(csv.reader(fh), [])
+            return bool(_column(header, KIND_COLUMNS) and _column(header, VALUE_COLUMNS))
     except (OSError, UnicodeError, csv.Error):
         return False
 
@@ -59,15 +67,21 @@ def read_archives(paths: list[str]) -> tuple[dict, list[ParseStats]]:
     archive: dict[tuple[str, str], dict] = {}
     stats = []
     for path in paths:
-        stat = ParseStats(file=path.rsplit("/", 1)[-1], fmt="mucaro_ioc_archive")
+        stat = ParseStats(file=path.rsplit("/", 1)[-1], fmt="ioc_csv")
         with open(path, newline="", encoding="utf-8-sig") as fh:
-            for row in csv.DictReader(fh):
+            reader = csv.DictReader(fh)
+            kind_column = _column(reader.fieldnames, KIND_COLUMNS)
+            value_column = _column(reader.fieldnames, VALUE_COLUMNS)
+            article_column = _column(reader.fieldnames, ARTICLE_COLUMNS)
+            if not kind_column or not value_column:
+                raise ValueError(f"IOC CSV needs type and indicator columns: {path}")
+            for row in reader:
                 stat.read += 1
-                kind = (row.get("indicatorType") or "").strip().lower()
-                value = _value(kind, row.get("indicator") or "") if kind in TYPES else ""
-                links = _urls(row.get("articleUrls") or "")
-                if not value or not links:
-                    stat.drop("missing indicator or article URL")
+                kind = (row.get(kind_column) or "").strip().lower()
+                value = _value(kind, row.get(value_column) or "") if kind in TYPES else ""
+                links = _urls(row.get(article_column) or "") if article_column else []
+                if not value:
+                    stat.drop("missing or invalid indicator")
                     continue
                 stat.kept += 1
                 key = (kind, value)
@@ -142,15 +156,15 @@ def match_archive(ds, archive: dict) -> list[dict]:
 
 
 def markdown_section(matches: list[dict]) -> str:
-    lines = ["## Múcaro IOC matches", "",
-             "Exact matches to the imported IOC Archive are leads for review, not proof of malicious activity.", ""]
+    lines = ["## IOC matches", "",
+             "Exact matches to the imported IOC CSV are leads for review, not proof of malicious activity.", ""]
     if not matches:
-        return "\n".join(lines + ["No archive indicators matched the supplied telemetry or scan findings.", ""])
-    lines += ["| Indicator | Type | Related hosts | Observed in | Source articles |",
+        return "\n".join(lines + ["No imported indicators matched the supplied telemetry or scan findings.", ""])
+    lines += ["| Indicator | Type | Related hosts | Observed in | Source links |",
               "|---|---|---|---|---|"]
     for row in matches:
         observed = ", ".join(f"{count} {label}" for label, count in row["observed"].items())
-        articles = "; ".join(row["articles"][:3])
+        articles = "; ".join(row["articles"][:3]) or "—"
         cells = [row["value"], row["type"], ", ".join(row["hosts"]) or "network",
                  observed, articles]
         lines.append("| " + " | ".join(str(c).replace("|", "\\|").replace("\n", " ") for c in cells) + " |")
@@ -167,7 +181,7 @@ def table_html(matches: list[dict]) -> str:
                     "\">" + value + "</button></td><td>" + html.escape(row["type"]) +
                     "</td><td>" + html.escape(", ".join(row["hosts"]) or "network") +
                     "</td><td>" + html.escape(observed) + "</td><td>" +
-                    f"{len(row['articles'])} article(s)</td></tr>")
+                    f"{len(row['articles'])} source link(s)</td></tr>")
     return ("<table><thead><tr><th>Indicator</th><th>Type</th><th>Related hosts</th>"
             "<th>Observed in</th><th>Sources</th></tr></thead><tbody>" + "".join(rows) + "</tbody></table>")
 
@@ -213,13 +227,17 @@ SCRIPT = """<script>
     heading.textContent = item.type.toUpperCase() + ' · ' + item.value;
     body.append(heading);
     const note = document.createElement('p');
-    note.textContent = 'Exact archive match. Review the source and surrounding telemetry before drawing a conclusion.';
+    note.textContent = 'Exact IOC match. Review the source and surrounding telemetry before drawing a conclusion.';
     body.append(note);
     const context = document.createElement('p');
     context.textContent = 'Observed in: ' + Object.entries(item.observed).map(([k,v]) => v + ' ' + k).join(', ')
       + (item.hosts.length ? ' · Related hosts: ' + item.hosts.join(', ') : '');
     body.append(context);
-    const label = document.createElement('h3'); label.textContent = 'Source articles'; body.append(label);
+    if (item.sources && item.sources.length) {
+      const sources = document.createElement('p');
+      sources.textContent = 'Sources: ' + item.sources.join(', '); body.append(sources);
+    }
+    const label = document.createElement('h3'); label.textContent = 'Source links'; body.append(label);
     const list = document.createElement('ul');
     item.articles.forEach(url => {
       const li = document.createElement('li');
@@ -263,7 +281,7 @@ SCRIPT = """<script>
         }
         card.append(more);
         const caution = document.createElement('small');
-        caution.textContent = 'AI-generated from the article. The archive match is a lead, not proof of compromise.';
+        caution.textContent = 'AI-generated from the article. The IOC match is a lead, not proof of compromise.';
         card.append(caution);
         li.append(card);
       } else if (preview && preview.overview) {
@@ -278,7 +296,12 @@ SCRIPT = """<script>
       link.rel = 'noopener noreferrer'; link.textContent = 'Read full article ↗';
       li.append(link); list.append(li);
     });
-    body.append(list);
+    if (item.articles.length) body.append(list);
+    else {
+      const missing = document.createElement('p');
+      missing.textContent = 'No source link was provided in the IOC CSV.';
+      body.append(missing);
+    }
     drawer.hidden = shade.hidden = false;
     document.getElementById('ioc-close').focus();
   }
@@ -312,7 +335,7 @@ def drawer_html(matches: list[dict], article_briefs: dict | None = None) -> str:
             f'<script id="ioc-article-briefs" type="application/json">{brief_blob}</script>'
             '<div id="ioc-shade" class="ioc-shade" hidden></div>'
             '<aside id="ioc-drawer" class="ioc-drawer" role="dialog" aria-modal="true" '
-            'aria-label="Múcaro indicator sources" hidden>'
+            'aria-label="Indicator details" hidden>'
             '<button id="ioc-close" class="ioc-close" type="button">Close</button>'
             '<div class="ioc-drawer-brand">Múcaro VulnScope <span>Source intelligence</span></div>'
             '<div id="ioc-drawer-body"></div></aside>' + SCRIPT)

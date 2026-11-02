@@ -150,7 +150,7 @@ class ArticleBriefTests(unittest.TestCase):
                     page = fh.read()
                 self.assertIn("Source-backed brief for the matched IP.", page)
                 self.assertIn("Múcaro AI Brief", page)
-                self.assertIn("Exact archive match", page)
+                self.assertIn("Exact IOC match", page)
             with open(os.path.join(tmp, "out", "results.json"), encoding="utf-8") as fh:
                 self.assertEqual(json.load(fh)["article_briefs"][url]["brief"]["source"]["url"], url)
 
@@ -175,6 +175,8 @@ class ArticleBriefTests(unittest.TestCase):
                 with urllib.request.urlopen(base) as response:
                     index = response.read().decode()
                 self.assertIn("Generate article briefs with OpenAI", index)
+                self.assertIn('class="article-brief-progress"', index)
+                self.assertIn('class="analyst-chat results-assistant-drawer"', index)
                 csrf = re.search(r'action="article-briefs"><input type="hidden" name="csrf" value="([^"]+)', index)
                 self.assertIsNotNone(csrf)
 

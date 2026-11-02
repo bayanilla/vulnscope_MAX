@@ -70,7 +70,7 @@
 
   const toggle = document.getElementById('btn-ai');
   if (!toggle) return;
-  const match = location.pathname.match(/^\/runs\/([a-f0-9]{16})\/explorer\.html$/);
+  const match = location.pathname.match(/^\/runs\/([a-f0-9]{16})\/(?:explorer\.html)?$/);
   if (!match) return; // Downloaded, standalone reports have no run-scoped AI endpoint.
   const runUrl = `/runs/${match[1]}/`;
   const close = root.querySelector('.ai-chat-close');

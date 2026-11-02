@@ -4,7 +4,7 @@ GET  /            upload form
 POST /analyze     run the workflow on the uploaded files
 GET  /runs/<id>/  links to a run's reports; files under it are served read-only
 POST /runs/<id>/brief  generate the Security Assistant brief (when an LLM is configured)
-POST /runs/<id>/article-briefs  generate Múcaro article briefs from matched sources
+POST /runs/<id>/article-briefs  generate article briefs from matched sources
 POST /runs/<id>/ask    JSON {question, history} -> {answer, answer_html}
 GET/POST /settings     choose the AI provider and enter its API key (kept in memory only)
 """
@@ -85,9 +85,9 @@ technical report.</p>
 <label for="scans">Vulnerability scans</label>
 <input id="scans" type="file" name="scans" multiple>
 <div class="hint">Nessus .nessus (preferred) or Nessus CSV export.</div>
-<label for="ioc_archive">Múcaro IOC Archive (optional)</label>
+<label for="ioc_archive">IOC CSV (optional)</label>
 <input id="ioc_archive" type="file" name="ioc_archive" accept=".csv,text/csv">
-<div class="hint">Export a 60-day IOC Archive CSV from Múcaro to link exact matches to their source articles.</div>
+<div class="hint">Use a CSV with type and indicator columns. Source links are optional.</div>
 <label for="nets">Internal networks (optional)</label>
 <input id="nets" type="text" name="internal_nets" placeholder="10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16">
 <div class="hint">Anything outside these ranges is treated as the internet. Leave blank for private ranges.</div>
@@ -146,13 +146,59 @@ def _page(title, body):
             f"<body>{theme_control()}{body}</body></html>")
 
 
-CHAT = """<section class="analyst-chat" data-ai-chat data-ask-url="ask"><h2>Security Assistant</h2>
-<p class="hint">{where}</p>
+CHAT = """<section id="analyst-chat" class="analyst-chat results-assistant-drawer" data-ai-chat data-ask-url="ask"
+role="dialog" aria-modal="false" aria-labelledby="ai-chat-title" hidden>
+<div class="ai-chat-header"><h2 id="ai-chat-title">Security Assistant</h2>
+<button type="button" class="ai-chat-close" aria-label="Close Security Assistant">Close</button></div>
+<p class="ai-chat-status">{status}</p><a class="ai-chat-settings" href="{settings}">Change provider</a>
 {brief}
-<div class="ai-chat-log" role="log" aria-label="Security Assistant conversation" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
-<form class="ai-chat-form"><label for="q">Ask about these results</label>
+<div class="ai-chat-log" role="log" aria-label="Security Assistant conversation" aria-live="polite"
+aria-relevant="additions" tabindex="0"{unready}></div>
+<form class="ai-chat-form"{unready}><label for="q">Ask about these results</label>
 <textarea id="q" rows="3" maxlength="4000" placeholder="e.g. Why is fs01 a P1? How do I confirm the callback from web01 in Zeek?"></textarea>
 <button type="submit" class="ai-chat-submit">Ask</button> <span class="ai-chat-busy hint" role="status"></span></form></section>"""
+
+RESULTS_CHAT_CSS = """
+.results-assistant-trigger{margin:0 0 16px}
+.results-assistant-drawer[hidden],.results-assistant-drawer [hidden],.article-brief-progress[hidden]{display:none!important}
+.results-assistant-drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100vw);max-width:none;
+z-index:1000;box-sizing:border-box;padding:18px;display:flex;flex-direction:column;gap:10px;
+background:var(--bg);color:var(--fg);border-left:1px solid var(--line);box-shadow:-18px 0 48px #0008;
+animation:assistant-slide-in .3s cubic-bezier(.2,.8,.2,1)}
+.results-assistant-drawer .ai-chat-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.results-assistant-drawer h2{margin:0;font-size:18px}.results-assistant-drawer .ai-chat-close{margin:0}
+.results-assistant-drawer .ai-chat-status{font-size:12px;margin:0;max-height:5em;overflow:auto}
+.results-assistant-drawer .ai-chat-settings{align-self:flex-start;font-size:12px}
+.results-assistant-drawer .ai-chat-log{height:auto;min-height:0;flex:1}
+.results-assistant-drawer .ai-chat-form{flex:none}
+.results-assistant-drawer .ai-chat-form label{margin-top:0}
+.results-assistant-drawer .ai-chat-brief form{margin:0}
+.article-brief-progress{display:inline-flex;align-items:center;gap:8px;margin-left:10px}
+.article-brief-spinner{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--accent);
+border-radius:50%;animation:article-brief-spin .8s linear infinite}
+@keyframes assistant-slide-in{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes article-brief-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.results-assistant-drawer,.article-brief-spinner{animation:none}}
+"""
+
+ARTICLE_PROGRESS_SCRIPT = """<script>
+(() => {
+  const form = document.getElementById('article-briefs-form');
+  if (!form) return;
+  const button = form.querySelector('button');
+  const progress = form.querySelector('.article-brief-progress');
+  form.addEventListener('submit', () => {
+    button.disabled = true;
+    button.textContent = 'Generating article briefs…';
+    progress.hidden = false;
+  });
+  window.addEventListener('pageshow', () => {
+    button.disabled = false;
+    button.textContent = 'Generate article briefs with OpenAI';
+    progress.hidden = true;
+  });
+})();
+</script>"""
 
 
 def _chat_asset(name: str) -> str:
@@ -390,16 +436,18 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 items = f"<ul>{items}</ul>"
             here = f"/runs/{run_id}/"
             cfg, ai = self._llm(), ""
-            if cfg is not None and not cfg.ready:
-                ai = ("<h2>Security Assistant</h2><p>No AI provider selected yet. Use Anthropic, OpenAI or a model you host "
-                      f'to interpret these results and answer questions.</p><p><a href="/settings?next={here}">'
-                      "Choose a provider and enter an API key</a></p>")
-            elif cfg is not None:
-                brief = ("" if os.path.exists(os.path.join(run_dir, "ai_analyst_brief.html")) else
-                         f'<form method="post" action="brief"><input type="hidden" name="csrf" value="{csrf}">'
+            trigger = ""
+            if cfg is not None:
+                brief = (f'<div class="ai-chat-brief"><form method="post" action="brief">'
+                         f'<input type="hidden" name="csrf" value="{csrf}">'
                          '<button type="submit">Generate Security Assistant brief</button>'
-                         ' <span class="hint">Takes a minute or two.</span></form>')
-                ai = CHAT.format(where=_where(cfg).replace("{next}", here), brief=brief)
+                         ' <span class="hint">Takes a minute or two.</span></form></div>'
+                         if cfg.ready and not os.path.exists(os.path.join(run_dir, "ai_analyst_brief.html")) else "")
+                ai = CHAT.format(status=html.escape(_where_text(cfg) if cfg.ready else "No AI provider selected yet."),
+                                 settings=f"/settings?next={here}", brief=brief,
+                                 unready="" if cfg.ready else " hidden")
+                trigger = ('<button id="btn-ai" class="results-assistant-trigger" type="button" '
+                           'aria-controls="analyst-chat" aria-expanded="false">Security Assistant</button>')
             article_ui = ""
             try:
                 result = load_results(run_dir)
@@ -407,25 +455,28 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 saved_urls = set(result.get("article_briefs", {}))
                 if article_urls:
                     remaining = len(article_urls - saved_urls)
-                    article_ui = (f"<h2>Múcaro article briefs</h2><p>{len(saved_urls & article_urls)} saved; "
+                    article_ui = (f"<h2>Article briefs</h2><p>{len(saved_urls & article_urls)} saved; "
                                   f"{remaining} matched article(s) without a saved brief.</p>")
                     if remaining and cfg is not None and cfg.provider == "openai" and cfg.redact:
                         article_ui += (f'<p><a href="/settings?next={here}">Turn off IP/hostname redaction</a>'
                                        ' to include exact source indicators in article briefs.</p>')
                     elif remaining and cfg is not None and cfg.provider == "openai" and cfg.api_key:
-                        article_ui += (f'<form method="post" action="article-briefs">'
+                        article_ui += (f'<form id="article-briefs-form" method="post" action="article-briefs">'
                                        f'<input type="hidden" name="csrf" value="{csrf}">'
                                        '<button type="submit">Generate article briefs with OpenAI</button>'
-                                       ' <span class="hint">Sends matched article text to OpenAI using your configured key.</span></form>')
+                                       ' <span class="hint">Sends matched article text to OpenAI using your configured key.</span>'
+                                       ' <span class="article-brief-progress" role="status" aria-live="polite" hidden>'
+                                       '<span class="article-brief-spinner" aria-hidden="true"></span>'
+                                       'Generating briefs. This may take a few minutes…</span></form>')
                     elif remaining and cfg is not None:
                         article_ui += (f'<p><a href="/settings?next={here}">Choose OpenAI and enter an API key</a>'
                                        ' to generate these article briefs.</p>')
             except (OSError, ValueError):
                 pass
-            chat_style = f"<style>{_chat_asset('analyst_chat.css')}</style>" if ai and cfg and cfg.ready else ""
-            chat_script = f"<script>{_chat_asset('analyst_chat.js')}</script>" if chat_style else ""
-            body = (f"{chat_style}<h1>Results</h1>{items}{article_ui}{ai}"
-                    f"<p><a href=\"/\">New analysis</a></p>{chat_script}")
+            chat_style = f"<style>{_chat_asset('analyst_chat.css')}{RESULTS_CHAT_CSS}</style>" if ai else ""
+            chat_script = f"<script>{_chat_asset('analyst_chat.js')}</script>" if ai else ""
+            body = (f"{chat_style}<h1>Results</h1>{trigger}{items}{article_ui}{ai}"
+                    f"<p><a href=\"/\">New analysis</a></p>{chat_script}{ARTICLE_PROGRESS_SCRIPT}")
             self._send(200, _page("Results", body))
 
         def _json(self, code, obj):

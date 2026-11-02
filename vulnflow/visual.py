@@ -18,7 +18,7 @@ VISUAL_CSS = """
 :root,[data-theme]{--p1:#ef4444;--p2:#f97316;--p3:#eab308;--p4:#64748b;--p-tx:#0b1020;
 --sev-critical:#f87171;--sev-high:#fb923c;--sev-medium:#facc15;--sev-low:#60a5fa;--sev-none:#94a3b8;
 --e-return:#c084fc;--e-ips:#ef4444;--e-spread:#fb923c;--e-internet:#94a3b8}
-[data-theme="light"],[data-theme="classic-windows"],[data-theme="aqua"],[data-theme="win2k"]{
+[data-theme="light"]{
 --p1:#b91c1c;--p2:#c2410c;--p3:#a16207;--p4:#475569;--p-tx:#fff;
 --sev-critical:#b91c1c;--sev-high:#c2410c;--sev-medium:#a16207;--sev-low:#1d4ed8;--sev-none:#64748b;
 --e-return:#7c3aed;--e-ips:#dc2626;--e-spread:#c2410c;--e-internet:#64748b}

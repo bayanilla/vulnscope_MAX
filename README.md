@@ -16,7 +16,7 @@ Browse the [screenshot gallery](screenshots/README.md) for the upload workflow, 
 ## Quick start
 
 **Want to see the indicators immediately?** The download includes a ready-made, synthetic
-250-host demo with 28 exact Múcaro archive matches from five articles on five hosts. Open
+250-host demo with 28 exact IOC matches from five articles on five hosts. Open
 `example_output/explorer.html` in your browser, or open
 `example_output/executive_summary.html` and `example_output/technical_report.html`.
 Click an indicator to see its saved article overview and source link. These pages work as
@@ -32,9 +32,9 @@ python3 -m vulnflow analyze samples \
 python3 -m vulnflow analyze /path/to/log-bundle -o out \
     --internal-net 10.0.0.0/8 --internal-net 172.16.0.0/12
 
-# Optional: add a Múcaro IOC Archive CSV export for source-article links
+# Optional: add a typed IOC CSV, with optional source links
 python3 -m vulnflow analyze /path/to/log-bundle -o out \
-    --ioc-archive /path/to/mucaro-60-day-ioc-archive.csv
+    --ioc-csv /path/to/indicators.csv
 
 # 3. Point it at a folder and open the interactive host explorer in your browser
 python3 -m vulnflow explore ~/Documents/case-logs            # add --host 10.0.1.10 to open on one host
@@ -47,27 +47,35 @@ Run tests with `python3 -m unittest discover -s tests` (no model or network need
 
 For the same demo in the upload page, select the `samples` folder under **Analyze files with
 Múcaro VulnScope** and click **Analyze folder**. The folder already contains its telemetry, scan,
-and Múcaro IOC Archive CSV. See [the sample guide](samples/README.md) for the synthetic scenario.
+and IOC CSV. See [the sample guide](samples/README.md) for the synthetic scenario.
 
-### Múcaro IOC Archive links
+### IOC CSV matches
 
-Export the **IOC Archive** as CSV in Múcaro, selecting the 60-day window and the desired filters. Add
-that CSV with `--ioc-archive`, include it in an analyzed folder, or upload it with telemetry and a Nessus
-scan on the local upload page. VulnScope compares exact IPs in network sessions and IDS/IPS alerts,
+Add a typed IOC CSV with `--ioc-csv`, include it in an analyzed folder, or upload it with telemetry and a Nessus
+scan on the local upload page. Use `type,indicator` or `indicatorType,indicator` as the column headers;
+supported types are `ip`, `domain`, `url`, `hash`, `cve`, and `package`. Optional `source_url` or
+`articleUrls` columns add source links. For example:
+
+```csv
+type,indicator,source_url
+ip,203.0.113.45,https://research.example/report
+domain,example.test,
+```
+
+VulnScope compares exact IPs in network sessions and IDS/IPS alerts,
 CVEs in scan findings, and domains, URLs, hashes, and packages in matching Zeek event fields. Matched
 indicators appear in the executive report, technical report, and host Explorer. Click one in the HTML
-pages to open its source article links. The links are saved in the standalone output, so the popup
-does not depend on Múcaro's feed remaining live. For matched source articles, VulnScope reads the
+pages to open its details and any source links. The links are saved in the standalone output. For matched source articles, VulnScope reads the
 public page's title and description or lead paragraphs and saves a short overview alongside the
 link. This is a source preview, not a Múcaro AI Brief. Use `--no-article-preview` to skip fetching,
 or `--article-preview-cache /path/to/previews.json` to reuse saved overviews offline. If a page
 cannot be read, its link remains available. An IOC match is a lead for review, not confirmation
-of compromise. This import uses a CSV snapshot; automated API retrieval is a separate step.
+of compromise. The legacy `--ioc-archive` flag remains available for existing scripts.
 
 ### Múcaro article AI briefs
 
 On the local upload page, open **Security Assistant settings**, choose OpenAI, and enter your model and
-OpenAI API key. After analyzing a run with Múcaro archive matches, choose **Generate article briefs
+OpenAI API key. After analyzing a run with IOC matches that include source article links, choose **Generate article briefs
 with OpenAI** on its results page. VulnScope reads each unique matched source article, sends its
 text through a bundled copy of Múcaro's article prompt and structured output schema, and saves
 the resulting brief in `results.json` and the standalone executive, technical, and Explorer HTML
@@ -189,8 +197,9 @@ and reports. It binds to 127.0.0.1 by default and has no authentication, so put 
 proxy before exposing it to other users.
 
 The upload page, AI settings, results page, and newly generated HTML reports share a theme picker.
-It offers Mucaro's SOC Dark, Nord Calm, High Contrast, Light, Classic Windows, Matrix,
-Mac OS X Aqua, and Windows 2000 styles. The browser remembers the choice locally.
+It offers SOC Dark, Olive Drab, Matrix, High Contrast, and Light. The browser remembers
+the choice locally. The standalone reports embed the matching signal, map, or soft-gradient
+background treatment, so they work offline. High Contrast uses a plain black background.
 
 Uploads are streamed to disk in 64 KB chunks, so memory use stays flat whatever the file size. The default
 limit is 1 GB per upload; change it with `serve --max-upload-mb N`.

@@ -13,11 +13,14 @@ const iocButton = (type, value, label = value) => {
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // backdrop follows the report theme picked on the vulnflow pages (same browser storage when served);
 // light themes get a dark slate, since the glowing graph needs a dark canvas
-const BACKDROP = {dark: ['#16223a', '#0f172a'], nord: ['#434c5e', '#3b4252'], 'high-contrast': ['#0a0a0a', '#000000'],
-  matrix: ['#05200c', '#020b04']};
+const BACKDROP = {dark: ['#16223a', '#020617'], 'olive-drab': ['#263021', '#10150e'],
+  'high-contrast': ['#0a0a0a', '#000000'], matrix: ['#05200c', '#020b04'],
+  light: ['#3a4a60', '#283548']};
 const SLATE = ['#3a4a60', '#283548'];
 let themeName = 'dark';
 try { themeName = localStorage.getItem('vulnflow-theme') || 'dark'; } catch (_) {}
+if (!BACKDROP[themeName]) themeName = 'dark';
+document.documentElement.dataset.theme = themeName;
 const [BG_IN, BG_OUT] = BACKDROP[themeName] || SLATE;
 document.documentElement.style.setProperty('--bg', BG_OUT);
 const SEV = {Critical: '#ff3b5c', High: '#ff8a3d', Medium: '#ffd23f', Low: '#4dabf7', Info: '#8da2b5', '': '#8da2b5'};
@@ -503,7 +506,7 @@ function tip(n, x, y) {
   if (n.domain) {
     const observed = n.info.observed && n.info.observed['dns event'];
     h = `<b>${esc(n.d.id)}</b> <span class="m">domain IOC · ${observed ? 'observed DNS query' : 'observed domain match'}</span>` +
-      '<br>Exact Múcaro archive match. A DNS query alone does not prove a connection or compromise.' +
+      '<br>Exact IOC match. A DNS query alone does not prove a connection or compromise.' +
       '<br><span style="color:#2ee6d6">Click for report overview</span>';
   } else if (n.ext) {
     const a = n.info;
@@ -515,7 +518,7 @@ function tip(n, x, y) {
       (a.alerts || a.alerts_blocked ? `<br>IPS: ${a.alerts} not blocked, ${a.alerts_blocked} blocked` : '') +
       (a.signatures.length ? `<br><span class="m">${esc(a.signatures.join('; '))}</span>` : '') +
       (a.returned && a.dir === 'both' ? '<br><span style="color:#b98cff">The host also connected out to this address (lead)</span>' : '') +
-      (iocIds.has('ip:' + a.ip) ? '<br><span style="color:#2ee6d6">Click for Múcaro report overview</span>' : '');
+      (iocIds.has('ip:' + a.ip) ? '<br><span style="color:#2ee6d6">Click for IOC details</span>' : '');
   } else {
     const d = n.d, info = state.mode === 'focus' && n.info && n.id !== state.focus ? n.info : null;
     h = `<b>${esc(d.name || d.id)}</b>${d.name ? ` <span class="m">${esc(d.id)}</span>` : ''}<br>` +
@@ -561,7 +564,7 @@ function renderList() {
   $('hostlist').innerHTML = rows.map(id => {
     const d = nodes.get(id).d, F = D.focus[id];
     const iocCount = iocCounts[id] || 0;
-    const iocHint = iocCount ? `<span class="ioc-host-badge" title="${iocCount} exact Múcaro archive indicator match${iocCount === 1 ? '' : 'es'}; review the source and traffic" aria-label="${iocCount} IOC match${iocCount === 1 ? '' : 'es'}">IOC ${iocCount}</span>` : '';
+  const iocHint = iocCount ? `<span class="ioc-host-badge" title="${iocCount} exact IOC match${iocCount === 1 ? '' : 'es'}; review the source and traffic" aria-label="${iocCount} IOC match${iocCount === 1 ? '' : 'es'}">IOC ${iocCount}</span>` : '';
     return `<div class="hrow${id === state.focus ? ' on' : ''}" role="listitem" tabindex="0" data-id="${esc(id)}">` +
       `<span class="pill ${esc(d.pri)}">${esc(d.pri)}</span><span class="nm">${esc((d.name || id).split('.')[0])} ${iocHint}` +
       `<br><span class="ip">${esc(id)} · ${F.attackers_total} N/S · ${F.peers_total} E/W</span></span>` +
@@ -573,7 +576,7 @@ const iocHostTotal = Object.values(iocCounts).filter(count => count > 0).length;
 if (iocHostTotal) {
   $('ioc-filter').hidden = false;
   $('ioc-host-count').textContent = `(${iocHostTotal})`;
-  $('ioc-filter').title = 'Show only hosts with exact Múcaro archive indicator matches';
+  $('ioc-filter').title = 'Show only hosts with exact IOC matches';
   $('ioc-filter').addEventListener('click', () => {
     iocOnly = !iocOnly;
     $('ioc-filter').setAttribute('aria-pressed', String(iocOnly));
@@ -633,9 +636,9 @@ function renderPanel(id) {
     (F.peers_total > F.peers.length ? `<div class="row"><span></span><span class="sub">${F.peers_total - F.peers.length} more not shown</span></div>` : '') +
     `<h3>Vulnerabilities</h3>${fds || '<div class="fd">None at the configured severity.</div>'}` +
     (D.ioc_matches && D.ioc_matches.some(item => item.hosts.includes(id))
-      ? `<h3>Múcaro IOC matches</h3><div class="note">Exact archive matches are leads for review.</div>` +
+      ? `<h3>IOC matches</h3><div class="note">Exact IOC matches are leads for review.</div>` +
         D.ioc_matches.filter(item => item.hosts.includes(id)).map(item =>
-          `<div class="fd">${iocButton(item.type, item.value)} <span class="meta">${esc(item.type)} · ${item.articles.length} source article(s)</span> · ${iocButton(item.type, item.value, 'View summary')}</div>`).join('')
+          `<div class="fd">${iocButton(item.type, item.value)} <span class="meta">${esc(item.type)} · ${item.articles.length} source link(s)</span> · ${iocButton(item.type, item.value, 'View details')}</div>`).join('')
       : '') +
     `<div class="note">This view shows all traffic to and from the host in the telemetry: outside addresses on the left, internal hosts on the right. Inbound outside traffic is targeting, not proof of compromise. ` +
     `Likelihood is an estimate from observed sessions, the ports in use and the scanner's findings on each peer. Use it to decide where to look first; only host evidence confirms a compromise. Click a row for the reasons.</div>`;

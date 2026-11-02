@@ -1,6 +1,6 @@
 # Múcaro VulnScope: Executive Summary
 
-Prepared 2026-10-31. Network activity analysed from 2026-10-12T00:01:19Z to 2026-10-18T03:11:38Z.
+Prepared 2026-11-02. Network activity analysed from 2026-10-12T00:01:19Z to 2026-10-18T03:11:38Z.
 
 ## Bottom line
 
@@ -16,7 +16,7 @@ Of 448 vulnerabilities reported by the scanner, 48 sit on services with no obser
 
 4 active servers seen on the network were not in the scan, so their risk is unknown.
 
-28 observed indicators matched the imported Múcaro IOC Archive. Review the source reports and surrounding telemetry; a match alone does not confirm malicious activity.
+28 observed indicators matched the imported IOC CSV. Review the source information and surrounding telemetry; a match alone does not confirm malicious activity.
 
 ## Key numbers
 
@@ -30,7 +30,7 @@ Of 448 vulnerabilities reported by the scanner, 48 sit on services with no obser
 | Exploitable vulnerabilities with observed traffic | 28 |
 | Systems with corroborated evidence / to investigate / possible next targets | 2 / 0 / 2 |
 | Active servers missing from the scan | 4 |
-| Múcaro IOC Archive matches | 28 |
+| IOC CSV matches | 28 |
 
 ## Top risks
 
@@ -55,11 +55,11 @@ The assessment combines the vulnerability scan with 9,782 observed network sessi
 
 Full evidence for every finding is in the technical report.
 
-## Múcaro IOC matches
+## IOC matches
 
-Exact matches to the imported IOC Archive are leads for review, not proof of malicious activity.
+Exact matches to the imported IOC CSV are leads for review, not proof of malicious activity.
 
-| Indicator | Type | Related hosts | Observed in | Source articles |
+| Indicator | Type | Related hosts | Observed in | Source links |
 |---|---|---|---|---|
 | 247.cdnflare.xyz | domain | 10.10.1.11 | 1 dns event | https://sansec.io/research/stylesmuggler-0day |
 | adsaw.cfd | domain | 10.10.2.25 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/ |

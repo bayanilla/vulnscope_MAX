@@ -11,6 +11,7 @@ import tempfile
 
 from .correlate import PRIORITY_LABELS
 from .branding import PRODUCT_NAME, icon_data_uri
+from .theme_backgrounds import texture_data
 
 
 def _c(v) -> str:
@@ -92,7 +93,7 @@ def executive_summary(res: dict) -> str:
                       f"{'was' if len(gaps) == 1 else 'were'} not in the scan, so their risk is unknown.")
     if res.get("ioc_matches"):
         bottom.append(f"{_plural(len(res['ioc_matches']), 'observed indicator')} matched the imported "
-                      "Múcaro IOC Archive. Review the source reports and surrounding telemetry; "
+                      "IOC CSV. Review the source information and surrounding telemetry; "
                       "a match alone does not confirm malicious activity.")
     L += ["\n\n".join(bottom), "", "## Key numbers", "",
           "| Measure | Value |", "|---|---|",
@@ -105,7 +106,7 @@ def executive_summary(res: dict) -> str:
           f"| Systems with corroborated evidence / to investigate / possible next targets | {len(corr)} / {len(inv)} / {len(spread)} |",
           f"| Active servers missing from the scan | {len(gaps)} |"]
     if "ioc_matches" in res:
-        L.append(f"| Múcaro IOC Archive matches | {len(res['ioc_matches'])} |")
+        L.append(f"| IOC CSV matches | {len(res['ioc_matches'])} |")
     L += ["", "## Top risks", ""]
     top = [r for r in F if r["priority"] in ("P1", "P2")][:5] or F[:3]
     if not top:
@@ -309,15 +310,16 @@ def technical_report(res: dict) -> str:
 
 # ---------------------------------------------------------------- HTML
 THEMES = (
-    ("dark", "SOC Dark"), ("nord", "Nord Calm"), ("high-contrast", "High Contrast"),
-    ("light", "Light"), ("classic-windows", "Classic Windows"), ("matrix", "Matrix"),
-    ("aqua", "Mac OS X Aqua"), ("win2k", "Windows 2000"),
+    ("dark", "SOC Dark"), ("olive-drab", "Olive Drab"),
+    ("matrix", "Matrix"), ("high-contrast", "High Contrast"), ("light", "Light"),
 )
 
 THEME_INIT = """<script>
-try { document.documentElement.dataset.theme = localStorage.getItem('vulnflow-theme') || 'dark'; }
-catch (_) { document.documentElement.dataset.theme = 'dark'; }
-</script>"""
+const supportedThemes = new Set(__THEMES__);
+let savedTheme = 'dark';
+try { savedTheme = localStorage.getItem('vulnflow-theme') || 'dark'; } catch (_) {}
+document.documentElement.dataset.theme = supportedThemes.has(savedTheme) ? savedTheme : 'dark';
+</script>""".replace("__THEMES__", json.dumps([value for value, _ in THEMES]))
 
 
 def theme_control() -> str:
@@ -332,18 +334,15 @@ def theme_control() -> str:
 
 
 CSS = """
-:root,[data-theme="dark"]{--desktop:#0f172a;--bg:#0f172a;--fg:#f1f5f9;--muted:#cbd5e1;--line:#334155;--head:#1e293b;--accent:#22d3ee;--accent-text:#082f49;--code:#1e293b;--panel:#111c31;--radius:10px;--bar:#0b1221;--shadow:none}
-[data-theme="light"]{--desktop:#b9c4d1;--bg:#cfd8e3;--fg:#0f172a;--muted:#334155;--line:#a3b1c2;--head:#bfcad7;--accent:#1d4ed8;--accent-text:#fff;--code:#c2ccd8;--panel:#dbe2ea;--radius:10px;--bar:#c2ccd8;--shadow:0 12px 34px #47556922}
-[data-theme="nord"]{--desktop:#3b4252;--bg:#3b4252;--fg:#eceff4;--muted:#d8dee9;--line:#616e83;--head:#434c5e;--accent:#88c0d0;--accent-text:#2e3440;--code:#434c5e;--panel:#3b4252;--radius:10px;--bar:#2e3440;--shadow:none}
-[data-theme="high-contrast"]{--desktop:#000;--bg:#000;--fg:#fff;--muted:#f1f5f9;--line:#fff;--head:#111;--accent:#fde047;--accent-text:#000;--code:#111;--panel:#000;--radius:0;--bar:#000;--shadow:none}
-[data-theme="matrix"]{--desktop:#020b04;--bg:#020b04;--fg:#86efac;--muted:#4ade80;--line:#166534;--head:#052e16;--accent:#22c55e;--accent-text:#000;--code:#052e16;--panel:#031508;--radius:4px;--bar:#001a08;--shadow:none}
-[data-theme="classic-windows"]{--desktop:#3c9bbd;--bg:#ece9d8;--fg:#17345e;--muted:#475e79;--line:#8ca7ca;--head:#d7e8f9;--accent:#0b5dcc;--accent-text:#fff;--code:#fffdf5;--panel:#fffdf5;--radius:3px;--bar:linear-gradient(#3988f8,#0b5dcc 52%,#0b4daf);--shadow:2px 4px 12px #17345e55}
-[data-theme="aqua"]{--desktop:#8095ae;--bg:#e8edf3;--fg:#1b2938;--muted:#42566b;--line:#9aabba;--head:#dce5ee;--accent:#2879cb;--accent-text:#fff;--code:#f8fbff;--panel:#f8fbff;--radius:12px;--bar:linear-gradient(#f7fbff,#9dabbc);--shadow:0 12px 28px #22344955}
-[data-theme="win2k"]{--desktop:#3a6ea5;--bg:#d4d0c8;--fg:#000;--muted:#303030;--line:#808080;--head:#e8e5dc;--accent:#0a246a;--accent-text:#fff;--code:#fff;--panel:#d4d0c8;--radius:0;--bar:linear-gradient(90deg,#0a246a,#2b5a9c);--shadow:2px 2px 0 #404040}
-html{background:var(--desktop);color-scheme:dark}
-[data-theme="light"],[data-theme="classic-windows"],[data-theme="aqua"],[data-theme="win2k"]{color-scheme:light}
+:root,[data-theme="dark"]{--desktop:#020617;--bg:#020617;--fg:#f1f5f9;--muted:#cbd5e1;--line:#334155;--head:#1e293b;--accent:#22d3ee;--accent-text:#082f49;--code:#1e293b;--panel:#0f172a;--radius:10px;--bar:#020617;--shadow:none;--background-art:url('__DARK_TEXTURE__');--background-overlay:linear-gradient(#02061755,#020617aa);--body-tint:#020617dd}
+[data-theme="olive-drab"]{--desktop:#10150e;--bg:#10150e;--fg:#f0f0e9;--muted:#b7bcab;--line:#62613e;--head:#192017;--accent:#d2c681;--accent-text:#10150e;--code:#1d261b;--panel:#192017;--radius:4px;--bar:#10150e;--shadow:none;--background-art:url('__WORLD_TEXTURE__');--background-overlay:linear-gradient(#10150e33,#10150e99);--body-tint:#10150ed1}
+[data-theme="light"]{--desktop:#b9c4d1;--bg:#cfd8e3;--fg:#0f172a;--muted:#334155;--line:#a3b1c2;--head:#bfcad7;--accent:#1d4ed8;--accent-text:#fff;--code:#c2ccd8;--panel:#dbe2ea;--radius:10px;--bar:#c2ccd8;--shadow:0 12px 34px #47556922;--background-art:radial-gradient(at 8% 0%,#2f4b7c1a,transparent 48%),radial-gradient(at 95% 65%,#2f4b7c0b,transparent 50%),linear-gradient(115deg,transparent 38%,#2f4b7c06 49%,transparent 60%);--background-overlay:linear-gradient(#cfd8e355,#cfd8e355);--body-tint:#cfd8e3d9}
+[data-theme="high-contrast"]{--desktop:#000;--bg:#000;--fg:#fff;--muted:#f1f5f9;--line:#fff;--head:#111;--accent:#fde047;--accent-text:#000;--code:#111;--panel:#000;--radius:0;--bar:#000;--shadow:none;--background-art:none;--background-overlay:none;--body-tint:#000}
+[data-theme="matrix"]{--desktop:#020b04;--bg:#020b04;--fg:#86efac;--muted:#4ade80;--line:#166534;--head:#052e16;--accent:#22c55e;--accent-text:#000;--code:#052e16;--panel:#031508;--radius:4px;--bar:#001a08;--shadow:none;--background-art:url('__MATRIX_TEXTURE__');--background-overlay:linear-gradient(#020b0455,#020b04bb);--body-tint:#020b04d9}
+html{background-color:var(--desktop);background-image:var(--background-overlay),var(--background-art);background-position:center;background-size:cover;background-attachment:fixed;color-scheme:dark}
+[data-theme="light"]{color-scheme:light}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;max-width:1100px;min-height:100vh;margin:0 auto;padding:24px 22px;box-shadow:var(--shadow)}
+body{background:var(--body-tint);color:var(--fg);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;max-width:1100px;min-height:100vh;margin:0 auto;padding:24px 22px;box-shadow:var(--shadow)}
 h1{font-size:1.65rem;margin-top:.8rem}h2{margin-top:2rem;border-bottom:1px solid var(--line);padding-bottom:.3rem}
 h3{margin-top:1.8rem;color:var(--accent)}h4{margin-bottom:.3rem}
 a{color:var(--accent)}a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
@@ -357,15 +356,13 @@ code{background:var(--code);padding:1px 4px;border-radius:3px}li{margin:.2rem 0}
 pre{background:var(--code);padding:10px;border-radius:var(--radius);overflow-x:auto}pre code{padding:0}
 blockquote{margin:.8rem 0;padding:.4rem .9rem;border-left:3px solid var(--accent);color:var(--muted)}
 [data-theme="matrix"] body{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
-[data-theme="classic-windows"] body,[data-theme="win2k"] body{font-family:Tahoma,Verdana,Arial,sans-serif}
-[data-theme="classic-windows"] .theme-bar,[data-theme="win2k"] .theme-bar{color:#fff}
-[data-theme="classic-windows"] .theme-bar{border-radius:7px 7px 0 0}
-[data-theme="win2k"] button,[data-theme="win2k"] .theme-bar select{border-radius:0;box-shadow:inset -1px -1px #404040,inset 1px 1px #fff,inset -2px -2px #808080,inset 2px 2px #e8e6e0}
-[data-theme="aqua"] button{border-radius:999px;background:linear-gradient(#83c3ff,#2879cb);box-shadow:inset 0 1px #fff9,0 2px 5px #22344944}
 [data-theme="high-contrast"] a{text-decoration:underline}
 @media(max-width:600px){body{padding:16px}.theme-bar{margin:-16px -16px 20px}.theme-brand{font-size:.9rem}.theme-bar select{max-width:145px}}
 @media print{html{background:#fff;color-scheme:light}body{box-shadow:none;max-width:none;padding:0;background:#fff;color:#000}.theme-bar{display:none}a{color:#000}}
 """
+CSS = (CSS.replace("__DARK_TEXTURE__", texture_data("signal"))
+          .replace("__WORLD_TEXTURE__", texture_data("world"))
+          .replace("__MATRIX_TEXTURE__", texture_data("matrix")))
 
 
 def _inline(t: str) -> str:
@@ -447,7 +444,7 @@ def md_to_html(md: str, title: str, inserts: dict | None = None,
     from . import visual
     from . import ioc_archive
     if inserts is not None and ioc_matches:
-        inserts = {**inserts, "Múcaro IOC matches": [{"replace_table": ioc_archive.table_html(ioc_matches)}]}
+        inserts = {**inserts, "IOC matches": [{"replace_table": ioc_archive.table_html(ioc_matches)}]}
     body = md_body(md, inserts)
     script = ""
     if inserts is not None:

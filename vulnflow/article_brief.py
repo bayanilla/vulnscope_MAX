@@ -1,4 +1,4 @@
-"""Múcaro-style article briefs for exact IOC archive matches.
+"""Múcaro-style article briefs for exact IOC matches with source links.
 
 The prompt and output schema are bundled from Múcaro Threat Monitor so a
 VulnScope user's OpenAI key can generate briefs without calling Múcaro's app.
@@ -162,7 +162,7 @@ def generate_article_briefs(res: dict, cfg: LLMConfig) -> dict:
             if match["value"] not in by_url[url]:
                 by_url[url].append(match["value"])
     if not by_url:
-        raise LLMError("No matched Múcaro source articles are available for AI briefs.")
+        raise LLMError("No matched source articles are available for AI briefs.")
     saved = res.setdefault("article_briefs", {})
     generated, unavailable, errors = 0, 0, []
     for url, indicators in by_url.items():

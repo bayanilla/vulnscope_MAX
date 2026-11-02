@@ -1,7 +1,7 @@
 # Múcaro VulnScope synthetic sample
 
 This one folder contains the 250-host sample telemetry and scan, five fabricated IOC storylines,
-and the Múcaro IOC Archive CSV that links exact matches to source articles. On the upload page,
+and an IOC CSV that links exact matches to source articles. On the upload page,
 choose `samples` under **Analyze files with Múcaro VulnScope** and click **Analyze folder**.
 The resulting executive report, technical report, and Explorer show 28 matched indicators across
 five source articles. Click a matched indicator to see its article overview and full source link.
@@ -24,7 +24,7 @@ and a second workstation matches delivery indicators from [Cisco Talos's Antino
 research](https://blog.talosintelligence.com/china-nexus-uat-11587-targets-government-and-policy-organizations-across-asia-with-antino-backdoor/).
 The original web01 exploitation and outbound-upload storyline remains in the baseline sample.
 
-| Demo host | Exact archive matches | Source article |
+| Demo host | Exact IOC matches | Source article |
 | --- | ---: | --- |
 | web02 (10.10.1.11) | 7 | Sansec StyleSmuggler |
 | mon01 (10.10.2.42) | 7 | Unit 42 Linux campaign |
@@ -32,8 +32,8 @@ The original web01 exploitation and outbound-upload storyline remains in the bas
 | fs01 (10.10.2.25) | 4 | Microsoft remote management abuse |
 | ws-049 (10.10.3.49) | 4 | Cisco Talos Antino |
 
-The bundled `mucaro_ioc_archive.csv` is a **28-indicator, source-reviewed subset** of the supplied
-60-day Múcaro export. It keeps this demo reproducible after the live 60-day window rotates. The
+The bundled `ioc_indicators.csv` is a **28-indicator, source-reviewed sample** with article links.
+It keeps this demo reproducible. The
 telemetry, scan result, and large transfer are fictional: the source articles do not document activity
 on these demo hosts, and a large transfer is an investigation lead rather than proof of exfiltration.
 

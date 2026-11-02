@@ -1,20 +1,22 @@
 # Múcaro VulnScope: Technical Analysis
 
-Generated 2026-10-31T10:56:29Z. Telemetry window 2026-10-12T00:01:19Z to 2026-10-18T03:11:38Z.
+Generated 2026-11-02T12:48:20Z. Telemetry window 2026-10-12T00:01:19Z to 2026-10-18T03:11:38Z.
 
 ## 1. Inputs and data quality
 
 | File | Format | Records read | Kept | Dropped | Notes |
 |---|---|---|---|---|---|
-| netflow_segment6.csv | generic | 112 | 112 | 0 |  |
-| paloalto_traffic.csv | paloalto | 2285 | 1315 | 970 missing or invalid IP | firewall timestamps are assumed to be UTC; 4 IPS/IDS alert(s) used as exploitation evidence |
-| quarterly_scan.nessus | nessus | 697 | 697 | 0 |  |
-| zeek_conn.log | zeek | 8343 | 8342 | 1 missing or invalid IP |  |
+| README.md | generic | 55 | 0 | 55 unmapped columns | could not find source/destination IP columns; header was: #, múcaro, vulnscope, synthetic, sample |
+| article_previews.json | generic | 25 | 0 | 25 unmapped columns | could not find source/destination IP columns; header was: { |
 | dns.log | zeek | 16 | 16 | 0 | Zeek stream records preserved as events; only conn sessions and notice alerts affect scoring |
 | flows.csv | generic | 18 | 18 | 0 |  |
+| netflow_segment6.csv | generic | 112 | 112 | 0 |  |
 | notice.log | zeek | 1 | 1 | 0 | 1 IPS/IDS alert(s) used as exploitation evidence |
+| paloalto_traffic.csv | paloalto | 2285 | 1315 | 970 missing or invalid IP | firewall timestamps are assumed to be UTC; 4 IPS/IDS alert(s) used as exploitation evidence |
+| quarterly_scan.nessus | nessus | 697 | 697 | 0 |  |
 | scan.csv | nessus_csv | 1 | 1 | 0 | Nessus CSV exports usually omit exploit availability; prefer the .nessus file |
-| large_mucaro_archive.csv | mucaro_ioc_archive | 28 | 28 | 0 |  |
+| zeek_conn.log | zeek | 8343 | 8342 | 1 missing or invalid IP |  |
+| ioc_indicators.csv | ioc_csv | 28 | 28 | 0 |  |
 
 Exact duplicate sessions removed: 1. Duplicate findings merged across scans: 0. IPS/IDS alerts loaded: 5. Internal address space: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, fc00::/7, fe80::/10, ::1/128.
 
@@ -11351,11 +11353,11 @@ Reachable hosts with High/Critical findings: 10.10.3.31, 10.10.2.20.
 - `normalized/zeek_events.jsonl`: other Zeek streams with stream identity and source fields
 - `normalized/ot_events.jsonl`: industrial protocol records with operation and message direction
 
-## Múcaro IOC matches
+## IOC matches
 
-Exact matches to the imported IOC Archive are leads for review, not proof of malicious activity.
+Exact matches to the imported IOC CSV are leads for review, not proof of malicious activity.
 
-| Indicator | Type | Related hosts | Observed in | Source articles |
+| Indicator | Type | Related hosts | Observed in | Source links |
 |---|---|---|---|---|
 | 247.cdnflare.xyz | domain | 10.10.1.11 | 1 dns event | https://sansec.io/research/stylesmuggler-0day |
 | adsaw.cfd | domain | 10.10.2.25 | 1 dns event | https://www.microsoft.com/en-us/security/blog/2026/09/29/phishing-abuses-rmm-tools-persistent-access/ |
