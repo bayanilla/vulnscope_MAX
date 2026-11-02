@@ -159,7 +159,8 @@ aria-relevant="additions" tabindex="0"{unready}></div>
 <button type="submit" class="ai-chat-submit">Ask</button> <span class="ai-chat-busy hint" role="status"></span></form></section>"""
 
 RESULTS_CHAT_CSS = """
-.results-assistant-trigger{margin:0 0 16px}
+.results-assistant-intro{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 16px}
+.results-assistant-trigger{margin:0}
 .results-assistant-drawer[hidden],.results-assistant-drawer [hidden],.article-brief-progress[hidden]{display:none!important}
 .results-assistant-drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100vw);max-width:none;
 z-index:1000;box-sizing:border-box;padding:18px;display:flex;flex-direction:column;gap:10px;
@@ -446,8 +447,11 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 ai = CHAT.format(status=html.escape(_where_text(cfg) if cfg.ready else "No AI provider selected yet."),
                                  settings=f"/settings?next={here}", brief=brief,
                                  unready="" if cfg.ready else " hidden")
-                trigger = ('<button id="btn-ai" class="results-assistant-trigger" type="button" '
-                           'aria-controls="analyst-chat" aria-expanded="false">Security Assistant</button>')
+                trigger = ('<div class="results-assistant-intro">'
+                           '<button id="btn-ai" class="results-assistant-trigger" type="button" '
+                           'aria-controls="analyst-chat" aria-expanded="false">Security Assistant</button>'
+                           '<span class="hint">Ask about this run’s findings, evidence, and next steps.</span>'
+                           '</div>')
             article_ui = ""
             try:
                 result = load_results(run_dir)
