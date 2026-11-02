@@ -55,7 +55,7 @@
       });
       const result = await response.json();
       if (!response.ok || result.error) throw new Error(result.error || `Request failed (${response.status})`);
-      addMessage('ai', 'AI analyst', result.answer_html, true);
+      addMessage('ai', 'Security Assistant', result.answer_html, true);
       history.push({role: 'user', content: question}, {role: 'assistant', content: result.answer});
       if (history.length > 40) history.splice(0, history.length - 40);
     } catch (error) {

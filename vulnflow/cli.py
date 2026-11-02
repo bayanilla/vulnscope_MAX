@@ -104,11 +104,11 @@ def main(argv=None) -> int:
                    help="skip fetching short source previews for matched archive articles")
     a.add_argument("--article-preview-cache", metavar="JSON",
                    help="saved short source overviews keyed by article URL (useful offline)")
-    a.add_argument("--llm", action="store_true", help="also write an AI analyst brief")
+    a.add_argument("--llm", action="store_true", help="also write a Security Assistant brief")
     common(a)
     _llm_flags(a)
 
-    b = sub.add_parser("brief", help="write an AI analyst brief for an existing output folder")
+    b = sub.add_parser("brief", help="write a Security Assistant brief for an existing output folder")
     b.add_argument("outdir")
     _llm_flags(b)
 
@@ -116,7 +116,7 @@ def main(argv=None) -> int:
     ab.add_argument("outdir")
     _llm_flags(ab)
 
-    q = sub.add_parser("ask", help="ask the AI analyst about an output folder (interactive without a question)")
+    q = sub.add_parser("ask", help="ask the Security Assistant about an output folder (interactive without a question)")
     q.add_argument("outdir")
     q.add_argument("question", nargs="*")
     q.add_argument("--once", action="store_true", help="answer the question and exit")
@@ -129,7 +129,7 @@ def main(argv=None) -> int:
     s.add_argument("--max-upload-mb", type=int, default=1024, help="largest accepted upload (default 1024)")
     common(s)
     _llm_flags(s)
-    s.add_argument("--no-llm", action="store_true", help="hide the AI analyst on the results page")
+    s.add_argument("--no-llm", action="store_true", help="hide the Security Assistant on the results page")
     # serve: provider/key can also be chosen later on the page's AI settings screen
 
     x = sub.add_parser("explore", help="analyze a folder and open the interactive host explorer")
@@ -232,7 +232,7 @@ def main(argv=None) -> int:
         from .llm import LLMError, write_brief
         try:
             cfg = _llm_cfg(args)
-            print(f"\nWriting AI analyst brief with {cfg.label()} ...")
+            print(f"\nWriting Security Assistant brief with {cfg.label()} ...")
             write_brief(res, args.out, cfg)
             paths["ai_analyst_brief.md"] = os.path.join(args.out, "ai_analyst_brief.md")
             paths["ai_analyst_brief.html"] = os.path.join(args.out, "ai_analyst_brief.html")

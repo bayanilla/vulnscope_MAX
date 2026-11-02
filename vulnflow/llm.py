@@ -464,14 +464,14 @@ def _stamp(cfg: LLMConfig) -> str:
 def write_brief(res: dict, outdir: str, cfg: LLMConfig) -> str:
     from .report import md_to_html
     text = Analyst(res, cfg).brief()
-    md = ("# AI Analyst Brief\n\n"
+    md = ("# Security Assistant Brief\n\n"
           f"> AI-generated interpretation of the correlated results ({_stamp(cfg)}). "
           "Verify against the technical report before acting.\n\n" + text + "\n")
     path = os.path.join(outdir, "ai_analyst_brief.md")
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(md)
     with open(os.path.join(outdir, "ai_analyst_brief.html"), "w", encoding="utf-8") as fh:
-        fh.write(md_to_html(md, "AI Analyst Brief"))
+        fh.write(md_to_html(md, "Security Assistant Brief"))
     return path
 
 

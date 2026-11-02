@@ -2,13 +2,13 @@
 
 Examples of the upload workflow, reports, and Explorer. Click a preview to open the full-size image. These captures span several versions; older Explorer images show earlier branding and controls, including the removed Tour/Fly-Through button and an older host-summary layout.
 
-## Explorer and AI Analyst
+## Explorer and Security Assistant
 
-### AI Analyst drawer
+### Security Assistant drawer
 
-<a href="explorer_ai_analyst.png"><img src="explorer_ai_analyst.png" alt="Explorer focused on a workstation with the AI Analyst conversation open" width="800"></a>
+<a href="explorer_ai_analyst.png"><img src="explorer_ai_analyst.png" alt="Explorer focused on a workstation with the Security Assistant conversation open" width="800"></a>
 
-The focused host graph sits beside an AI Analyst answer about the workstation's findings and observed connections.
+The focused host graph sits beside a Security Assistant answer about the workstation's findings and observed connections.
 
 ### Earlier Explorer captures
 

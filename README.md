@@ -9,9 +9,9 @@ compromise could spread, and whether traffic already looks like exploitation. It
 writes an **executive summary** and a **technical report** for system owners.
 
 Pure Python 3.10+ standard library. Nothing to install for the core workflow; the optional
-AI analyst needs `pip install anthropic` only if you choose Anthropic.
+Security Assistant needs `pip install anthropic` only if you choose Anthropic.
 
-Browse the [screenshot gallery](screenshots/README.md) for the upload workflow, reports, Explorer, and AI Analyst.
+Browse the [screenshot gallery](screenshots/README.md) for the upload workflow, reports, Explorer, and Security Assistant.
 
 ## Quick start
 
@@ -66,13 +66,13 @@ of compromise. This import uses a CSV snapshot; automated API retrieval is a sep
 
 ### Múcaro article AI briefs
 
-On the local upload page, open **AI analyst settings**, choose OpenAI, and enter your model and
+On the local upload page, open **Security Assistant settings**, choose OpenAI, and enter your model and
 OpenAI API key. After analyzing a run with Múcaro archive matches, choose **Generate article briefs
 with OpenAI** on its results page. VulnScope reads each unique matched source article, sends its
 text through a bundled copy of Múcaro's article prompt and structured output schema, and saves
 the resulting brief in `results.json` and the standalone executive, technical, and Explorer HTML
 pages. Click a matched indicator to see a concise AI brief, action list, and the full article link.
-The whole-report AI analyst brief remains a separate feature. No article is sent until you
+The whole-report Security Assistant brief remains a separate feature. No article is sent until you
 explicitly generate its brief. The API key remains in the local server's memory, while generated
 briefs stay with the report after the server stops. Unreadable articles retain their original
 short overview and source link. A matched IP is a source lead, not proof that a host is compromised.
@@ -142,7 +142,7 @@ Force a format with `--format file.csv=paloalto` if detection guesses wrong.
    inline SVG, CSS and a little JavaScript, follows the selected theme, and prints cleanly.
    - `normalized/flows.csv`, `normalized/findings.csv`, `normalized/zeek_events.jsonl`,
      `normalized/ot_events.jsonl` for cleaned inputs and preserved Zeek stream records
-   - `ai_analyst_brief.md/.html` and `ai_chat_log.md` when the AI analyst is used
+   - `ai_analyst_brief.md/.html` and `ai_chat_log.md` when the Security Assistant is used
 
 ## Host explorer
 
@@ -164,7 +164,7 @@ worst severity. Click a host, or pick it from the list on the left, and the came
 
 Use the host list or `/` to find a host. L toggles labels and M toggles motion.
 Deep links work: `explorer.html#host=10.0.1.10`.
-See the [Explorer AI Analyst screenshot](screenshots/explorer_ai_analyst.png).
+See the [Explorer Security Assistant screenshot](screenshots/explorer_ai_analyst.png).
 
 **How the blast-radius likelihood is estimated.** It is a heuristic for triage, not a measurement:
 `p = reach x weakness`. Reach is 1.0 when the selected host opened completed sessions to the peer, 0.35
@@ -195,7 +195,7 @@ Mac OS X Aqua, and Windows 2000 styles. The browser remembers the choice locally
 Uploads are streamed to disk in 64 KB chunks, so memory use stays flat whatever the file size. The default
 limit is 1 GB per upload; change it with `serve --max-upload-mb N`.
 
-## AI analyst (optional, vendor-neutral)
+## Security Assistant (optional, vendor-neutral)
 
 An LLM can read the correlated results, write an **analyst brief** (what matters, what to do first,
 likely attack paths, how to validate each top finding with example Zeek / Palo Alto filters, where the
@@ -209,11 +209,11 @@ analyst picks a provider.
 | `openai` | OpenAI's API, or an OpenAI-hosted gateway via `--llm-base-url` | `OPENAI_API_KEY` |
 | `local` | Any OpenAI-compatible server you run: Ollama, vLLM, LM Studio, llama.cpp | usually none |
 
-**On the upload page**, open **AI analyst settings** (linked on the upload page and every results page),
+**On the upload page**, open **Security Assistant settings** (linked on the upload page and every results page),
 pick a provider, enter the model and API key, and save. The key is held in the server's memory only:
 it is never written to disk, logged, or shown again (only its last four characters), and it is forgotten
 when the server stops. "Turn off AI and forget key" clears it. Each results page then offers
-**Generate AI analyst brief** and a chat box for questions.
+**Generate Security Assistant brief** and a chat box for questions.
 
 **From the command line**, choose the provider explicitly. If it needs a key and none is set in the
 environment, you are prompted for it without echo (keys are not accepted as command-line arguments, so they

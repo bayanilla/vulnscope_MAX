@@ -3,7 +3,7 @@
 GET  /            upload form
 POST /analyze     run the workflow on the uploaded files
 GET  /runs/<id>/  links to a run's reports; files under it are served read-only
-POST /runs/<id>/brief  generate the AI analyst brief (when an LLM is configured)
+POST /runs/<id>/brief  generate the Security Assistant brief (when an LLM is configured)
 POST /runs/<id>/article-briefs  generate Múcaro article briefs from matched sources
 POST /runs/<id>/ask    JSON {question, history} -> {answer, answer_html}
 GET/POST /settings     choose the AI provider and enter its API key (kept in memory only)
@@ -94,7 +94,7 @@ technical report.</p>
 <button type="submit">Analyze</button>
 </form>
 <p class="hint">Formats are detected automatically: {formats}. Folder selection is supported by Chrome and other compatible browsers. Files stay on this machine.
-<a href="/settings">AI analyst settings</a></p>
+<a href="/settings">Security Assistant settings</a></p>
 <script>
 (function () {{
   const csrf = {csrf_js}, native = {native_js};
@@ -146,10 +146,10 @@ def _page(title, body):
             f"<body>{theme_control()}{body}</body></html>")
 
 
-CHAT = """<section class="analyst-chat" data-ai-chat data-ask-url="ask"><h2>AI analyst</h2>
+CHAT = """<section class="analyst-chat" data-ai-chat data-ask-url="ask"><h2>Security Assistant</h2>
 <p class="hint">{where}</p>
 {brief}
-<div class="ai-chat-log" role="log" aria-label="AI analyst conversation" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
+<div class="ai-chat-log" role="log" aria-label="Security Assistant conversation" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
 <form class="ai-chat-form"><label for="q">Ask about these results</label>
 <textarea id="q" rows="3" maxlength="4000" placeholder="e.g. Why is fs01 a P1? How do I confirm the callback from web01 in Zeek?"></textarea>
 <button type="submit" class="ai-chat-submit">Ask</button> <span class="ai-chat-busy hint" role="status"></span></form></section>"""
@@ -172,7 +172,7 @@ def _where_text(cfg: LLMConfig) -> str:
     return f"Model: {cfg.label()}: {dest + red}."
 
 
-SETTINGS = """<style>{css}</style><h1>AI analyst settings</h1>
+SETTINGS = """<style>{css}</style><h1>Security Assistant settings</h1>
 <p>Pick any provider. Nothing is sent to a model until you save a choice here. The API key is held in this
 server's memory only: it is not written to disk, shown again, or logged, and it is forgotten when the server stops.</p>
 {status}{error}
@@ -247,7 +247,7 @@ def native_pick(start: str) -> dict:
 
 def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = None,
                  max_upload: int = MAX_UPLOAD):
-    """llm_cfg None hides the AI analyst entirely; an unready LLMConfig shows it unconfigured."""
+    """llm_cfg None hides the Security Assistant entirely; an unready LLMConfig shows it unconfigured."""
     state = {"llm": llm_cfg}
     csrf = secrets.token_urlsafe(24)   # guards form posts from other sites in the same browser
 
@@ -378,7 +378,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                      ("Executive summary (Markdown)", "executive_summary.md"),
                      ("Technical report (Markdown)", "technical_report.md")]
             if os.path.exists(os.path.join(run_dir, "ai_analyst_brief.html")):
-                links.insert(2, ("AI analyst brief", "ai_analyst_brief.html"))
+                links.insert(2, ("Security Assistant brief", "ai_analyst_brief.html"))
             if os.path.exists(os.path.join(run_dir, "ai_chat_log.md")):
                 links.append(("AI Q&A log (Markdown)", "ai_chat_log.md"))
             items = "".join(f'<li><a href="/runs/{run_id}/{p}" target="_blank" rel="noopener">{t}</a></li>' for t, p in links)
@@ -391,13 +391,13 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             here = f"/runs/{run_id}/"
             cfg, ai = self._llm(), ""
             if cfg is not None and not cfg.ready:
-                ai = ("<h2>AI analyst</h2><p>No AI provider selected yet. Use Anthropic, OpenAI or a model you host "
+                ai = ("<h2>Security Assistant</h2><p>No AI provider selected yet. Use Anthropic, OpenAI or a model you host "
                       f'to interpret these results and answer questions.</p><p><a href="/settings?next={here}">'
                       "Choose a provider and enter an API key</a></p>")
             elif cfg is not None:
                 brief = ("" if os.path.exists(os.path.join(run_dir, "ai_analyst_brief.html")) else
                          f'<form method="post" action="brief"><input type="hidden" name="csrf" value="{csrf}">'
-                         '<button type="submit">Generate AI analyst brief</button>'
+                         '<button type="submit">Generate Security Assistant brief</button>'
                          ' <span class="hint">Takes a minute or two.</span></form>')
                 ai = CHAT.format(where=_where(cfg).replace("{next}", here), brief=brief)
             article_ui = ""
@@ -484,7 +484,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
 
         def _settings(self, nxt, error="", code=200):
             if state["llm"] is None:
-                return self._send(404, "The AI analyst is turned off on this server.", "text/plain")
+                return self._send(404, "The Security Assistant is turned off on this server.", "text/plain")
             if not re.fullmatch(r"/(runs/[a-f0-9]{16}/)?", nxt):
                 nxt = "/"
             cfg = state["llm"]
@@ -500,7 +500,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 model=html.escape(cfg.model), base_url=html.escape(cfg.base_url),
                 key_hint="key is set; leave blank to keep it" if cfg.api_key else "paste key",
                 redact=" checked" if cfg.redact else "")
-            self._send(code, _page("AI analyst settings", body))
+            self._send(code, _page("Security Assistant settings", body))
 
         def _save_settings(self):
             length = int(self.headers.get("Content-Length") or 0)
@@ -596,7 +596,7 @@ def serve(host: str, port: int, data_dir: str, cfg: Config, llm_cfg: LLMConfig |
     srv = ThreadingHTTPServer((host, port), make_handler(os.path.abspath(data_dir), cfg, llm_cfg, max_upload))
     print(f"Upload page: http://{host}:{port}/  (results stored in {os.path.abspath(data_dir)})")
     if llm_cfg is not None:
-        print(f"AI analyst: {llm_cfg.label() if llm_cfg.ready else 'no provider yet; choose one at /settings'}")
+        print(f"Security Assistant: {llm_cfg.label() if llm_cfg.ready else 'no provider yet; choose one at /settings'}")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
