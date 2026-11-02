@@ -1,42 +1,36 @@
 # Screenshot gallery
 
-Examples of the upload workflow, reports, and Explorer. Click a preview to open the full-size image. These captures span several versions; older Explorer images show earlier branding and controls, including the removed Tour/Fly-Through button and an older host-summary layout.
+Examples of the upload workflow, reports, and Explorer. Click a preview to open the full-size image.
 
 ## Explorer and Security Assistant
 
 ### Security Assistant drawer
 
-<a href="explorer_ai_analyst.png"><img src="explorer_ai_analyst.png" alt="Explorer focused on a workstation with the Security Assistant conversation open" width="800"></a>
+<a href="security_assistant.jpg"><img src="security_assistant.jpg" alt="Explorer focused on web01 with a Security Assistant conversation open" width="800"></a>
 
-The focused host graph sits beside a Security Assistant answer about the workstation's findings and observed connections.
+The focused host graph sits beside a Security Assistant answer about the findings and observed connections.
 
-### Earlier Explorer captures
+### Explorer overview
 
-<a href="explorer_overview.png"><img src="explorer_overview.png" alt="Explorer overview of a smaller sample network" width="720"></a>
+<a href="explorer_current_overview.jpg"><img src="explorer_current_overview.jpg" alt="Current Explorer overview of the sample network" width="720"></a>
 
-A smaller sample network grouped by subnet, with a prioritized host list and connections across the graph.
+The sample network is grouped by subnet, with a prioritized host list and observed connections.
 
-<a href="explorer_web01.png"><img src="explorer_web01.png" alt="Explorer focused on the web01 host" width="720"></a>
+### Focused host
 
-A focused web server: outside addresses appear to the left, directly connected internal hosts to the right, and host details in the pane.
+<a href="explorer_current_host.jpg"><img src="explorer_current_host.jpg" alt="Explorer focused on web01 with its host details open" width="720"></a>
 
-<a href="explorer_app02_case_demo.png"><img src="explorer_app02_case_demo.png" alt="Explorer focused on app02 and its many internal connections" width="720"></a>
-
-An application server with many internal connections; the pane lists peers and their investigation estimates.
-
-<a href="case_large_overview.png"><img src="case_large_overview.png" alt="Explorer overview of a larger sample network" width="720"></a>
-
-A larger sample network overview with host clusters, many observed connections, and a prioritized host list.
-
-<a href="case_large_dmz19.png"><img src="case_large_dmz19.png" alt="Explorer focused on a DMZ host with an alert and onward paths" width="720"></a>
-
-A DMZ host with an inbound alert, a directly connected internal host, and possible onward paths shown for investigation.
+Outside addresses appear to the left, connected internal hosts to the right, and the host details in the pane.
 
 ## Upload workflow and reports
 
-<a href="folder_browser.png"><img src="folder_browser.png" alt="Upload page with the local folder browser open" width="600"></a>
+<a href="upload_current.jpg"><img src="upload_current.jpg" alt="Current Múcaro VulnScope upload page" width="600"></a>
 
-The upload page's local folder picker, used to select telemetry and scan files for analysis.
+The upload page accepts a local folder or selected telemetry, scan, and Múcaro IOC Archive files.
+
+<a href="results_current.jpg"><img src="results_current.jpg" alt="Results page with report links and Security Assistant controls" width="600"></a>
+
+The results page links to the reports and Explorer and offers Security Assistant controls.
 
 <a href="executive_dark.png"><img src="executive_dark.png" alt="Dark-themed executive summary report" width="400"></a>
 
