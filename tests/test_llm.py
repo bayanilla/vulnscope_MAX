@@ -231,6 +231,7 @@ class WebTests(Base):
             status = json.load(resp)
             self.assertTrue(status["enabled"])
             self.assertTrue(status["ready"])
+            self.assertTrue(status["mock"])
             self.assertIn("nothing leaves this machine", status["description"])
         status, body = self._post(host + run + "ask", json.dumps({"question": "<b>fs01?</b>", "history": []}),
                                   {"Content-Type": "application/json"})
@@ -239,6 +240,24 @@ class WebTests(Base):
         self.assertNotIn("<b>", j["answer_html"])
         with open(os.path.join(self.out, "ai_chat_log.md")) as fh:
             self.assertIn("fs01?", fh.read())
+
+    def test_mock_can_be_selected_in_browser_without_model_or_key(self):
+        import re
+        from urllib.parse import urlencode
+        host, run = self._server(LLMConfig())
+        with urllib.request.urlopen(host + "/settings?next=" + run) as resp:
+            page = resp.read().decode()
+        self.assertIn('<option value="mock">Offline mock</option>', page)
+        token = re.search(r'name="csrf" value="([^"]+)"', page)[1]
+        form = {"csrf": token, "next": run, "provider": "mock", "model": "old-model",
+                "api_key": "unused-key", "action": "save"}
+        status, body = self._post(host + "/settings", urlencode(form))
+        self.assertEqual(status, 200)
+        self.assertIn("Offline mock: fixed summaries", body)
+        with urllib.request.urlopen(host + run + "ai-status") as resp:
+            config = json.load(resp)
+        self.assertTrue(config["ready"])
+        self.assertTrue(config["mock"])
 
     def test_explorer_uses_same_run_chat_and_hides_it_when_ai_is_off(self):
         host, run = self._server(LLMConfig.from_env(provider="mock"))

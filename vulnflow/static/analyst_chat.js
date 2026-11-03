@@ -101,7 +101,7 @@
     .then(config => {
       if (!config.enabled) return;
       toggle.hidden = false;
-      status.textContent = config.description + (config.ready ? ' Answers are AI-generated; verify before acting.' : '');
+      status.textContent = config.description + (config.ready && !config.mock ? ' Answers are AI-generated; verify before acting.' : '');
       form.hidden = !config.ready;
       log.hidden = !config.ready;
       settings.textContent = config.ready ? 'Change provider' : 'Choose a provider';

@@ -213,8 +213,9 @@ def _where(cfg: LLMConfig) -> str:
 
 
 def _where_text(cfg: LLMConfig) -> str:
-    dest = ("nothing leaves this machine" if cfg.provider == "mock" else
-            f"correlated results (not raw logs) are sent to {cfg.destination()}")
+    if cfg.provider == "mock":
+        return "Offline mock: fixed summaries from this run's results; no model is used and nothing leaves this machine."
+    dest = f"correlated results (not raw logs) are sent to {cfg.destination()}"
     red = "; IPs and hostnames are replaced with tokens first" if cfg.redact else ""
     return f"Model: {cfg.label()}: {dest + red}."
 
@@ -227,6 +228,7 @@ server's memory only: it is not written to disk, shown again, or logged, and it 
 <input type="hidden" name="csrf" value="{csrf}"><input type="hidden" name="next" value="{next}">
 <label for="provider">Provider</label>
 <select id="provider" name="provider">{options}</select>
+<div class="hint">Offline mock uses this run's results to demonstrate the assistant without a model, API key, or network request. Its answers are fixed summaries, not AI analysis.</div>
 <label for="model">Model</label>
 <input id="model" name="model" type="text" value="{model}" placeholder="e.g. claude-opus-5-5, an OpenAI model name, llama3.1">
 <div class="hint">Required for OpenAI. Anthropic and self-hosted fall back to claude-opus-5-5 and llama3.1.</div>
@@ -401,6 +403,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 cfg = self._llm()
                 return self._send(200, json.dumps({
                     "enabled": cfg is not None, "ready": bool(cfg and cfg.ready),
+                    "mock": bool(cfg and cfg.provider == "mock"),
                     "description": _where_text(cfg) if cfg and cfg.ready else "No AI provider selected yet.",
                 }), "application/json", {"Cache-Control": "no-store"})
             if not m[2]:
@@ -544,7 +547,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 nxt = "/"
             cfg = state["llm"]
             options = "".join(f'<option value="{p}"{" selected" if p == cfg.provider else ""}>{n}</option>'
-                              for p, n in PROVIDER_NAMES.items() if p != "mock" or cfg.provider == "mock")
+                              for p, n in PROVIDER_NAMES.items())
             if not cfg.provider:
                 options = '<option value="" selected>Choose a provider</option>' + options
             status = (f'<p><strong>Current:</strong> {html.escape(cfg.label())}, API key {cfg.masked_key()}.</p>'
@@ -575,6 +578,8 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                             # keep the stored key when the field is left blank and the provider is unchanged
                             api_key=form.get("api_key", "").strip() or (cur.api_key if provider == cur.provider else ""),
                             redact=form.get("redact") == "1")
+            if provider == "mock":
+                new.model, new.base_url, new.api_key, new.redact = "mock", "", "", False
             if provider in ("anthropic", "local", "mock"):
                 if new.model == "" and provider == cur.provider:
                     new.model = cur.model
