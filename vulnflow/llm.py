@@ -31,6 +31,8 @@ SUGGESTED_MODELS = {"anthropic": "claude-opus-5-5", "local": "llama3.1", "mock":
 DEFAULT_BASE_URLS = {"openai": "https://api.openai.com/v1", "local": "http://localhost:11434/v1"}
 KEY_ENV = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}
 MAX_FINDINGS_IN_CONTEXT = 150
+LOCAL_FINDINGS_IN_CONTEXT = 10
+LOCAL_FOCUS_LIMIT = 8
 MAX_HISTORY_TURNS = 20
 
 
@@ -142,7 +144,7 @@ If indicators or pivots exist, describe the plausible path step by step using th
 If none exist, say so and name the most likely path an attacker would take given the exposure data.
 
 ## How to validate the top findings
-For each P1/P2 finding (group identical findings across hosts), concrete checks that would confirm or rule \
+For each P1/P2 finding present in the supplied context (group identical findings across hosts), concrete checks that would confirm or rule \
 it out: host checks, and log searches with example Zeek / Palo Alto / SIEM filters using the real IPs and ports.
 
 ## Where this analysis may be wrong
@@ -185,25 +187,56 @@ def _compact_host(h: dict) -> dict:
     }
 
 
-def build_context(res: dict) -> str:
+def _local_finding(r: dict) -> dict:
+    e = r["exposure"]
+    return {
+        "priority": r["priority"], "score": r["score"], "host": r["host"],
+        "hostname": r["hostname"], "plugin_id": r["plugin_id"],
+        "plugin_name": r["plugin_name"], "severity": r["severity_name"],
+        "port": r["port"], "service": r["service"], "cves": r["cves"][:3],
+        "exposure": {"label": e["label"], "established": e["established"],
+                     "denied": e["denied"], "top_sources": e["top_sources"][:3]},
+        "indicators": [i["text"][:300] for i in r["indicators"][:3]],
+        "rationale": [line[:220] for line in r["rationale"][:4]],
+        "solution": (r["solution"] or "")[:180],
+    }
+
+
+def _local_host(h: dict) -> dict:
+    b = h["blast"]
+    return {
+        "host": h["host"], "priority": h["priority"],
+        "internet_exposed": h["internet_exposed"], "telemetry_seen": h["telemetry_seen"],
+        "blast": {"direct": b["direct_count"], "within_hops": b["reachable_count"],
+                  "vulnerable_pivots": b["vulnerable_pivots"][:5],
+                  "lateral_protocols": b["lateral_protocols"]},
+    }
+
+
+def build_context(res: dict, *, compact: bool = False) -> str:
     """Stable JSON view of the results; kept identical across questions so it can be cached."""
     F = res["findings"]
-    hosts_in = {r["host"] for r in F[:MAX_FINDINGS_IN_CONTEXT]}
+    limit = LOCAL_FINDINGS_IN_CONTEXT if compact else MAX_FINDINGS_IN_CONTEXT
+    hosts_in = {r["host"] for r in F[:limit]}
     cov = dict(res["coverage"])
-    cov["active_servers_not_scanned"] = cov["active_servers_not_scanned"][:40]
+    cov["active_servers_not_scanned"] = cov["active_servers_not_scanned"][:10 if compact else 40]
     data = {
-        "generated": res["generated"], "config": res["config"], "inputs": res["inputs"],
+        "generated": res["generated"], "config": res["config"],
         "summary": res["summary"], "coverage": cov,
-        "findings": [_compact_finding(r) for r in F[:MAX_FINDINGS_IN_CONTEXT]],
-        "hosts": [_compact_host(h) for h in res["hosts"] if h["host"] in hosts_in],
+        "findings": [(_local_finding(r) if compact else _compact_finding(r)) for r in F[:limit]],
+        "hosts": [(_local_host(h) if compact else _compact_host(h))
+                  for h in res["hosts"] if h["host"] in hosts_in],
     }
-    if len(F) > MAX_FINDINGS_IN_CONTEXT:
-        data["note"] = (f"Only the top {MAX_FINDINGS_IN_CONTEXT} of {len(F)} findings are listed here; "
-                        f"details for others mentioned in a question are given in <focus_details>.")
+    if not compact:
+        data["inputs"] = res["inputs"]
+    if len(F) > limit:
+        data["note"] = (f"Only the top {limit} of {len(F)} findings are listed here; "
+                        "do not treat omitted findings as absent. Details for findings mentioned "
+                        "in a question are given in <focus_details>.")
     return json.dumps(data, sort_keys=True, default=str)
 
 
-def focus_details(res: dict, question: str) -> str:
+def focus_details(res: dict, question: str, *, compact: bool = False) -> str:
     """Full records for findings the question names (by IP, hostname, CVE or plugin ID) that the
     main context left out or summarized."""
     q = question.lower()
@@ -213,12 +246,17 @@ def focus_details(res: dict, question: str) -> str:
         names = {r["host"], (r["hostname"] or "").lower(), (r["hostname"] or "").split(".")[0].lower()} - {""}
         if (any(n.lower() in q for n in names if len(n) > 3) or r["plugin_id"] in terms
                 or any(c.lower() in terms for c in r["cves"])):
-            if i >= MAX_FINDINGS_IN_CONTEXT or len(hits) < 12:
+            if compact or i >= MAX_FINDINGS_IN_CONTEXT or len(hits) < 12:
                 rec = _compact_finding(r)
                 rec["synopsis"] = r["synopsis"]
                 rec["exposure_full"] = r["exposure"]
                 hits.append(rec)
-    return json.dumps(hits[:25], sort_keys=True, default=str) if hits else ""
+    if not hits:
+        return ""
+    if compact:
+        return json.dumps({"matching_findings": len(hits), "findings": hits[:LOCAL_FOCUS_LIMIT]},
+                          sort_keys=True, default=str)
+    return json.dumps(hits[:25], sort_keys=True, default=str)
 
 
 # ------------------------------------------------------------------ redaction
@@ -424,7 +462,8 @@ class Analyst:
             raise LLMError("No AI provider selected. Choose Anthropic, OpenAI or a self-hosted model first.")
         self.res, self.cfg = res, cfg
         self.redactor = Redactor(res) if cfg.redact else None
-        ctx = build_context(res)
+        self.compact = cfg.provider == "local"
+        ctx = build_context(res, compact=self.compact)
         self.system = SYSTEM_PROMPT + "\n\n<correlation_results>\n" + self._out(ctx) + "\n</correlation_results>"
 
     def _out(self, text: str) -> str:
@@ -450,7 +489,7 @@ class Analyst:
                 msgs.append({"role": h["role"], "content": self._out(h["content"][:8000])})
         while msgs and msgs[0]["role"] != "user":
             msgs.pop(0)
-        focus = focus_details(self.res, question)
+        focus = focus_details(self.res, question, compact=self.compact)
         content = (f"<focus_details>\n{self._out(focus)}\n</focus_details>\n\n" if focus else "") + \
                   f"<question>\n{self._out(question)}\n</question>"
         msgs.append({"role": "user", "content": content})

@@ -248,8 +248,9 @@ How it is kept honest and safe:
 
 - **Grounded.** The model gets the correlated results (scores, exposure evidence, blast radius,
   indicators, coverage), never raw logs, and must cite host and plugin/CVE for each claim and say when
-  the data does not answer a question. A question naming a host, CVE or plugin pulls that finding's full
-  record into the prompt. The same prompt is used for every provider.
+  the data does not answer a question. The local provider starts with the summary and top ten findings
+  to fit smaller models; a question naming a host, CVE or plugin adds matching finding details. Hosted
+  providers keep the broader context. The instructions are the same for every provider.
 - **Untrusted data.** Hostnames, application names and plugin output can be attacker-influenced. They are
   wrapped as data, the model is told never to follow instructions inside them, it has no tools, and its
   output is HTML-escaped on the page.

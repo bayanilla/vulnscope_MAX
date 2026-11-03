@@ -50,6 +50,26 @@ class ContextTests(Base):
             self.assertIn(f"of {total} findings", data["note"])
         self.assertIn("connected back", " ".join(data["findings"][0]["indicators"]).replace("outbound connection(s) to", "connected back"))
 
+    def test_local_context_is_compact_and_named_findings_are_added_on_demand(self):
+        compact = build_context(self.res, compact=True)
+        data = json.loads(compact)
+        self.assertEqual(len(data["findings"]), llm.LOCAL_FINDINGS_IN_CONTEXT)
+        self.assertLess(len(compact), 20000)
+        self.assertIn("do not treat omitted findings as absent", data["note"])
+        top_hosts = {r["host"] for r in self.res["findings"][:llm.LOCAL_FINDINGS_IN_CONTEXT]}
+        target = next(r for r in self.res["findings"][llm.LOCAL_FINDINGS_IN_CONTEXT:]
+                      if r["host"] not in top_hosts)
+        captured = {}
+        def local_reply(cfg, system, messages, effort):
+            captured["system"], captured["question"] = system, messages[-1]["content"]
+            return "Demo answer"
+        with mock.patch.dict(llm.PROVIDERS, {"local": local_reply}):
+            analyst = Analyst(self.res, LLMConfig.from_env(provider="local"))
+            self.assertEqual(analyst.ask(f"What about {target['host']}?"), "Demo answer")
+        self.assertIn(target["plugin_id"], captured["question"])
+        self.assertIn("<focus_details>", captured["question"])
+        self.assertLess(len(captured["system"]), len(Analyst(self.res, LLMConfig.from_env(provider="mock")).system) // 10)
+
     def test_focus_details_finds_hosts_and_cves(self):
         self.assertIn("97833", llm.focus_details(self.res, "Why is fs01 urgent?"))
         self.assertIn("10.10.3.31", llm.focus_details(self.res, "tell me about CVE-2019-0708"))
