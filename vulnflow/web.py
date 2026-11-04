@@ -6,6 +6,8 @@ GET  /runs/<id>/  links to a run's reports; files under it are served read-only
 POST /runs/<id>/brief  generate the Security Assistant brief (when an LLM is configured)
 POST /runs/<id>/article-briefs  generate article briefs from matched sources
 POST /runs/<id>/ask    JSON {question, history} -> {answer, answer_html}
+GET  /runs/<id>/radar-status  whether on-demand Radar lookup is configured
+POST /runs/<id>/radar  Radar context for an observed IP or domain IOC
 GET/POST /settings     choose the AI provider and enter its API key (kept in memory only)
 """
 from __future__ import annotations
@@ -33,6 +35,7 @@ from .llm import PROVIDER_NAMES, Analyst, LLMConfig, LLMError, load_results, log
 from .article_brief import generate_article_briefs
 from .parsers import FORMATS
 from .pipeline import run
+from .radar import RadarError, lookup as radar_lookup
 from .report import CSS, THEME_INIT, md_body, save_article_briefs, theme_control
 from .cli import _input_files
 
@@ -406,6 +409,13 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                     "mock": bool(cfg and cfg.provider == "mock"),
                     "description": _where_text(cfg) if cfg and cfg.ready else "No AI provider selected yet.",
                 }), "application/json", {"Cache-Control": "no-store"})
+            if m[2] == "radar-status":
+                if not os.path.isdir(run_dir):
+                    return self._send(404, "Not found", "text/plain")
+                return self._send(200, json.dumps({
+                    "enabled": bool(os.environ.get("CLOUDFLARE_RADAR_API_TOKEN")),
+                    "csrf": csrf,
+                }), "application/json", {"Cache-Control": "no-store"})
             if not m[2]:
                 return self._run_index(m[1], run_dir)
             target = os.path.realpath(os.path.join(run_dir, m[2]))
@@ -488,6 +498,33 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
 
         def _json(self, code, obj):
             self._send(code, json.dumps(obj), "application/json")
+
+        def _radar(self, run_id):
+            run_dir = os.path.join(data_dir, run_id, "out")
+            if not os.path.isdir(run_dir):
+                return self._json(404, {"error": "Analysis run not found."})
+            body = self._read_json()
+            if body is None:
+                return self._json(403, {"error": "Forbidden."})
+            kind, value = body.get("type"), body.get("value")
+            if not isinstance(kind, str) or not isinstance(value, str) or len(value) > 253:
+                return self._json(400, {"error": "Invalid indicator."})
+            try:
+                result = load_results(run_dir)
+                if not any(row.get("type") == kind and row.get("value") == value
+                           for row in result.get("ioc_matches", [])):
+                    return self._json(404, {"error": "Indicator was not matched in this run."})
+                context = radar_lookup(kind, value, os.environ.get("CLOUDFLARE_RADAR_API_TOKEN", ""))
+                return self._send(200, json.dumps(context), "application/json",
+                                  {"Cache-Control": "no-store"})
+            except ValueError as exc:
+                return self._json(400, {"error": str(exc)})
+            except RadarError as exc:
+                return self._json(502, {"error": str(exc)})
+            except LLMError:
+                return self._json(404, {"error": "Analysis results not found."})
+            except OSError:
+                return self._json(500, {"error": "Analysis results could not be read."})
 
         def _ai(self, run_id, action):
             run_dir = os.path.join(data_dir, run_id, "out")
@@ -599,6 +636,9 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return self._send(403, "Cross-origin request refused", "text/plain")
             if self.path == "/settings":
                 return self._save_settings()
+            m = re.fullmatch(r"/runs/([a-f0-9]{16})/radar", self.path)
+            if m:
+                return self._radar(m[1])
             m = re.fullmatch(r"/runs/([a-f0-9]{16})/(brief|article-briefs|ask)", self.path)
             if m:
                 return self._ai(m[1], m[2])

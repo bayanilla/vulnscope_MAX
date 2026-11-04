@@ -204,10 +204,13 @@ border-radius:6px;padding:5px 10px;cursor:pointer}
 .ioc-brief{margin:12px 0;padding:12px;border:1px solid #42637c;border-radius:8px;background:#172a3c}
 .ioc-brief h4{margin:0 0 6px;color:#79dce7}.ioc-brief ol{padding-left:20px;margin:6px 0}
 .ioc-brief details{margin-top:10px}.ioc-brief summary{cursor:pointer;color:#79dce7}
+.ioc-radar{margin:14px 0;padding:12px;border:1px solid #42637c;border-radius:8px;background:#172a3c}
+.ioc-radar button{padding:6px 10px;cursor:pointer}.ioc-radar p{margin:6px 0}
+.ioc-radar strong{color:#eef7ff}
 @media print{.ioc-shade,.ioc-drawer{display:none!important}}
 """
 
-SCRIPT = """<script>
+SCRIPT = r"""<script>
 (() => {
   const data = JSON.parse(document.getElementById('ioc-provenance-data').textContent);
   const briefs = JSON.parse(document.getElementById('ioc-article-briefs').textContent);
@@ -215,7 +218,56 @@ SCRIPT = """<script>
   const shade = document.getElementById('ioc-shade');
   const drawer = document.getElementById('ioc-drawer');
   const body = document.getElementById('ioc-drawer-body');
+  const runPath = location.pathname.match(/^\/runs\/[a-f0-9]{16}\/(?:executive_summary|technical_report|explorer)\.html$/);
+  const radarPath = runPath ? runPath[0].replace(/[^/]+$/, '') : null;
   let previous = null;
+  function addRadar(item) {
+    if (!radarPath || !['ip', 'domain'].includes(item.type)) return;
+    const box = document.createElement('section'); box.className = 'ioc-radar';
+    const heading = document.createElement('h3'); heading.textContent = 'Cloudflare Radar context';
+    const button = document.createElement('button'); button.type = 'button';
+    button.textContent = 'Check Cloudflare Radar';
+    const result = document.createElement('div'); result.setAttribute('role', 'status');
+    const row = (label, value) => {
+      if (value === undefined || value === null || value === '') return;
+      const p = document.createElement('p');
+      const strong = document.createElement('strong'); strong.textContent = label + ': ';
+      p.append(strong, document.createTextNode(String(value))); result.append(p);
+    };
+    button.addEventListener('click', async () => {
+      button.disabled = true; result.textContent = 'Checking Cloudflare Radar…';
+      try {
+        const statusResponse = await fetch(radarPath + 'radar-status', {cache: 'no-store'});
+        if (!statusResponse.ok) throw new Error('Radar configuration could not be checked.');
+        const status = await statusResponse.json();
+        if (!status.enabled) throw new Error('Set CLOUDFLARE_RADAR_API_TOKEN on the VulnScope server first.');
+        const response = await fetch(radarPath + 'radar', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({csrf: status.csrf, type: item.type, value: item.value})
+        });
+        const info = await response.json();
+        if (!response.ok) throw new Error(info.error || 'Radar lookup failed.');
+        result.replaceChildren();
+        if (info.type === 'ip') {
+          row('Network', [info.asn && 'AS' + info.asn, info.asnOrgName || info.asnName].filter(Boolean).join(' · '));
+          row('IP location', info.locationName);
+          row('Network location', info.asnLocation);
+        } else {
+          if (info.rank) row('Popularity rank', info.rank);
+          else if (info.bucket) row('Popularity bucket', 'Top ' + info.bucket);
+          else row('Popularity ranking', 'Not available');
+          row('Categories', (info.categories || []).join(', '));
+        }
+        row('Checked', info.retrieved_at);
+        const caution = document.createElement('p');
+        caution.textContent = 'Radar context is not proof of malicious activity.';
+        result.append(caution);
+      } catch (error) {
+        result.textContent = error.message || 'Radar lookup failed.';
+      } finally { button.disabled = false; }
+    });
+    box.append(heading, button, result); body.append(box);
+  }
   function close() {
     drawer.hidden = shade.hidden = true;
     if (previous && previous.isConnected) previous.focus();
@@ -233,6 +285,7 @@ SCRIPT = """<script>
     context.textContent = 'Observed in: ' + Object.entries(item.observed).map(([k,v]) => v + ' ' + k).join(', ')
       + (item.hosts.length ? ' · Related hosts: ' + item.hosts.join(', ') : '');
     body.append(context);
+    addRadar(item);
     if (item.sources && item.sources.length) {
       const sources = document.createElement('p');
       sources.textContent = 'Sources: ' + item.sources.join(', '); body.append(sources);

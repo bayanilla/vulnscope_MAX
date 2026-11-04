@@ -72,6 +72,21 @@ or `--article-preview-cache /path/to/previews.json` to reuse saved overviews off
 cannot be read, its link remains available. An IOC match is a lead for review, not confirmation
 of compromise. The legacy `--ioc-archive` flag remains available for existing scripts.
 
+### Cloudflare Radar demo lookups
+
+The local upload server can look up a matched public IPv4 address or domain on demand. Set
+`CLOUDFLARE_RADAR_API_TOKEN` in the server's environment before starting `python3 -m vulnflow serve`,
+using a Cloudflare custom token with **Account > Radar > Read** permission. Open a served executive
+report, technical report, or Explorer, select an IP or domain IOC match, then click **Check Cloudflare
+Radar** in its details panel. The server calls Radar; the token is not included in the browser page
+or saved output. Opening the standalone HTML file offline does not offer live lookups.
+
+The IP lookup shows ASN and location metadata; the domain lookup shows available popularity rank and
+categories. These are context for investigation, not evidence of malicious activity and do not change
+VulnScope's scores. The bundled demo indicators are synthetic, so use a real public indicator for a
+meaningful live lookup. A Radar Read token does not grant access to Cloudflare's separate URL Scanner
+or Threat Intelligence APIs. Confirm Cloudflare's terms for the intended evaluation and deployment.
+
 ### Múcaro article AI briefs
 
 On the local upload page, open **Security Assistant settings**, choose OpenAI, and enter your model and
