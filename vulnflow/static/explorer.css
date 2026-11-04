@@ -55,6 +55,11 @@ border-bottom:1px solid var(--line);padding-bottom:4px}
 .lk{font-family:var(--mono);font-size:11px;min-width:64px;text-align:right}
 .why{grid-column:2/4;margin:2px 0 4px;padding-left:14px;color:var(--muted);font-size:11.5px}
 .row.peer{cursor:pointer}.row .go{color:var(--cyan);text-decoration:underline;cursor:pointer}
+.direction-note{font-size:11.5px;color:var(--muted);margin:12px 0 2px}
+.conn-examples{grid-column:2/4;border-left:2px solid var(--cyan);padding-left:7px;margin:3px 0 2px;
+min-width:0;font:11px/1.5 var(--mono);color:var(--fg);overflow-wrap:anywhere}
+.conn-line{margin:2px 0}.conn-path{color:var(--cyan)}.conn-source,.conn-more{color:var(--muted)}
+.ot-record{font-size:11.5px;padding:5px 0;border-bottom:1px dashed var(--line);overflow-wrap:anywhere}
 .fd{padding:6px 0;border-bottom:1px dashed var(--line);font-size:12.5px}.fd:last-child{border:0}
 .fd .meta{color:var(--muted);font-size:11.5px}.fd .ev{font-size:11.5px;margin-top:3px;color:var(--muted)}
 .note{margin-top:16px;font-size:11.5px;color:var(--muted);border-left:2px solid var(--violet);padding-left:8px}

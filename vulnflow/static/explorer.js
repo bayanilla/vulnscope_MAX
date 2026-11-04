@@ -2,6 +2,8 @@
 'use strict';
 const D = JSON.parse(document.getElementById('vf-data').textContent);
 const telemetryOnly = D.vulnerability_data_available === false;
+if (telemetryOnly) document.getElementById('hint').textContent =
+  'Click a host to inspect recorded endpoints, ports, protocols, and direction.';
 const cv = document.getElementById('stage'), ctx = cv.getContext('2d');
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -573,6 +575,38 @@ function renderList() {
       (d.ev ? `<span class="tag ${d.ev}">${d.ev === 'likely' ? 'LIKELY' : 'LEAD'}</span>` : '') + '</div>';
   }).join('') || `<div class="hrow">${iocOnly ? 'No IOC hosts match' : 'No match'}</div>`;
 }
+// These are recorded source/originator -> destination/responder tuples, not
+// arrows inferred from an internet/internal boundary or a vulnerability scan.
+function connectionExamples(items, total) {
+  if (!items || !items.length) return '';
+  const endpoint = (ip, port) => `${esc(ip)}:${port == null ? '?' : esc(port)}`;
+  return `<div class="conn-examples">${items.map(f =>
+    `<div class="conn-line"><span class="conn-path">${endpoint(f.src_ip, f.src_port)} → ${endpoint(f.dst_ip, f.dst_port)}</span>` +
+    ` · ${esc(f.proto || 'transport unknown')}${f.app ? ` · logged app/service: ${esc(f.app)}` : ''}` +
+    `${f.action !== 'allow' ? ` · ${esc(f.action)}` : !f.established ? ' · not completed' : ''}` +
+    `${f.source ? ` <span class="conn-source">(${esc(f.source)})</span>` : ''}</div>`).join('')}` +
+    (total > items.length ? `<div class="conn-more">${total} sessions total; representative distinct tuples shown.</div>` : '') +
+    '</div>';
+}
+function alertExamples(items) {
+  if (!items || !items.length) return '';
+  return `<div class="conn-examples">${items.map(a =>
+    `<div class="conn-line">Alert metadata: ${esc(a.src_ip)} → ${esc(a.dst_ip)}${a.dst_port == null ? '' : ':' + esc(a.dst_port)}` +
+    ` · transport and source port not logged · ${a.blocked ? 'blocked' : 'not blocked'}</div>`).join('')}</div>`;
+}
+function otExamples(items, total) {
+  if (!items || !items.length) return '';
+  return `<h3>Industrial protocol records</h3><p class="onward-note">Zeek protocol records show message operations; they are not extra connection sessions or vulnerability findings.</p>` +
+    items.map(e => {
+      const direction = e.src_ip && e.dst_ip ? `${esc(e.src_ip)} → ${esc(e.dst_ip)}` :
+        `${esc(e.originator || '?')} ↔ ${esc(e.responder || '?')} (message direction not logged)`;
+      return `<div class="ot-record"><b>${esc(e.protocol)}</b>${e.operation ? ` · ${esc(e.operation)}` : ''}<br>` +
+        `<span class="conn-path">${direction}</span>` +
+        `${e.message_side !== 'unknown' ? ` · sent by Zeek ${esc(e.message_side)}` : ''}` +
+        `${e.source ? ` · ${esc(e.source)}` : ''}</div>`;
+    }).join('') + (total > items.length ?
+      `<div class="conn-more">Showing ${items.length} of ${total} industrial records. See normalized/ot_events.jsonl for all records.</div>` : '');
+}
 let iocOnly = false;
 const iocHostTotal = Object.values(iocCounts).filter(count => count > 0).length;
 if (iocHostTotal) {
@@ -600,7 +634,10 @@ function renderPanel(id) {
     `${a.alerts_blocked ? ' · ' + a.alerts_blocked + ' IPS blocked' : ''}` +
     `${a.dir === 'both' && a.out_sessions ? ' · <span style="color:var(--violet)">host also connected out' + (a.out_ports.length ? ' on ' + esc(a.out_ports.join(', ')) : '') + '</span>' : ''}` +
     `${a.dir === 'out' && a.out_ports.length ? ' · ports ' + esc(a.out_ports.join(', ')) : ''}` +
-    `${a.signatures.length ? '<br>' + esc(a.signatures.join('; ')) : ''}</span></div>`).join('') ||
+    `${a.signatures.length ? '<br>' + esc(a.signatures.join('; ')) : ''}</span>` +
+    connectionExamples(a.connection_examples, a.sessions + a.out_sessions) +
+    (a.connection_examples && a.connection_examples.length ? '' : alertExamples(a.alert_examples)) +
+    '</div>').join('') ||
     '<div class="row"><span></span><span class="sub">No north/south traffic to or from this host in the telemetry.</span></div>';
   const peers = F.peers.map(q => {
     const pd = peerNode(q.ip).d, nm = pd.name ? pd.name.split('.')[0] : q.ip, none = q.band === 'None';
@@ -610,6 +647,7 @@ function renderPanel(id) {
       `<span>${D.focus[q.ip] ? `<span class="go" data-go="${esc(q.ip)}">${esc(nm)}</span>` : esc(nm)} <span class="ip" style="color:var(--muted);font-size:11px">${esc(q.ip)}</span></span>` +
       `<span class="lk" style="color:${BAND[q.band]}">${none ? 'no session' : telemetryOnly ? 'observed' : Math.round(q.p * 100) + '% ' + q.band}</span>` +
       `<span class="sub">${esc(dir)} ${none ? 'attempts, none completed' : 'sessions'}${q.ports_out.length ? ' · ' + (none ? 'tried ' : 'uses ') + esc(q.ports_out.join(', ')) : ''}${telemetryOnly ? ' · vulnerability status unknown' : pd.scanned ? ' · worst ' + esc(pd.sev || 'none') : ' · not scanned'}</span>` +
+      connectionExamples(q.connection_examples, q.out_tries + q.in_tries) +
       `<ul class="why" hidden>${q.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>`;
   }).join('') || '<div class="row"><span></span><span class="sub">No east/west traffic to or from this host in the telemetry.</span></div>';
   const h2list = F.hop2.filter(q => q.p >= 0.05).slice(0, 12);
@@ -632,17 +670,19 @@ function renderPanel(id) {
     `<div class="stats"><div class="stat red"><b>${F.attackers_total}</b><span>outside addresses (N/S)${nAlert ? `, ${nAlert} with IPS alerts` : ''}</span></div>` +
     `<div class="stat pink"><b>${F.peers_total}</b><span>internal hosts (E/W)${telemetryOnly ? '' : ` · ${F.blast.high} high, ${F.blast.medium} med`}</span></div></div>` +
     (state.history.length ? `<p style="margin:10px 0 0"><button id="btn-back">← Back to ${esc(state.history[state.history.length - 1])}</button></p>` : '') +
+    `<p class="direction-note">Recorded direction: source/originator → destination/responder. Ports are source → destination; ? means the log did not provide a port. Logged application labels appear only when supplied.</p>` +
     `<h3>North / south: outside addresses</h3>${atk}` +
     (F.attackers_total > F.attackers.length ? `<div class="row"><span></span><span class="sub">${F.attackers_total - F.attackers.length} more not shown</span></div>` : '') +
     `<h3>${telemetryOnly ? 'East / west: observed internal connections' : 'East / west: internal hosts · blast radius if exploited'}</h3>${peers}${hop2}` +
     (F.peers_total > F.peers.length ? `<div class="row"><span></span><span class="sub">${F.peers_total - F.peers.length} more not shown</span></div>` : '') +
+    otExamples(F.ot_events, F.ot_events_total) +
     `<h3>Vulnerabilities</h3>${telemetryOnly ? '<div class="fd">No vulnerability data available; status unknown.</div>' : fds || '<div class="fd">None at the configured severity.</div>'}` +
     (D.ioc_matches && D.ioc_matches.some(item => item.hosts.includes(id))
       ? `<h3>IOC matches</h3><div class="note">Exact IOC matches are leads for review.</div>` +
         D.ioc_matches.filter(item => item.hosts.includes(id)).map(item =>
           `<div class="fd">${iocButton(item.type, item.value)} <span class="meta">${esc(item.type)} · ${item.articles.length} source link(s)</span> · ${iocButton(item.type, item.value, 'View details')}</div>`).join('')
       : '') +
-    `<div class="note">This view shows all traffic to and from the host in the telemetry: outside addresses on the left, internal hosts on the right. Inbound outside traffic is targeting, not proof of compromise. ` +
+    `<div class="note">This view shows observed traffic to and from the host: outside addresses on the left, internal hosts on the right. Outside contact alone is not proof of compromise. ` +
     (telemetryOnly ? 'Vulnerability status is unknown. Review alerts and IOC matches as leads; only host evidence confirms a compromise.' :
     `Likelihood is an estimate from observed sessions, the ports in use and the scanner's findings on each peer. Use it to decide where to look first; only host evidence confirms a compromise. Click a row for the reasons.`) + '</div>';
   p.hidden = false; p.scrollTop = 0;

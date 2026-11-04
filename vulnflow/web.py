@@ -448,8 +448,9 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             items = "".join(f'<li><a href="/runs/{run_id}/{p}" target="_blank" rel="noopener">{t}</a></li>' for t, p in links)
             if os.path.exists(os.path.join(run_dir, "explorer.html")):
                 items = (f'<p class="explore"><a href="/runs/{run_id}/explorer.html" target="_blank" rel="noopener"><b>Open the host explorer</b></a>'
-                         " Click a host to see who is targeting it and how far a compromise could reach.</p>"
-                         f"<ul>{items}</ul>")
+                         + (" Click a host to inspect observed endpoints, ports, protocols, and direction.</p>"
+                            if telemetry_only else " Click a host to see who is targeting it and how far a compromise could reach.</p>")
+                         + f"<ul>{items}</ul>")
             else:
                 items = f"<ul>{items}</ul>"
             here = f"/runs/{run_id}/"
