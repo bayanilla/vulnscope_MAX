@@ -269,9 +269,70 @@ class EndToEndTests(Base):
         with open(paths["executive_summary.md"]) as fh:
             self.assertIn("Likely exploitation", fh.read())
 
-    def test_missing_scan_is_rejected(self):
-        with self.assertRaises(ValueError):
-            run([p for p in self.samples if not p.endswith(".nessus")], os.path.join(self.tmp, "x"))
+    def test_network_telemetry_without_scan(self):
+        inputs = [p for p in self.samples if not p.endswith(".nessus")]
+        ioc = self.write("network-ioc.csv", "type,indicator\nip,203.0.113.45\n")
+        res, paths = run(inputs + [ioc], os.path.join(self.tmp, "telemetry-only"))
+        self.assertFalse(res["summary"]["vulnerability_data_available"])
+        self.assertEqual(res["findings"], [])
+        self.assertEqual(res["summary"]["priority_counts"], {p: None for p in ("P1", "P2", "P3", "P4")})
+        self.assertTrue(res["hosts"])
+        self.assertTrue(res["telemetry_leads"])
+        self.assertTrue(res["ioc_matches"])
+        self.assertIn("10.10.1.10", res["ioc_matches"][0]["hosts"])
+        for name in ("executive_summary.md", "technical_report.md", "explorer.html"):
+            with open(paths[name], encoding="utf-8") as fh:
+                text = fh.read()
+            self.assertIn("No vulnerability data", text)
+            self.assertNotIn("No vulnerability reached Priority 1", text)
+        with open(paths["explorer.html"], encoding="utf-8") as fh:
+            page = fh.read()
+        data = json.loads(re.search(r'<script id="vf-data" type="application/json">(.*?)</script>', page, re.S)[1])
+        self.assertIn("10.10.1.10", data["focus"])
+        self.assertEqual(data["focus"]["10.10.1.10"]["findings"], [])
+        self.assertEqual(data["focus"]["10.10.1.10"]["peers"][0]["band"], "Unknown")
+        from vulnflow.report import save_article_briefs
+        save_article_briefs(res, os.path.join(self.tmp, "telemetry-only"))
+        with open(paths["technical_report.html"], encoding="utf-8") as fh:
+            self.assertIn("Vulnerability status: unknown", fh.read())
+        from vulnflow.llm import Analyst, LLMConfig
+        analyst = Analyst(res, LLMConfig.from_env(provider="mock"))
+        self.assertIn("without vulnerability scan data", analyst.system)
+        self.assertIn("vulnerability status unknown", analyst.brief())
+
+    def test_empty_scan_and_missing_telemetry(self):
+        empty_scan = self.write("empty.nessus", "")
+        telemetry = next(p for p in self.samples if p.endswith("zeek_conn.log"))
+        res, _ = run([telemetry, empty_scan], os.path.join(self.tmp, "empty-scan-output"))
+        self.assertFalse(res["summary"]["vulnerability_data_available"])
+        with self.assertRaisesRegex(ValueError, "No network telemetry"):
+            run([empty_scan], os.path.join(self.tmp, "missing-telemetry-output"))
+        with self.assertRaisesRegex(ValueError, "No network telemetry"):
+            run([], os.path.join(self.tmp, "empty-input-output"))
+
+    def test_alert_only_telemetry(self):
+        notice = os.path.join(os.path.dirname(__file__), "..", "samples", "notice.log")
+        res, paths = run([notice], os.path.join(self.tmp, "alert-only-output"))
+        self.assertFalse(res["summary"]["vulnerability_data_available"])
+        self.assertEqual(res["summary"]["flows"], 0)
+        self.assertEqual(res["summary"]["threat_alerts"], 1)
+        self.assertTrue(res["hosts"])
+        self.assertTrue(res["telemetry_leads"])
+        self.assertTrue(os.path.exists(paths["explorer.html"]))
+
+    def test_cli_network_only_and_scan_regression(self):
+        from vulnflow.cli import main
+        from contextlib import redirect_stdout
+        from io import StringIO
+        telemetry = next(p for p in self.samples if p.endswith("zeek_conn.log"))
+        output = StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(main(["explore", telemetry, "--no-open", "-o", os.path.join(self.tmp, "explore-only")]), 0)
+        self.assertIn("No vulnerability data available", output.getvalue())
+        with redirect_stdout(StringIO()):
+            res, _ = run(self.samples, os.path.join(self.tmp, "scan-regression"))
+        self.assertTrue(res["summary"]["vulnerability_data_available"])
+        self.assertGreater(res["summary"]["findings_scored"], 0)
 
     def test_recursive_folder_combines_zeek_ot_and_scan(self):
         from vulnflow.cli import main
@@ -328,6 +389,28 @@ class EndToEndTests(Base):
                 self.assertEqual(resp.status, 200)
             with self.assertRaises(urllib.error.HTTPError):
                 urllib.request.urlopen(run_url + "..%2f..%2fin%2f00_x")
+        finally:
+            srv.shutdown()
+
+    def test_web_telemetry_only_upload(self):
+        from vulnflow.web import make_handler
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(os.path.join(self.tmp, "telemetry-runs"), Config()))
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            boundary = uuid.uuid4().hex
+            telemetry = next(p for p in self.samples if p.endswith("zeek_conn.log"))
+            with open(telemetry, "rb") as fh:
+                payload = fh.read()
+            body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"telemetry\"; "
+                    f"filename=\"zeek_conn.log\"\r\nContent-Type: application/octet-stream\r\n\r\n").encode()
+            body += payload + f"\r\n--{boundary}--\r\n".encode()
+            req = urllib.request.Request(f"http://127.0.0.1:{srv.server_port}/analyze", data=body,
+                                         headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+            with urllib.request.urlopen(req) as resp:
+                index, run_url = resp.read().decode(), resp.url
+            self.assertIn("No vulnerability data available", index)
+            with urllib.request.urlopen(run_url + "results.json") as resp:
+                self.assertFalse(json.load(resp)["summary"]["vulnerability_data_available"])
         finally:
             srv.shutdown()
 

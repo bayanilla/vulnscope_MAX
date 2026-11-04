@@ -1,4 +1,4 @@
-"""Data and page for the host explorer: a GrassMarlin-style logical graph of the scanned hosts.
+"""Data and page for the host explorer: a logical graph of scanned or observed hosts.
 
 Click a host and the view flies in on it. On the left is all of its north/south traffic: every outside
 address that reached, tried to reach, or was contacted by it (with firewall and IPS outcome). On the
@@ -66,6 +66,7 @@ def _iso(ts):
 def build(res: dict, ds, cfg: Config | None = None) -> dict:
     cfg = cfg or Config(internal_nets=res["config"]["internal_nets"])
     net = _Net(cfg.internal_nets)
+    telemetry_only = not res["summary"].get("vulnerability_data_available", True)
     pairs: dict[tuple, _Pair] = defaultdict(_Pair)
     for f in ds.flows:
         if f.src_ip != f.dst_ip:
@@ -92,6 +93,8 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     def reach(a: str, b: str) -> dict:
         """How easily someone in control of `a` could compromise `b`, from what was observed."""
         fwd, back = pairs.get((a, b)), pairs.get((b, a))
+        if telemetry_only:
+            return {"p": 0.0, "why": ["Vulnerability status unknown; observed connections do not establish compromise likelihood."]}
         why = []
         if fwd and fwd.established:
             r = 1.0
@@ -140,7 +143,8 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         worst = max((r["severity"] for r in fl), default=-1)
         ev = ("likely" if any(i["confidence"] == "corroborated" for r in fl for i in r["indicators"])
               else "lead" if any(r["indicators"] for r in fl) else "")
-        nodes[ip] = {"id": ip, "name": (h or {}).get("hostname", "") or "", "scanned": h is not None,
+        nodes[ip] = {"id": ip, "name": (h or {}).get("hostname", "") or "", "scanned": ip in ds.scanned_hosts,
+                     "observed": h is not None,
                      "subnet": _subnet(ip), "sev": SEV.get(worst, ""), "pri": (h or {}).get("priority", ""),
                      "score": (h or {}).get("max_score", 0), "ev": ev, "os": (h or {}).get("os", "") or ""}
         return nodes[ip]
@@ -209,7 +213,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                           "out_tries": o.sessions if o else 0, "in_tries": i.sessions if i else 0,
                           "ports_out": sorted(o.ports if ok else o.tried)[:8] if o else [],
                           "ports_in": sorted(i.ports if ok else i.tried)[:8] if i else [],
-                          "p": est["p"], "band": _band(est["p"]) if ok else "None", "why": est["why"]})
+                          "p": est["p"], "band": ("Unknown" if telemetry_only else _band(est["p"])) if ok else "None", "why": est["why"]})
         peers.sort(key=lambda p: (-p["p"], p["band"] == "None", -(p["out"] + p["in"]),
                                   -(p["out_tries"] + p["in_tries"]), p["ip"]))
         n_peers = len(peers)
@@ -244,7 +248,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         }
 
     # overview edges: internal pairs touching at least one node we keep
-    keep = sorted(nodes, key=lambda n: (not nodes[n]["scanned"], n))[:MAX_NODES]
+    keep = sorted(nodes, key=lambda n: (not nodes[n]["observed"], n))[:MAX_NODES]
     kept = set(keep)
     links = {}
     for (s, d), p in pairs.items():
@@ -263,6 +267,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                 ioc_by_host[host].add(match["id"])
     s = res["summary"]
     return {
+        "vulnerability_data_available": not telemetry_only,
         "generated": res["generated"], "window": [s.get("window_start"), s.get("window_end")],
         "counts": {"hosts": len(scanned), "flows": s["flows"], "p1": s["priority_counts"]["P1"],
                    "alerts": s.get("threat_alerts", 0)},

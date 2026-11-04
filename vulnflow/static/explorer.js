@@ -1,6 +1,7 @@
 (function () {
 'use strict';
 const D = JSON.parse(document.getElementById('vf-data').textContent);
+const telemetryOnly = D.vulnerability_data_available === false;
 const cv = document.getElementById('stage'), ctx = cv.getContext('2d');
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -28,7 +29,7 @@ const RETURN = '#b98cff';
 const KIND = {alert: '#ff3b5c', vuln: '#ff8a3d', reached: '#ffc857', outbound: RETURN, attempt: '#8892a6', blocked: '#5b6b82'};
 const KIND_TXT = {alert: 'IPS alert, not blocked', vuln: 'Reached a vulnerable service', reached: 'Reached the host',
   outbound: 'Host connected out to it', attempt: 'Tried, no completed session', blocked: 'Blocked by firewall or IPS'};
-const BAND = {High: '#ff2e88', Medium: '#ffb020', Low: '#2ee6d6', None: '#5b6b82'};
+const BAND = {High: '#ff2e88', Medium: '#ffb020', Low: '#2ee6d6', None: '#5b6b82', Unknown: '#8da2b5'};
 
 let W = 0, H = 0, DPR = 1;
 const cam = {x: 0, y: 0, z: 0.25, tx: 0, ty: 0, tz: 1};
@@ -46,7 +47,7 @@ function overviewLayout() {
   const golden = Math.PI * (3 - Math.sqrt(5));
   const clusters = [];
   subnets.forEach((s, i) => {
-    const members = groups.get(s).sort((a, b) => (b.scanned - a.scanned) || (b.score - a.score) || a.id.localeCompare(b.id));
+    const members = groups.get(s).sort((a, b) => (b.observed - a.observed) || (b.score - a.score) || a.id.localeCompare(b.id));
     const cr = 40 + 40 * Math.sqrt(members.length);
     const r = i === 0 ? 0 : 230 * Math.sqrt(i) + cr;
     const cx = r * Math.cos(i * golden), cy = r * Math.sin(i * golden);
@@ -62,7 +63,7 @@ function overviewLayout() {
 }
 function node(d) {
   if (nodes.has(d.id)) return nodes.get(d.id);
-  const r = d.scanned ? 7 + Math.min(9, (d.score || 0) / 12) : 4.5;
+  const r = d.observed ? 7 + Math.min(9, (d.score || 0) / 12) : 4.5;
   const n = {d, id: d.id, x: 0, y: 0, tx: 0, ty: 0, ox: 0, oy: 0, a: 0, ta: 1, r, tr: r, color: SEV[d.sev] || SEV[''],
     ext: false, born: performance.now() + Math.random() * 900};
   nodes.set(d.id, n);
@@ -149,7 +150,7 @@ function focus(id, push = true) {
   });
   const peers = F.peers.slice(0, SIDE_MAX).map(p => { const n = peerNode(p.ip); n.info = p; return n; });
   arc(peers, 1);
-  peers.forEach(n => { n.ta = n.info.band === 'None' ? 0.75 : 1; n.tr = n.small ? 3.5 : (n.d.scanned ? 8 : 6) + n.info.p * 6; keep.add(n.id); });
+  peers.forEach(n => { n.ta = n.info.band === 'None' ? 0.75 : 1; n.tr = n.small ? 3.5 : (n.d.observed ? 8 : 6) + n.info.p * 6; keep.add(n.id); });
   // two-hop nodes sit beyond the labelled columns; with a packed overflow block they stay in the panel only
   const shownPeers = new Set(peers.length > LABELED ? [] : peers.map(n => n.id));
   const h2 = F.hop2.filter(p => shownPeers.has(p.via) && p.p >= 0.1).slice(0, 10).map(p => { const n = peerNode(p.ip); n.info = p; return n; });
@@ -378,7 +379,7 @@ function drawNode(n, T) {
       ctx.strokeStyle = '#2ee6d6'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke();
     }
-  } else if (!n.d.scanned) {
+  } else if (!n.d.observed) {
     ctx.fillStyle = 'rgba(14,22,36,.9)'; ctx.strokeStyle = '#8da2b5'; ctx.lineWidth = 1.5; ctx.setLineDash([2, 2]);
     ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
   } else {
@@ -391,7 +392,7 @@ function drawNode(n, T) {
   ctx.shadowBlur = 0;
   if (hov && !sel) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r + 4, 0, 7); ctx.stroke(); }
   // labels
-  const show = state.labels && (sel || hov || (state.mode === 'focus' ? n.a > 0.5 && !n.small : (n.d.scanned && (cam.z > 0.55 || n.d.pri === 'P1'))));
+  const show = state.labels && (sel || hov || (state.mode === 'focus' ? n.a > 0.5 && !n.small : (n.d.observed && (cam.z > 0.55 || n.d.pri === 'P1'))));
   if (show) {
     const name = nodeLabel(n);
     ctx.font = (sel ? '600 14px' : '12px') + ' system-ui,-apple-system,Segoe UI,sans-serif';
@@ -522,9 +523,10 @@ function tip(n, x, y) {
   } else {
     const d = n.d, info = state.mode === 'focus' && n.info && n.id !== state.focus ? n.info : null;
     h = `<b>${esc(d.name || d.id)}</b>${d.name ? ` <span class="m">${esc(d.id)}</span>` : ''}<br>` +
-      (d.scanned ? `<span class="pill ${esc(d.pri)}">${esc(d.pri)}</span> worst finding ${esc(d.sev || 'none')}` : '<span class="m">Not in the vulnerability scan</span>') +
+      (telemetryOnly ? '<span class="m">Vulnerability data unavailable; status unknown</span>' :
+        d.scanned ? `<span class="pill ${esc(d.pri)}">${esc(d.pri)}</span> worst finding ${esc(d.sev || 'none')}` : '<span class="m">Not in the vulnerability scan</span>') +
       (info && info.band === 'None' ? `<br>East/west attempts only, no completed session<br><span class="m">${esc(info.why.join('; '))}</span>` : '') +
-      (info && info.band !== 'None' ? `<br>Estimated likelihood if ${esc(state.focus)} is exploited: <b style="color:${BAND[info.band]}">${Math.round(info.p * 100)}% ${info.band}</b>` +
+      (info && info.band !== 'None' && !telemetryOnly ? `<br>Estimated likelihood if ${esc(state.focus)} is exploited: <b style="color:${BAND[info.band]}">${Math.round(info.p * 100)}% ${info.band}</b>` +
         `<br><span class="m">${esc(info.why.join('; '))}</span>` : '') +
       (D.focus[n.id] && n.id !== state.focus ? '<br><span class="m">Click to focus</span>' : '');
   }
@@ -566,7 +568,7 @@ function renderList() {
     const iocCount = iocCounts[id] || 0;
   const iocHint = iocCount ? `<span class="ioc-host-badge" title="${iocCount} exact IOC match${iocCount === 1 ? '' : 'es'}; review the source and traffic" aria-label="${iocCount} IOC match${iocCount === 1 ? '' : 'es'}">IOC ${iocCount}</span>` : '';
     return `<div class="hrow${id === state.focus ? ' on' : ''}" role="listitem" tabindex="0" data-id="${esc(id)}">` +
-      `<span class="pill ${esc(d.pri)}">${esc(d.pri)}</span><span class="nm">${esc((d.name || id).split('.')[0])} ${iocHint}` +
+      (telemetryOnly ? '<span class="pill">UNKNOWN</span>' : `<span class="pill ${esc(d.pri)}">${esc(d.pri)}</span>`) + `<span class="nm">${esc((d.name || id).split('.')[0])} ${iocHint}` +
       `<br><span class="ip">${esc(id)} · ${F.attackers_total} N/S · ${F.peers_total} E/W</span></span>` +
       (d.ev ? `<span class="tag ${d.ev}">${d.ev === 'likely' ? 'LIKELY' : 'LEAD'}</span>` : '') + '</div>';
   }).join('') || `<div class="hrow">${iocOnly ? 'No IOC hosts match' : 'No match'}</div>`;
@@ -606,8 +608,8 @@ function renderPanel(id) {
     const dir = (o ? `→ ${o}` : '') + (o && i ? '  ' : '') + (i ? `← ${i}` : '');
     return `<div class="row peer" data-k="peer" data-ip="${esc(q.ip)}"><div class="bar b-${q.band}"><i style="width:${Math.round(q.p * 100)}%"></i></div>` +
       `<span>${D.focus[q.ip] ? `<span class="go" data-go="${esc(q.ip)}">${esc(nm)}</span>` : esc(nm)} <span class="ip" style="color:var(--muted);font-size:11px">${esc(q.ip)}</span></span>` +
-      `<span class="lk" style="color:${BAND[q.band]}">${none ? 'no session' : Math.round(q.p * 100) + '% ' + q.band}</span>` +
-      `<span class="sub">${esc(dir)} ${none ? 'attempts, none completed' : 'sessions'}${q.ports_out.length ? ' · ' + (none ? 'tried ' : 'uses ') + esc(q.ports_out.join(', ')) : ''}${pd.scanned ? ' · worst ' + esc(pd.sev || 'none') : ' · not scanned'}</span>` +
+      `<span class="lk" style="color:${BAND[q.band]}">${none ? 'no session' : telemetryOnly ? 'observed' : Math.round(q.p * 100) + '% ' + q.band}</span>` +
+      `<span class="sub">${esc(dir)} ${none ? 'attempts, none completed' : 'sessions'}${q.ports_out.length ? ' · ' + (none ? 'tried ' : 'uses ') + esc(q.ports_out.join(', ')) : ''}${telemetryOnly ? ' · vulnerability status unknown' : pd.scanned ? ' · worst ' + esc(pd.sev || 'none') : ' · not scanned'}</span>` +
       `<ul class="why" hidden>${q.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>`;
   }).join('') || '<div class="row"><span></span><span class="sub">No east/west traffic to or from this host in the telemetry.</span></div>';
   const h2list = F.hop2.filter(q => q.p >= 0.05).slice(0, 12);
@@ -625,23 +627,24 @@ function renderPanel(id) {
   p.innerHTML =
     `<div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><h2>${esc(d.name ? d.name.split('.')[0] : id)}</h2>` +
     `<div class="ipline">${esc(id)}${d.name ? ' · ' + esc(d.name) : ''}</div><div class="ipline">${esc(d.os)}</div></div>` +
-    `<div style="text-align:right"><span class="pill ${esc(d.pri)}">${esc(d.pri)}</span><div class="ipline">score ${d.score}</div>` +
+    `<div style="text-align:right">${telemetryOnly ? '<span class="pill">UNKNOWN</span><div class="ipline">No vulnerability data</div>' : `<span class="pill ${esc(d.pri)}">${esc(d.pri)}</span><div class="ipline">score ${d.score}</div>`}` +
     (d.ev ? `<span class="tag ${d.ev}">${d.ev === 'likely' ? 'LIKELY EXPLOITATION' : 'LEAD'}</span>` : '') + `</div></div>` +
     `<div class="stats"><div class="stat red"><b>${F.attackers_total}</b><span>outside addresses (N/S)${nAlert ? `, ${nAlert} with IPS alerts` : ''}</span></div>` +
-    `<div class="stat pink"><b>${F.peers_total}</b><span>internal hosts (E/W) · ${F.blast.high} high, ${F.blast.medium} med</span></div></div>` +
+    `<div class="stat pink"><b>${F.peers_total}</b><span>internal hosts (E/W)${telemetryOnly ? '' : ` · ${F.blast.high} high, ${F.blast.medium} med`}</span></div></div>` +
     (state.history.length ? `<p style="margin:10px 0 0"><button id="btn-back">← Back to ${esc(state.history[state.history.length - 1])}</button></p>` : '') +
     `<h3>North / south: outside addresses</h3>${atk}` +
     (F.attackers_total > F.attackers.length ? `<div class="row"><span></span><span class="sub">${F.attackers_total - F.attackers.length} more not shown</span></div>` : '') +
-    `<h3>East / west: internal hosts · blast radius if exploited</h3>${peers}${hop2}` +
+    `<h3>${telemetryOnly ? 'East / west: observed internal connections' : 'East / west: internal hosts · blast radius if exploited'}</h3>${peers}${hop2}` +
     (F.peers_total > F.peers.length ? `<div class="row"><span></span><span class="sub">${F.peers_total - F.peers.length} more not shown</span></div>` : '') +
-    `<h3>Vulnerabilities</h3>${fds || '<div class="fd">None at the configured severity.</div>'}` +
+    `<h3>Vulnerabilities</h3>${telemetryOnly ? '<div class="fd">No vulnerability data available; status unknown.</div>' : fds || '<div class="fd">None at the configured severity.</div>'}` +
     (D.ioc_matches && D.ioc_matches.some(item => item.hosts.includes(id))
       ? `<h3>IOC matches</h3><div class="note">Exact IOC matches are leads for review.</div>` +
         D.ioc_matches.filter(item => item.hosts.includes(id)).map(item =>
           `<div class="fd">${iocButton(item.type, item.value)} <span class="meta">${esc(item.type)} · ${item.articles.length} source link(s)</span> · ${iocButton(item.type, item.value, 'View details')}</div>`).join('')
       : '') +
     `<div class="note">This view shows all traffic to and from the host in the telemetry: outside addresses on the left, internal hosts on the right. Inbound outside traffic is targeting, not proof of compromise. ` +
-    `Likelihood is an estimate from observed sessions, the ports in use and the scanner's findings on each peer. Use it to decide where to look first; only host evidence confirms a compromise. Click a row for the reasons.</div>`;
+    (telemetryOnly ? 'Vulnerability status is unknown. Review alerts and IOC matches as leads; only host evidence confirms a compromise.' :
+    `Likelihood is an estimate from observed sessions, the ports in use and the scanner's findings on each peer. Use it to decide where to look first; only host evidence confirms a compromise. Click a row for the reasons.`) + '</div>';
   p.hidden = false; p.scrollTop = 0;
   const back = $('btn-back'); if (back) back.onclick = () => focus(state.history.pop(), false);
 }
@@ -671,22 +674,22 @@ if (!state.motion) $('btn-motion').setAttribute('aria-pressed', 'false');
 
 $('legend').innerHTML =
   `<span><i style="background:${KIND.alert}"></i>IPS alert, not blocked</span>` +
-  `<span><i style="background:${KIND.vuln}"></i>Reached a vulnerable service</span>` +
+  (telemetryOnly ? '' : `<span><i style="background:${KIND.vuln}"></i>Reached a vulnerable service</span>`) +
   `<span><i style="background:${KIND.reached}"></i>Reached the host</span>` +
   `<span><i style="background:repeating-linear-gradient(90deg,#5b6b82 0 5px,transparent 5px 9px)"></i>Blocked or failed, no session</span>` +
   `<span><i style="background:${RETURN}"></i>Host connected out</span>` +
   `<span><span class="sw" style="background:transparent;border:2px solid #2ee6d6"></span>Click outlined IP or domain IOC for report overview</span>` +
-  `<span><i style="background:${BAND.High}"></i><i style="background:${BAND.Medium};width:12px"></i><i style="background:${BAND.Low};width:12px"></i>Blast-radius likelihood high / medium / low</span>` +
-  `<span><span class="sw" style="background:${SEV.Critical}"></span>Critical <span class="sw" style="background:${SEV.High}"></span>High <span class="sw" style="background:${SEV.Medium}"></span>Medium <span class="sw" style="background:${SEV.Low}"></span>Low</span>` +
-  `<span class="cal">Leads and estimates, not confirmed compromise</span>`;
+  (telemetryOnly ? '' : `<span><i style="background:${BAND.High}"></i><i style="background:${BAND.Medium};width:12px"></i><i style="background:${BAND.Low};width:12px"></i>Blast-radius likelihood high / medium / low</span>` +
+  `<span><span class="sw" style="background:${SEV.Critical}"></span>Critical <span class="sw" style="background:${SEV.High}"></span>High <span class="sw" style="background:${SEV.Medium}"></span>Medium <span class="sw" style="background:${SEV.Low}"></span>Low</span>`) +
+  `<span class="cal">${telemetryOnly ? 'No vulnerability data; status unknown' : 'Leads and estimates, not confirmed compromise'}</span>`;
 
 const c = D.counts, w = D.window;
-$('subtitle').textContent = `${c.hosts} scanned hosts · ${c.flows.toLocaleString()} sessions · ${c.p1} P1 · ${c.alerts} IPS alerts` +
+$('subtitle').textContent = (telemetryOnly ? `${c.hosts} observed hosts · no vulnerability data · ${c.flows.toLocaleString()} sessions · ${c.alerts} IPS alerts` : `${c.hosts} scanned hosts · ${c.flows.toLocaleString()} sessions · ${c.p1} P1 · ${c.alerts} IPS alerts`) +
   (w[0] ? ` · ${w[0].slice(0, 10)} → ${(w[1] || '').slice(0, 10)}` : '');
 
 // ---------------------------------------------------------------- start
 resize(); renderList(); fitOverview();
-const introText = `Correlating ${c.hosts} hosts against ${c.flows.toLocaleString()} sessions`;
+const introText = telemetryOnly ? `Exploring ${c.hosts} observed hosts and ${c.flows.toLocaleString()} sessions` : `Correlating ${c.hosts} hosts against ${c.flows.toLocaleString()} sessions`;
 if (state.motion) {
   let i = 0; const it = setInterval(() => { $('intro-text').textContent = introText.slice(0, ++i) + (i < introText.length ? '▌' : ''); if (i >= introText.length) clearInterval(it); }, 22);
   setTimeout(() => $('intro').classList.add('gone'), 1500);

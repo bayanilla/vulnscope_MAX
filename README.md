@@ -3,10 +3,15 @@
 The command-line package remains `vulnflow` for existing workflows. VulnScope Explorer is the
 interactive network view within Múcaro VulnScope.
 
-Upload network telemetry and Nessus results. The workflow cleans and normalizes them,
-works out which vulnerable services are actually reachable and from where, how far a
-compromise could spread, and whether traffic already looks like exploitation. It then
-writes an **executive summary** and a **technical report** for system owners.
+Upload network telemetry and optional Nessus results. The workflow cleans and normalizes them
+and writes an **executive summary** and a **technical report** for system owners. When scan
+findings are present, it correlates vulnerable services with observed reachability and
+investigation leads.
+
+With network telemetry alone, VulnScope reports observed connections, IPS/IDS alerts and exact IOC
+matches. It marks vulnerability status as **unknown** and does not assign CVSS scores or vulnerability
+priorities. A scan with no parsed findings is treated the same way. At least one parsed network session
+or IPS/IDS alert is required; an empty folder or scan-only input is rejected.
 
 Pure Python 3.10+ standard library. Nothing to install for the core workflow; the optional
 Security Assistant needs `pip install anthropic` only if you choose Anthropic.
@@ -32,6 +37,9 @@ python3 -m vulnflow analyze samples \
 python3 -m vulnflow analyze /path/to/log-bundle -o out \
     --internal-net 10.0.0.0/8 --internal-net 172.16.0.0/12
 
+# Telemetry-only analysis also works without a Nessus file
+python3 -m vulnflow analyze /path/to/network-logs -o network-out
+
 # Optional: add a typed IOC CSV, with optional source links
 python3 -m vulnflow analyze /path/to/log-bundle -o out \
     --ioc-csv /path/to/indicators.csv
@@ -51,8 +59,8 @@ and IOC CSV. See [the sample guide](samples/README.md) for the synthetic scenari
 
 ### IOC CSV matches
 
-Add a typed IOC CSV with `--ioc-csv`, include it in an analyzed folder, or upload it with telemetry and a Nessus
-scan on the local upload page. Use `type,indicator` or `indicatorType,indicator` as the column headers;
+Add a typed IOC CSV with `--ioc-csv`, include it in an analyzed folder, or upload it with telemetry
+on the local upload page. Use `type,indicator` or `indicatorType,indicator` as the column headers;
 supported types are `ip`, `domain`, `url`, `hash`, `cve`, and `package`. Optional `source_url` or
 `articleUrls` columns add source links. For example:
 

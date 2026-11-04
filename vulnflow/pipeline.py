@@ -13,16 +13,14 @@ def run(paths: list[str], outdir: str, cfg: Config | None = None,
         article_preview_cache: str | None = None) -> tuple[dict, dict[str, str]]:
     archive_paths = [path for path in paths if is_archive(path)]
     ds = load([path for path in paths if path not in archive_paths], overrides)
-    if not ds.findings and not any(s.fmt.startswith("nessus") for s in ds.stats):
-        raise ValueError("No vulnerability scan was provided. Add a .nessus file or Nessus CSV export.")
-    if not ds.flows:
+    if not ds.flows and not ds.threats:
         raise ValueError("No network telemetry was provided (or none could be parsed). "
-                         "Add Zeek conn.log, Palo Alto traffic logs or a flow CSV.")
+                         "Add Zeek conn.log, Palo Alto traffic/threat logs, IDS alerts or a flow CSV.")
     archive, archive_stats = read_archives(archive_paths)
     ds.stats.extend(archive_stats)
     res = correlate(ds, cfg)
     if archive_paths:
-        res["ioc_matches"] = match_archive(ds, archive)
+        res["ioc_matches"] = match_archive(ds, archive, {h["host"] for h in res["hosts"]})
         if article_previews:
             from .article_preview import add_previews, read_preview_cache
             cached = read_preview_cache(article_preview_cache) if article_preview_cache else None
