@@ -40,6 +40,18 @@ def rss() -> int:
         return int(fh.read().split()[1]) * PAGE
 
 
+def tree_bytes(path: str) -> int:
+    """Allocated bytes under path (like du), tolerant of files vanishing mid-walk."""
+    total = 0
+    for root, dirs, files in os.walk(path):
+        for f in files:
+            try:
+                total += os.lstat(os.path.join(root, f)).st_blocks * 512
+            except OSError:
+                pass
+    return total
+
+
 def size(s: str) -> int:
     units = {"K": 1 << 10, "M": 1 << 20, "G": 1 << 30}
     return int(float(s[:-1]) * units[s[-1].upper()]) if s[-1].upper() in units else int(s)
@@ -53,7 +65,25 @@ class Recorder:
         self.t0 = time.time()
         self.deadline = None
         self.lock = threading.Lock()
+        self.workdir, self.disk_peak = None, 0
         threading.Thread(target=self._sample, daemon=True).start()
+
+    def watch_disk(self, workdir: str, every: float = 2.0):
+        """Sample the run's working directory size (Parquet, DuckDB file, spill, spools)."""
+        self.workdir = workdir
+
+        def loop():
+            while True:
+                b = tree_bytes(workdir)
+                with self.lock:
+                    self.disk_peak = max(self.disk_peak, b)
+                    st = self.result["stages"].get(self.stage) if self.stage else None
+                    if st is not None:
+                        st["workdir_peak"] = max(st.get("workdir_peak", 0), b)
+                        st["workdir_last"] = b
+                    self.result["workdir_peak"] = self.disk_peak
+                time.sleep(every)
+        threading.Thread(target=loop, daemon=True).start()
 
     def _sample(self):
         main_id, tick = threading.main_thread().ident, 0
@@ -112,16 +142,28 @@ class Recorder:
         os.replace(self.path + ".tmp", self.path)
 
 
+_REC: list = [None]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("input")
     ap.add_argument("-o", "--out", required=True)
     ap.add_argument("--json", required=True)
     ap.add_argument("--rss-limit", default="12G")
+    ap.add_argument("--workdir", help="set VULNSCOPE_WORKDIR and record its disk usage per stage")
+    ap.add_argument("--skip-report", action="store_true",
+                    help="stop after correlate (the report stage builds explorer.html in memory)")
     ap.add_argument("--time-limit", type=float, default=0, help="stop after this many seconds (0 = none)")
     a = ap.parse_args()
     rec = Recorder(a.json, size(a.rss_limit))
+    _REC[0] = rec
+    rec.result["duckdb_memory_limit"] = os.environ.get("VULNSCOPE_DUCKDB_MEMORY") or "default"
     rec.deadline = rec.t0 + a.time_limit if a.time_limit else None
+    if a.workdir:
+        os.makedirs(a.workdir, exist_ok=True)
+        os.environ["VULNSCOPE_WORKDIR"] = a.workdir
+        rec.watch_disk(a.workdir)
 
     rec.start_stage("discover")
     files = _input_files([a.input], a.out)
@@ -173,6 +215,11 @@ def main():
     rec.finish_stage(hosts=len(res["hosts"]), findings_scored=len(res["findings"]),
                      network_leads=len(res["network_leads"]))
     rec.dump()
+    if a.skip_report:
+        rec.result["status"] = "ok (report skipped)"
+        rec.dump()
+        print(json.dumps({k: v for k, v in rec.result.items() if k != "files"}, indent=2, default=str))
+        return
 
     rec.start_stage("report")
     paths = write_all(res, ds, a.out)
@@ -183,4 +230,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:  # record where and why the run failed, then re-raise
+        rec = _REC[0]
+        if rec is not None:
+            with rec.lock:
+                if rec.stage and "seconds" not in rec.result["stages"][rec.stage]:
+                    rec.end_stage(aborted=True)
+                rec.result["status"] = f"failed in stage '{rec.stage}': {type(exc).__name__}: {str(exc)[:300]}"
+                rec.result["workdir_peak"] = rec.disk_peak
+            rec.dump()
+        raise

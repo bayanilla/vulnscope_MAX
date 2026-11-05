@@ -23,4 +23,4 @@ Generator defaults: 2,000 internal hosts in `10.10.0.0/16` (5% servers), 50,000 
 60% of sessions seen by both Zeek and the firewall, 2% of rows duplicated, 30% of files gzipped, and
 15% of the Zeek volume in `dns.log`. `--size` is uncompressed volume; on disk it is about 85% of that.
 
-Results from the first run are in [`RESULTS.md`](RESULTS.md); the streaming + DuckDB pipeline is in [`RESULTS_DUCKDB.md`](RESULTS_DUCKDB.md).
+Results from the first run are in [`RESULTS.md`](RESULTS.md); the streaming + DuckDB pipeline is in [`RESULTS_DUCKDB.md`](RESULTS_DUCKDB.md), and 5/10 GB runs with a 50 GB extrapolation are in [`RESULTS_10GB.md`](RESULTS_10GB.md).

@@ -1,0 +1,7776 @@
+{
+  "stages": {
+    "discover": {
+      "rss_start": 58392576,
+      "workdir_peak": 0,
+      "workdir_last": 0,
+      "seconds": 0.0,
+      "rss_peak": 58392576,
+      "rss_end": 58556416,
+      "aborted": false
+    },
+    "parse+normalize": {
+      "rss_start": 58556416,
+      "hot": {
+        "_util.py:readinto:127": 790,
+        "store.py:write_flow_batch:110": 81,
+        "store.py:_write_csv:92": 133,
+        "__init__.py:detect:22": 4,
+        "store.py:add:275": 85,
+        "store.py:write_flow_batch:115": 1,
+        "store.py:finalize_flows:134": 60,
+        "store.py:finalize_flows:145": 24,
+        "store.py:finalize_flows:155": 109,
+        "store.py:finalize_flows:161": 1
+      },
+      "workdir_peak": 13434834944,
+      "workdir_last": 12472537088,
+      "seconds": 1334.94,
+      "rss_peak": 11634864128,
+      "rss_end": 6351745024,
+      "aborted": false,
+      "parse_seconds": 1134.68,
+      "flows": 42080687,
+      "threats": 46911,
+      "zeek_events": 11872367,
+      "ot_events": 0,
+      "findings": 0,
+      "duplicate_flows_removed": 1346937,
+      "cross_sensor_duplicates_removed": 25251523,
+      "normalize_seconds": 200.26
+    },
+    "correlate": {
+      "rss_start": 6351818752,
+      "workdir_peak": 9052712960,
+      "workdir_last": 9052712960,
+      "hot": {
+        "correlate.py:__init__:102": 1,
+        "correlate.py:internal:51": 1,
+        "correlate.py:__init__:107": 26,
+        "store.py:insert_rows:183": 1,
+        "correlate.py:__init__:119": 1,
+        "correlate.py:__init__:129": 3,
+        "correlate.py:__init__:132": 1,
+        "correlate.py:__init__:133": 1,
+        "correlate.py:prepare_blast:258": 1,
+        "correlate.py:prepare_blast:265": 12,
+        "correlate.py:blast:337": 2,
+        "correlate.py:blast:336": 1,
+        "store.py:__iter__:291": 56,
+        "correlate.py:run:623": 1
+      },
+      "seconds": 117.56,
+      "rss_peak": 6352207872,
+      "rss_end": 2864074752,
+      "aborted": false,
+      "hosts": 2000,
+      "findings_scored": 0,
+      "network_leads": 65191
+    }
+  },
+  "files": [
+    {
+      "file": "paloalto/traffic_2026-10-01_00.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527122,
+      "seconds": 2.345,
+      "read": 125748,
+      "records": 125748,
+      "dropped": {},
+      "rss_after": 207876096
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_01.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532205,
+      "seconds": 2.019,
+      "read": 125887,
+      "records": 125887,
+      "dropped": {},
+      "rss_after": 242593792
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_02.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532495,
+      "seconds": 1.976,
+      "read": 125855,
+      "records": 125855,
+      "dropped": {},
+      "rss_after": 288919552
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_03.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531101,
+      "seconds": 2.191,
+      "read": 125985,
+      "records": 125985,
+      "dropped": {},
+      "rss_after": 335577088
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_04.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535747,
+      "seconds": 1.962,
+      "read": 125992,
+      "records": 125992,
+      "dropped": {},
+      "rss_after": 342839296
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_05.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526364,
+      "seconds": 1.898,
+      "read": 125728,
+      "records": 125728,
+      "dropped": {},
+      "rss_after": 318996480
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_06.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532576,
+      "seconds": 1.867,
+      "read": 125927,
+      "records": 125927,
+      "dropped": {},
+      "rss_after": 319598592
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_07.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3537686,
+      "seconds": 2.228,
+      "read": 126206,
+      "records": 126206,
+      "dropped": {},
+      "rss_after": 283381760
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_08.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3540432,
+      "seconds": 1.897,
+      "read": 126155,
+      "records": 126155,
+      "dropped": {},
+      "rss_after": 308576256
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_09.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528939,
+      "seconds": 1.882,
+      "read": 125855,
+      "records": 125855,
+      "dropped": {},
+      "rss_after": 282492928
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_10.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535350,
+      "seconds": 1.859,
+      "read": 126148,
+      "records": 126148,
+      "dropped": {},
+      "rss_after": 237862912
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_11.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532328,
+      "seconds": 2.214,
+      "read": 125867,
+      "records": 125867,
+      "dropped": {},
+      "rss_after": 279973888
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_12.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527044,
+      "seconds": 1.865,
+      "read": 125810,
+      "records": 125810,
+      "dropped": {},
+      "rss_after": 321499136
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_13.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535203,
+      "seconds": 1.853,
+      "read": 126092,
+      "records": 126092,
+      "dropped": {},
+      "rss_after": 299593728
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_14.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3523746,
+      "seconds": 1.847,
+      "read": 125635,
+      "records": 125635,
+      "dropped": {},
+      "rss_after": 302211072
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_15.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530627,
+      "seconds": 2.184,
+      "read": 125974,
+      "records": 125974,
+      "dropped": {},
+      "rss_after": 269844480
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_16.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527970,
+      "seconds": 1.967,
+      "read": 125926,
+      "records": 125926,
+      "dropped": {},
+      "rss_after": 283926528
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_17.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529966,
+      "seconds": 1.914,
+      "read": 125985,
+      "records": 125985,
+      "dropped": {},
+      "rss_after": 310235136
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_18.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528417,
+      "seconds": 1.901,
+      "read": 125903,
+      "records": 125903,
+      "dropped": {},
+      "rss_after": 311087104
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_19.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527672,
+      "seconds": 2.243,
+      "read": 125821,
+      "records": 125821,
+      "dropped": {},
+      "rss_after": 280948736
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_20.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526686,
+      "seconds": 1.882,
+      "read": 125834,
+      "records": 125834,
+      "dropped": {},
+      "rss_after": 280465408
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_21.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529703,
+      "seconds": 1.874,
+      "read": 125848,
+      "records": 125848,
+      "dropped": {},
+      "rss_after": 305111040
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_22.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3539530,
+      "seconds": 1.895,
+      "read": 126079,
+      "records": 126079,
+      "dropped": {},
+      "rss_after": 272605184
+    },
+    {
+      "file": "paloalto/traffic_2026-10-01_23.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3525592,
+      "seconds": 2.242,
+      "read": 125826,
+      "records": 125826,
+      "dropped": {},
+      "rss_after": 241577984
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_00.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532426,
+      "seconds": 1.875,
+      "read": 125923,
+      "records": 125923,
+      "dropped": {},
+      "rss_after": 268238848
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_01.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530140,
+      "seconds": 1.898,
+      "read": 125874,
+      "records": 125874,
+      "dropped": {},
+      "rss_after": 297807872
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_02.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533569,
+      "seconds": 1.917,
+      "read": 125945,
+      "records": 125945,
+      "dropped": {},
+      "rss_after": 292798464
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_03.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3542460,
+      "seconds": 2.296,
+      "read": 126347,
+      "records": 126347,
+      "dropped": {},
+      "rss_after": 251658240
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_04.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535676,
+      "seconds": 2.034,
+      "read": 126073,
+      "records": 126073,
+      "dropped": {},
+      "rss_after": 258887680
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_05.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532467,
+      "seconds": 1.939,
+      "read": 126070,
+      "records": 126070,
+      "dropped": {},
+      "rss_after": 268697600
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_06.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528570,
+      "seconds": 1.947,
+      "read": 125802,
+      "records": 125802,
+      "dropped": {},
+      "rss_after": 255012864
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_07.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532901,
+      "seconds": 2.354,
+      "read": 125868,
+      "records": 125868,
+      "dropped": {},
+      "rss_after": 283361280
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_08.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532442,
+      "seconds": 1.933,
+      "read": 125971,
+      "records": 125971,
+      "dropped": {},
+      "rss_after": 305856512
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_09.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532362,
+      "seconds": 1.986,
+      "read": 125962,
+      "records": 125962,
+      "dropped": {},
+      "rss_after": 295108608
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_10.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527395,
+      "seconds": 2.286,
+      "read": 125841,
+      "records": 125841,
+      "dropped": {},
+      "rss_after": 304070656
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_11.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529401,
+      "seconds": 1.923,
+      "read": 125752,
+      "records": 125752,
+      "dropped": {},
+      "rss_after": 330063872
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_12.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532498,
+      "seconds": 1.96,
+      "read": 125909,
+      "records": 125909,
+      "dropped": {},
+      "rss_after": 303550464
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_13.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527145,
+      "seconds": 1.992,
+      "read": 125898,
+      "records": 125898,
+      "dropped": {},
+      "rss_after": 251969536
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_14.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529959,
+      "seconds": 2.382,
+      "read": 125951,
+      "records": 125951,
+      "dropped": {},
+      "rss_after": 316276736
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_15.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530451,
+      "seconds": 1.959,
+      "read": 125980,
+      "records": 125980,
+      "dropped": {},
+      "rss_after": 300240896
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_16.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3520971,
+      "seconds": 1.953,
+      "read": 125810,
+      "records": 125810,
+      "dropped": {},
+      "rss_after": 271761408
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_17.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526721,
+      "seconds": 1.951,
+      "read": 125771,
+      "records": 125771,
+      "dropped": {},
+      "rss_after": 273018880
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_18.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3524978,
+      "seconds": 2.306,
+      "read": 125733,
+      "records": 125733,
+      "dropped": {},
+      "rss_after": 303534080
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_19.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533334,
+      "seconds": 1.937,
+      "read": 125907,
+      "records": 125907,
+      "dropped": {},
+      "rss_after": 283725824
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_20.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3525795,
+      "seconds": 1.894,
+      "read": 125745,
+      "records": 125745,
+      "dropped": {},
+      "rss_after": 231284736
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_21.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533600,
+      "seconds": 1.976,
+      "read": 125881,
+      "records": 125881,
+      "dropped": {},
+      "rss_after": 257150976
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_22.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3522837,
+      "seconds": 2.263,
+      "read": 125894,
+      "records": 125894,
+      "dropped": {},
+      "rss_after": 292417536
+    },
+    {
+      "file": "paloalto/traffic_2026-10-02_23.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529194,
+      "seconds": 1.96,
+      "read": 125811,
+      "records": 125811,
+      "dropped": {},
+      "rss_after": 318296064
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_00.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533697,
+      "seconds": 1.973,
+      "read": 125991,
+      "records": 125991,
+      "dropped": {},
+      "rss_after": 324046848
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_01.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528688,
+      "seconds": 1.917,
+      "read": 125908,
+      "records": 125908,
+      "dropped": {},
+      "rss_after": 352043008
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_02.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528225,
+      "seconds": 2.242,
+      "read": 126031,
+      "records": 126031,
+      "dropped": {},
+      "rss_after": 324182016
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_03.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3537458,
+      "seconds": 1.932,
+      "read": 126232,
+      "records": 126232,
+      "dropped": {},
+      "rss_after": 350633984
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_04.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530738,
+      "seconds": 1.907,
+      "read": 125931,
+      "records": 125931,
+      "dropped": {},
+      "rss_after": 365731840
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_05.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533344,
+      "seconds": 1.927,
+      "read": 125931,
+      "records": 125931,
+      "dropped": {},
+      "rss_after": 321175552
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_06.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529307,
+      "seconds": 2.35,
+      "read": 125923,
+      "records": 125923,
+      "dropped": {},
+      "rss_after": 375025664
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_07.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3537497,
+      "seconds": 1.935,
+      "read": 126140,
+      "records": 126140,
+      "dropped": {},
+      "rss_after": 392548352
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_08.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526615,
+      "seconds": 1.921,
+      "read": 125825,
+      "records": 125825,
+      "dropped": {},
+      "rss_after": 394948608
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_09.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3524283,
+      "seconds": 1.936,
+      "read": 125759,
+      "records": 125759,
+      "dropped": {},
+      "rss_after": 391507968
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_10.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3524713,
+      "seconds": 2.347,
+      "read": 125858,
+      "records": 125858,
+      "dropped": {},
+      "rss_after": 326393856
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_11.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530692,
+      "seconds": 1.924,
+      "read": 126115,
+      "records": 126115,
+      "dropped": {},
+      "rss_after": 340279296
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_12.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529882,
+      "seconds": 1.924,
+      "read": 125905,
+      "records": 125905,
+      "dropped": {},
+      "rss_after": 328650752
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_13.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3525806,
+      "seconds": 1.902,
+      "read": 125818,
+      "records": 125818,
+      "dropped": {},
+      "rss_after": 286609408
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_14.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526533,
+      "seconds": 2.379,
+      "read": 125845,
+      "records": 125845,
+      "dropped": {},
+      "rss_after": 230514688
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_15.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527384,
+      "seconds": 1.963,
+      "read": 125943,
+      "records": 125943,
+      "dropped": {},
+      "rss_after": 285163520
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_16.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533962,
+      "seconds": 1.912,
+      "read": 126030,
+      "records": 126030,
+      "dropped": {},
+      "rss_after": 283082752
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_17.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533652,
+      "seconds": 1.927,
+      "read": 126042,
+      "records": 126042,
+      "dropped": {},
+      "rss_after": 225083392
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_18.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528733,
+      "seconds": 2.265,
+      "read": 125923,
+      "records": 125923,
+      "dropped": {},
+      "rss_after": 272699392
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_19.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531815,
+      "seconds": 1.936,
+      "read": 125921,
+      "records": 125921,
+      "dropped": {},
+      "rss_after": 265756672
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_20.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3536654,
+      "seconds": 1.971,
+      "read": 125995,
+      "records": 125995,
+      "dropped": {},
+      "rss_after": 281772032
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_21.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529351,
+      "seconds": 2.269,
+      "read": 125905,
+      "records": 125905,
+      "dropped": {},
+      "rss_after": 258859008
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_22.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530097,
+      "seconds": 1.95,
+      "read": 125891,
+      "records": 125891,
+      "dropped": {},
+      "rss_after": 262139904
+    },
+    {
+      "file": "paloalto/traffic_2026-10-03_23.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527776,
+      "seconds": 1.907,
+      "read": 125758,
+      "records": 125758,
+      "dropped": {},
+      "rss_after": 260722688
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_00.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529649,
+      "seconds": 1.935,
+      "read": 125893,
+      "records": 125893,
+      "dropped": {},
+      "rss_after": 249266176
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_01.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3521471,
+      "seconds": 2.202,
+      "read": 125582,
+      "records": 125582,
+      "dropped": {},
+      "rss_after": 269172736
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_02.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532262,
+      "seconds": 1.855,
+      "read": 125942,
+      "records": 125942,
+      "dropped": {},
+      "rss_after": 307531776
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_03.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528637,
+      "seconds": 1.86,
+      "read": 125795,
+      "records": 125795,
+      "dropped": {},
+      "rss_after": 277815296
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_04.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529326,
+      "seconds": 1.858,
+      "read": 125863,
+      "records": 125863,
+      "dropped": {},
+      "rss_after": 289316864
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_05.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528309,
+      "seconds": 2.19,
+      "read": 125978,
+      "records": 125978,
+      "dropped": {},
+      "rss_after": 257085440
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_06.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532295,
+      "seconds": 1.868,
+      "read": 126030,
+      "records": 126030,
+      "dropped": {},
+      "rss_after": 276234240
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_07.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531639,
+      "seconds": 1.93,
+      "read": 126062,
+      "records": 126062,
+      "dropped": {},
+      "rss_after": 313892864
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_08.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529579,
+      "seconds": 1.882,
+      "read": 125955,
+      "records": 125955,
+      "dropped": {},
+      "rss_after": 289828864
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_09.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3522467,
+      "seconds": 2.232,
+      "read": 125725,
+      "records": 125725,
+      "dropped": {},
+      "rss_after": 311013376
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_10.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532006,
+      "seconds": 1.858,
+      "read": 126056,
+      "records": 126056,
+      "dropped": {},
+      "rss_after": 307965952
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_11.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531066,
+      "seconds": 1.849,
+      "read": 125856,
+      "records": 125856,
+      "dropped": {},
+      "rss_after": 306577408
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_12.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526740,
+      "seconds": 1.868,
+      "read": 125856,
+      "records": 125856,
+      "dropped": {},
+      "rss_after": 279457792
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_13.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527901,
+      "seconds": 2.21,
+      "read": 125843,
+      "records": 125843,
+      "dropped": {},
+      "rss_after": 309686272
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_14.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532531,
+      "seconds": 1.884,
+      "read": 125889,
+      "records": 125889,
+      "dropped": {},
+      "rss_after": 320049152
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_15.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3537734,
+      "seconds": 1.844,
+      "read": 126175,
+      "records": 126175,
+      "dropped": {},
+      "rss_after": 349802496
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_16.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3537507,
+      "seconds": 1.849,
+      "read": 126140,
+      "records": 126140,
+      "dropped": {},
+      "rss_after": 307990528
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_17.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533257,
+      "seconds": 2.209,
+      "read": 126041,
+      "records": 126041,
+      "dropped": {},
+      "rss_after": 272515072
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_18.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530494,
+      "seconds": 1.966,
+      "read": 125897,
+      "records": 125897,
+      "dropped": {},
+      "rss_after": 303931392
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_19.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527240,
+      "seconds": 1.904,
+      "read": 125860,
+      "records": 125860,
+      "dropped": {},
+      "rss_after": 307945472
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_20.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532272,
+      "seconds": 1.862,
+      "read": 125934,
+      "records": 125934,
+      "dropped": {},
+      "rss_after": 275087360
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_21.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534545,
+      "seconds": 2.184,
+      "read": 126060,
+      "records": 126060,
+      "dropped": {},
+      "rss_after": 243437568
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_22.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529824,
+      "seconds": 1.879,
+      "read": 125898,
+      "records": 125898,
+      "dropped": {},
+      "rss_after": 285450240
+    },
+    {
+      "file": "paloalto/traffic_2026-10-04_23.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531824,
+      "seconds": 1.89,
+      "read": 125924,
+      "records": 125924,
+      "dropped": {},
+      "rss_after": 284794880
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_00.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534229,
+      "seconds": 1.895,
+      "read": 126075,
+      "records": 126075,
+      "dropped": {},
+      "rss_after": 319000576
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_01.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532778,
+      "seconds": 2.212,
+      "read": 125949,
+      "records": 125949,
+      "dropped": {},
+      "rss_after": 337092608
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_02.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529306,
+      "seconds": 1.845,
+      "read": 125893,
+      "records": 125893,
+      "dropped": {},
+      "rss_after": 350703616
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_03.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3524479,
+      "seconds": 1.864,
+      "read": 125842,
+      "records": 125842,
+      "dropped": {},
+      "rss_after": 269791232
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_04.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527171,
+      "seconds": 1.948,
+      "read": 125889,
+      "records": 125889,
+      "dropped": {},
+      "rss_after": 306692096
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_05.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532040,
+      "seconds": 2.352,
+      "read": 126014,
+      "records": 126014,
+      "dropped": {},
+      "rss_after": 321835008
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_06.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531044,
+      "seconds": 1.947,
+      "read": 125973,
+      "records": 125973,
+      "dropped": {},
+      "rss_after": 323420160
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_07.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3536628,
+      "seconds": 1.895,
+      "read": 126009,
+      "records": 126009,
+      "dropped": {},
+      "rss_after": 297324544
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_08.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527495,
+      "seconds": 2.283,
+      "read": 125873,
+      "records": 125873,
+      "dropped": {},
+      "rss_after": 236003328
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_09.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527214,
+      "seconds": 1.884,
+      "read": 125708,
+      "records": 125708,
+      "dropped": {},
+      "rss_after": 267120640
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_10.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529051,
+      "seconds": 1.859,
+      "read": 125790,
+      "records": 125790,
+      "dropped": {},
+      "rss_after": 269467648
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_11.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528682,
+      "seconds": 1.862,
+      "read": 125926,
+      "records": 125926,
+      "dropped": {},
+      "rss_after": 265478144
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_12.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3524617,
+      "seconds": 2.175,
+      "read": 125840,
+      "records": 125840,
+      "dropped": {},
+      "rss_after": 254349312
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_13.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534431,
+      "seconds": 1.846,
+      "read": 126012,
+      "records": 126012,
+      "dropped": {},
+      "rss_after": 291057664
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_14.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530640,
+      "seconds": 1.842,
+      "read": 125929,
+      "records": 125929,
+      "dropped": {},
+      "rss_after": 293265408
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_15.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3537577,
+      "seconds": 1.849,
+      "read": 126103,
+      "records": 126103,
+      "dropped": {},
+      "rss_after": 225456128
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_16.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527563,
+      "seconds": 2.23,
+      "read": 125927,
+      "records": 125927,
+      "dropped": {},
+      "rss_after": 280875008
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_17.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527722,
+      "seconds": 1.873,
+      "read": 125726,
+      "records": 125726,
+      "dropped": {},
+      "rss_after": 291934208
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_18.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3525579,
+      "seconds": 1.883,
+      "read": 125790,
+      "records": 125790,
+      "dropped": {},
+      "rss_after": 308695040
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_19.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532054,
+      "seconds": 1.881,
+      "read": 126061,
+      "records": 126061,
+      "dropped": {},
+      "rss_after": 315240448
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_20.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526707,
+      "seconds": 2.245,
+      "read": 125890,
+      "records": 125890,
+      "dropped": {},
+      "rss_after": 307871744
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_21.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530316,
+      "seconds": 1.907,
+      "read": 125916,
+      "records": 125916,
+      "dropped": {},
+      "rss_after": 327282688
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_22.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531313,
+      "seconds": 1.895,
+      "read": 125879,
+      "records": 125879,
+      "dropped": {},
+      "rss_after": 297488384
+    },
+    {
+      "file": "paloalto/traffic_2026-10-05_23.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528624,
+      "seconds": 1.873,
+      "read": 125821,
+      "records": 125821,
+      "dropped": {},
+      "rss_after": 288825344
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_00.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526133,
+      "seconds": 2.173,
+      "read": 125806,
+      "records": 125806,
+      "dropped": {},
+      "rss_after": 277405696
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_01.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529259,
+      "seconds": 1.843,
+      "read": 125830,
+      "records": 125830,
+      "dropped": {},
+      "rss_after": 275808256
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_02.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3536893,
+      "seconds": 1.851,
+      "read": 126060,
+      "records": 126060,
+      "dropped": {},
+      "rss_after": 319463424
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_03.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531759,
+      "seconds": 1.871,
+      "read": 125986,
+      "records": 125986,
+      "dropped": {},
+      "rss_after": 315109376
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_04.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3520234,
+      "seconds": 2.151,
+      "read": 125714,
+      "records": 125714,
+      "dropped": {},
+      "rss_after": 323264512
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_05.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530093,
+      "seconds": 1.854,
+      "read": 125861,
+      "records": 125861,
+      "dropped": {},
+      "rss_after": 304996352
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_06.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534519,
+      "seconds": 1.863,
+      "read": 126093,
+      "records": 126093,
+      "dropped": {},
+      "rss_after": 310255616
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_07.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534110,
+      "seconds": 1.845,
+      "read": 125967,
+      "records": 125967,
+      "dropped": {},
+      "rss_after": 313909248
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_08.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529209,
+      "seconds": 2.185,
+      "read": 125900,
+      "records": 125900,
+      "dropped": {},
+      "rss_after": 287993856
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_09.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528419,
+      "seconds": 1.871,
+      "read": 125808,
+      "records": 125808,
+      "dropped": {},
+      "rss_after": 182063104
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_10.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527981,
+      "seconds": 1.849,
+      "read": 125866,
+      "records": 125866,
+      "dropped": {},
+      "rss_after": 235208704
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_11.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3524943,
+      "seconds": 1.875,
+      "read": 125927,
+      "records": 125927,
+      "dropped": {},
+      "rss_after": 253534208
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_12.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3537525,
+      "seconds": 2.17,
+      "read": 125989,
+      "records": 125989,
+      "dropped": {},
+      "rss_after": 292421632
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_13.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532175,
+      "seconds": 1.849,
+      "read": 125839,
+      "records": 125839,
+      "dropped": {},
+      "rss_after": 282910720
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_14.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535587,
+      "seconds": 1.859,
+      "read": 126108,
+      "records": 126108,
+      "dropped": {},
+      "rss_after": 288260096
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_15.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534191,
+      "seconds": 2.209,
+      "read": 125994,
+      "records": 125994,
+      "dropped": {},
+      "rss_after": 312664064
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_16.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528884,
+      "seconds": 1.865,
+      "read": 125877,
+      "records": 125877,
+      "dropped": {},
+      "rss_after": 307785728
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_17.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529376,
+      "seconds": 1.925,
+      "read": 125925,
+      "records": 125925,
+      "dropped": {},
+      "rss_after": 323584000
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_18.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3536499,
+      "seconds": 1.947,
+      "read": 126116,
+      "records": 126116,
+      "dropped": {},
+      "rss_after": 334336000
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_19.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531552,
+      "seconds": 2.263,
+      "read": 125939,
+      "records": 125939,
+      "dropped": {},
+      "rss_after": 339345408
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_20.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530549,
+      "seconds": 1.86,
+      "read": 125866,
+      "records": 125866,
+      "dropped": {},
+      "rss_after": 339673088
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_21.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531761,
+      "seconds": 1.872,
+      "read": 125995,
+      "records": 125995,
+      "dropped": {},
+      "rss_after": 350900224
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_22.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529624,
+      "seconds": 1.847,
+      "read": 125915,
+      "records": 125915,
+      "dropped": {},
+      "rss_after": 304885760
+    },
+    {
+      "file": "paloalto/traffic_2026-10-06_23.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530008,
+      "seconds": 2.199,
+      "read": 125889,
+      "records": 125889,
+      "dropped": {},
+      "rss_after": 295182336
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_00.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529446,
+      "seconds": 1.87,
+      "read": 125938,
+      "records": 125938,
+      "dropped": {},
+      "rss_after": 294854656
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_01.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534939,
+      "seconds": 1.877,
+      "read": 125943,
+      "records": 125943,
+      "dropped": {},
+      "rss_after": 283553792
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_02.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534087,
+      "seconds": 1.884,
+      "read": 126007,
+      "records": 126007,
+      "dropped": {},
+      "rss_after": 306802688
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_03.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530819,
+      "seconds": 2.195,
+      "read": 125970,
+      "records": 125970,
+      "dropped": {},
+      "rss_after": 343093248
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_04.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528234,
+      "seconds": 1.938,
+      "read": 125906,
+      "records": 125906,
+      "dropped": {},
+      "rss_after": 321802240
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_05.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534007,
+      "seconds": 2.017,
+      "read": 126086,
+      "records": 126086,
+      "dropped": {},
+      "rss_after": 323936256
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_06.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534350,
+      "seconds": 1.934,
+      "read": 126104,
+      "records": 126104,
+      "dropped": {},
+      "rss_after": 245624832
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_07.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530985,
+      "seconds": 2.381,
+      "read": 126112,
+      "records": 126112,
+      "dropped": {},
+      "rss_after": 252321792
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_08.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534715,
+      "seconds": 1.886,
+      "read": 125989,
+      "records": 125989,
+      "dropped": {},
+      "rss_after": 277692416
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_09.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532494,
+      "seconds": 1.895,
+      "read": 126053,
+      "records": 126053,
+      "dropped": {},
+      "rss_after": 293306368
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_10.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528978,
+      "seconds": 1.854,
+      "read": 125760,
+      "records": 125760,
+      "dropped": {},
+      "rss_after": 320126976
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_11.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534821,
+      "seconds": 2.214,
+      "read": 126100,
+      "records": 126100,
+      "dropped": {},
+      "rss_after": 321728512
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_12.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527479,
+      "seconds": 1.842,
+      "read": 125836,
+      "records": 125836,
+      "dropped": {},
+      "rss_after": 288702464
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_13.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532112,
+      "seconds": 1.859,
+      "read": 125985,
+      "records": 125985,
+      "dropped": {},
+      "rss_after": 320221184
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_14.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528129,
+      "seconds": 1.852,
+      "read": 126027,
+      "records": 126027,
+      "dropped": {},
+      "rss_after": 324280320
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_15.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526598,
+      "seconds": 2.302,
+      "read": 125887,
+      "records": 125887,
+      "dropped": {},
+      "rss_after": 326582272
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_16.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530170,
+      "seconds": 1.876,
+      "read": 125953,
+      "records": 125953,
+      "dropped": {},
+      "rss_after": 310247424
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_17.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3539230,
+      "seconds": 1.869,
+      "read": 126319,
+      "records": 126319,
+      "dropped": {},
+      "rss_after": 316407808
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_18.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533399,
+      "seconds": 1.849,
+      "read": 125881,
+      "records": 125881,
+      "dropped": {},
+      "rss_after": 321806336
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_19.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530060,
+      "seconds": 2.198,
+      "read": 126003,
+      "records": 126003,
+      "dropped": {},
+      "rss_after": 314834944
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_20.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533051,
+      "seconds": 1.871,
+      "read": 126050,
+      "records": 126050,
+      "dropped": {},
+      "rss_after": 286720000
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_21.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3536406,
+      "seconds": 1.879,
+      "read": 126146,
+      "records": 126146,
+      "dropped": {},
+      "rss_after": 283303936
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_22.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535573,
+      "seconds": 2.214,
+      "read": 126144,
+      "records": 126144,
+      "dropped": {},
+      "rss_after": 301682688
+    },
+    {
+      "file": "paloalto/traffic_2026-10-07_23.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535393,
+      "seconds": 1.89,
+      "read": 126132,
+      "records": 126132,
+      "dropped": {},
+      "rss_after": 302714880
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_00.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531161,
+      "seconds": 1.928,
+      "read": 125868,
+      "records": 125868,
+      "dropped": {},
+      "rss_after": 289792000
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_01.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529036,
+      "seconds": 1.886,
+      "read": 125911,
+      "records": 125911,
+      "dropped": {},
+      "rss_after": 319500288
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_02.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534865,
+      "seconds": 2.197,
+      "read": 126086,
+      "records": 126086,
+      "dropped": {},
+      "rss_after": 324374528
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_03.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3536187,
+      "seconds": 1.896,
+      "read": 125983,
+      "records": 125983,
+      "dropped": {},
+      "rss_after": 348934144
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_04.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529273,
+      "seconds": 1.881,
+      "read": 125945,
+      "records": 125945,
+      "dropped": {},
+      "rss_after": 335962112
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_05.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532665,
+      "seconds": 1.924,
+      "read": 125932,
+      "records": 125932,
+      "dropped": {},
+      "rss_after": 330420224
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_06.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532946,
+      "seconds": 2.244,
+      "read": 126025,
+      "records": 126025,
+      "dropped": {},
+      "rss_after": 313442304
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_07.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529648,
+      "seconds": 1.911,
+      "read": 126088,
+      "records": 126088,
+      "dropped": {},
+      "rss_after": 313712640
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_08.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526260,
+      "seconds": 1.907,
+      "read": 125890,
+      "records": 125890,
+      "dropped": {},
+      "rss_after": 310538240
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_09.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3524076,
+      "seconds": 1.854,
+      "read": 125754,
+      "records": 125754,
+      "dropped": {},
+      "rss_after": 313573376
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_10.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532506,
+      "seconds": 2.203,
+      "read": 126010,
+      "records": 126010,
+      "dropped": {},
+      "rss_after": 276557824
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_11.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532525,
+      "seconds": 1.871,
+      "read": 125973,
+      "records": 125973,
+      "dropped": {},
+      "rss_after": 302297088
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_12.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3536558,
+      "seconds": 1.862,
+      "read": 126029,
+      "records": 126029,
+      "dropped": {},
+      "rss_after": 267026432
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_13.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3522895,
+      "seconds": 1.902,
+      "read": 125732,
+      "records": 125732,
+      "dropped": {},
+      "rss_after": 267485184
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_14.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527890,
+      "seconds": 2.297,
+      "read": 125782,
+      "records": 125782,
+      "dropped": {},
+      "rss_after": 261652480
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_15.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528412,
+      "seconds": 1.933,
+      "read": 125866,
+      "records": 125866,
+      "dropped": {},
+      "rss_after": 287039488
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_16.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530116,
+      "seconds": 1.907,
+      "read": 126012,
+      "records": 126012,
+      "dropped": {},
+      "rss_after": 270852096
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_17.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3537359,
+      "seconds": 1.939,
+      "read": 126201,
+      "records": 126201,
+      "dropped": {},
+      "rss_after": 290062336
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_18.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530527,
+      "seconds": 2.255,
+      "read": 125909,
+      "records": 125909,
+      "dropped": {},
+      "rss_after": 325451776
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_19.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531572,
+      "seconds": 1.911,
+      "read": 125934,
+      "records": 125934,
+      "dropped": {},
+      "rss_after": 306393088
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_20.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531113,
+      "seconds": 1.918,
+      "read": 125865,
+      "records": 125865,
+      "dropped": {},
+      "rss_after": 270229504
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_21.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526778,
+      "seconds": 1.932,
+      "read": 125764,
+      "records": 125764,
+      "dropped": {},
+      "rss_after": 265007104
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_22.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534755,
+      "seconds": 2.252,
+      "read": 126007,
+      "records": 126007,
+      "dropped": {},
+      "rss_after": 304746496
+    },
+    {
+      "file": "paloalto/traffic_2026-10-08_23.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533137,
+      "seconds": 1.879,
+      "read": 126033,
+      "records": 126033,
+      "dropped": {},
+      "rss_after": 300863488
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_00.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535534,
+      "seconds": 1.877,
+      "read": 126095,
+      "records": 126095,
+      "dropped": {},
+      "rss_after": 300847104
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_01.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528306,
+      "seconds": 1.869,
+      "read": 125850,
+      "records": 125850,
+      "dropped": {},
+      "rss_after": 252661760
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_02.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535018,
+      "seconds": 2.24,
+      "read": 126110,
+      "records": 126110,
+      "dropped": {},
+      "rss_after": 267939840
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_03.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3538010,
+      "seconds": 1.907,
+      "read": 126019,
+      "records": 126019,
+      "dropped": {},
+      "rss_after": 282599424
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_04.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532066,
+      "seconds": 1.898,
+      "read": 126107,
+      "records": 126107,
+      "dropped": {},
+      "rss_after": 287887360
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_05.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528414,
+      "seconds": 1.887,
+      "read": 125886,
+      "records": 125886,
+      "dropped": {},
+      "rss_after": 229974016
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_06.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3536538,
+      "seconds": 2.206,
+      "read": 126190,
+      "records": 126190,
+      "dropped": {},
+      "rss_after": 284585984
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_07.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528693,
+      "seconds": 1.857,
+      "read": 125844,
+      "records": 125844,
+      "dropped": {},
+      "rss_after": 324521984
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_08.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532023,
+      "seconds": 1.845,
+      "read": 125875,
+      "records": 125875,
+      "dropped": {},
+      "rss_after": 326283264
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_09.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534805,
+      "seconds": 2.185,
+      "read": 126054,
+      "records": 126054,
+      "dropped": {},
+      "rss_after": 318017536
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_10.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3539155,
+      "seconds": 1.867,
+      "read": 125937,
+      "records": 125937,
+      "dropped": {},
+      "rss_after": 263852032
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_11.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534190,
+      "seconds": 1.873,
+      "read": 125850,
+      "records": 125850,
+      "dropped": {},
+      "rss_after": 232419328
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_12.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533155,
+      "seconds": 1.875,
+      "read": 125966,
+      "records": 125966,
+      "dropped": {},
+      "rss_after": 239083520
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_13.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535496,
+      "seconds": 2.214,
+      "read": 126073,
+      "records": 126073,
+      "dropped": {},
+      "rss_after": 300593152
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_14.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529127,
+      "seconds": 1.84,
+      "read": 125825,
+      "records": 125825,
+      "dropped": {},
+      "rss_after": 308068352
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_15.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526416,
+      "seconds": 1.857,
+      "read": 125737,
+      "records": 125737,
+      "dropped": {},
+      "rss_after": 275283968
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_16.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3525758,
+      "seconds": 1.843,
+      "read": 125836,
+      "records": 125836,
+      "dropped": {},
+      "rss_after": 294940672
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_17.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526565,
+      "seconds": 2.194,
+      "read": 125816,
+      "records": 125816,
+      "dropped": {},
+      "rss_after": 333475840
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_18.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3521941,
+      "seconds": 1.903,
+      "read": 125768,
+      "records": 125768,
+      "dropped": {},
+      "rss_after": 285720576
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_19.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533278,
+      "seconds": 1.885,
+      "read": 125993,
+      "records": 125993,
+      "dropped": {},
+      "rss_after": 284557312
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_20.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535797,
+      "seconds": 1.885,
+      "read": 125977,
+      "records": 125977,
+      "dropped": {},
+      "rss_after": 315252736
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_21.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529518,
+      "seconds": 2.244,
+      "read": 125956,
+      "records": 125956,
+      "dropped": {},
+      "rss_after": 345616384
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_22.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527828,
+      "seconds": 1.893,
+      "read": 125818,
+      "records": 125818,
+      "dropped": {},
+      "rss_after": 342474752
+    },
+    {
+      "file": "paloalto/traffic_2026-10-09_23.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529561,
+      "seconds": 1.956,
+      "read": 125925,
+      "records": 125925,
+      "dropped": {},
+      "rss_after": 318324736
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_00.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534777,
+      "seconds": 1.853,
+      "read": 126162,
+      "records": 126162,
+      "dropped": {},
+      "rss_after": 279785472
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_01.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3525769,
+      "seconds": 2.223,
+      "read": 125884,
+      "records": 125884,
+      "dropped": {},
+      "rss_after": 314908672
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_02.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3524642,
+      "seconds": 1.891,
+      "read": 125782,
+      "records": 125782,
+      "dropped": {},
+      "rss_after": 310652928
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_03.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531395,
+      "seconds": 1.884,
+      "read": 125900,
+      "records": 125900,
+      "dropped": {},
+      "rss_after": 314720256
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_04.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531602,
+      "seconds": 1.937,
+      "read": 126072,
+      "records": 126072,
+      "dropped": {},
+      "rss_after": 335319040
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_05.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532951,
+      "seconds": 2.199,
+      "read": 125987,
+      "records": 125987,
+      "dropped": {},
+      "rss_after": 324214784
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_06.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3534431,
+      "seconds": 1.886,
+      "read": 126092,
+      "records": 126092,
+      "dropped": {},
+      "rss_after": 319873024
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_07.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526854,
+      "seconds": 1.894,
+      "read": 125756,
+      "records": 125756,
+      "dropped": {},
+      "rss_after": 318324736
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_08.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529692,
+      "seconds": 1.878,
+      "read": 126002,
+      "records": 126002,
+      "dropped": {},
+      "rss_after": 290914304
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_09.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529333,
+      "seconds": 2.241,
+      "read": 125917,
+      "records": 125917,
+      "dropped": {},
+      "rss_after": 334114816
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_10.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527283,
+      "seconds": 1.881,
+      "read": 125968,
+      "records": 125968,
+      "dropped": {},
+      "rss_after": 336703488
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_11.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530248,
+      "seconds": 1.927,
+      "read": 125877,
+      "records": 125877,
+      "dropped": {},
+      "rss_after": 356237312
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_12.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530804,
+      "seconds": 1.9,
+      "read": 125927,
+      "records": 125927,
+      "dropped": {},
+      "rss_after": 307052544
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_13.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532001,
+      "seconds": 2.251,
+      "read": 126058,
+      "records": 126058,
+      "dropped": {},
+      "rss_after": 297242624
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_14.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528395,
+      "seconds": 1.926,
+      "read": 125899,
+      "records": 125899,
+      "dropped": {},
+      "rss_after": 306016256
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_15.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3539496,
+      "seconds": 1.904,
+      "read": 126123,
+      "records": 126123,
+      "dropped": {},
+      "rss_after": 254382080
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_16.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533857,
+      "seconds": 2.282,
+      "read": 125945,
+      "records": 125945,
+      "dropped": {},
+      "rss_after": 290234368
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_17.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3526835,
+      "seconds": 1.951,
+      "read": 125805,
+      "records": 125805,
+      "dropped": {},
+      "rss_after": 271765504
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_18.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531504,
+      "seconds": 1.956,
+      "read": 125992,
+      "records": 125992,
+      "dropped": {},
+      "rss_after": 273039360
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_19.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533521,
+      "seconds": 1.939,
+      "read": 126060,
+      "records": 126060,
+      "dropped": {},
+      "rss_after": 300244992
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_20.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527654,
+      "seconds": 2.356,
+      "read": 125867,
+      "records": 125867,
+      "dropped": {},
+      "rss_after": 279162880
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_21.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3524639,
+      "seconds": 1.9,
+      "read": 125767,
+      "records": 125767,
+      "dropped": {},
+      "rss_after": 310206464
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_22.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533553,
+      "seconds": 1.923,
+      "read": 126004,
+      "records": 126004,
+      "dropped": {},
+      "rss_after": 301211648
+    },
+    {
+      "file": "paloalto/traffic_2026-10-10_23.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532266,
+      "seconds": 1.933,
+      "read": 126002,
+      "records": 126002,
+      "dropped": {},
+      "rss_after": 265728000
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_00.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535796,
+      "seconds": 2.325,
+      "read": 125826,
+      "records": 125826,
+      "dropped": {},
+      "rss_after": 292671488
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_01.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3525753,
+      "seconds": 1.92,
+      "read": 125680,
+      "records": 125680,
+      "dropped": {},
+      "rss_after": 314077184
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_02.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532121,
+      "seconds": 1.902,
+      "read": 125955,
+      "records": 125955,
+      "dropped": {},
+      "rss_after": 273293312
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_03.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528670,
+      "seconds": 1.866,
+      "read": 125804,
+      "records": 125804,
+      "dropped": {},
+      "rss_after": 215207936
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_04.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535211,
+      "seconds": 2.203,
+      "read": 125980,
+      "records": 125980,
+      "dropped": {},
+      "rss_after": 270192640
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_05.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530010,
+      "seconds": 1.848,
+      "read": 125850,
+      "records": 125850,
+      "dropped": {},
+      "rss_after": 237477888
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_06.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3533836,
+      "seconds": 1.866,
+      "read": 126043,
+      "records": 126043,
+      "dropped": {},
+      "rss_after": 230813696
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_07.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3527852,
+      "seconds": 1.865,
+      "read": 125741,
+      "records": 125741,
+      "dropped": {},
+      "rss_after": 255336448
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_08.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3531978,
+      "seconds": 2.221,
+      "read": 125978,
+      "records": 125978,
+      "dropped": {},
+      "rss_after": 318263296
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_09.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530989,
+      "seconds": 1.941,
+      "read": 126010,
+      "records": 126010,
+      "dropped": {},
+      "rss_after": 325681152
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_10.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3532021,
+      "seconds": 1.96,
+      "read": 125842,
+      "records": 125842,
+      "dropped": {},
+      "rss_after": 300580864
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_11.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3530082,
+      "seconds": 1.938,
+      "read": 125943,
+      "records": 125943,
+      "dropped": {},
+      "rss_after": 299900928
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_12.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3535743,
+      "seconds": 2.258,
+      "read": 126029,
+      "records": 126029,
+      "dropped": {},
+      "rss_after": 303382528
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_13.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3529755,
+      "seconds": 1.887,
+      "read": 126039,
+      "records": 126039,
+      "dropped": {},
+      "rss_after": 316690432
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_14.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3522656,
+      "seconds": 1.883,
+      "read": 125644,
+      "records": 125644,
+      "dropped": {},
+      "rss_after": 342171648
+    },
+    {
+      "file": "paloalto/traffic_2026-10-11_15.csv.gz",
+      "fmt": "paloalto",
+      "bytes": 3528031,
+      "seconds": 1.872,
+      "read": 125857,
+      "records": 125857,
+      "dropped": {},
+      "rss_after": 276185088
+    },
+    {
+      "file": "zeek/2026-10-01/conn.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5028047,
+      "seconds": 1.937,
+      "read": 142742,
+      "records": 142742,
+      "dropped": {},
+      "rss_after": 238587904
+    },
+    {
+      "file": "zeek/2026-10-01/conn.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024139,
+      "seconds": 1.6,
+      "read": 142549,
+      "records": 142549,
+      "dropped": {},
+      "rss_after": 266362880
+    },
+    {
+      "file": "zeek/2026-10-01/conn.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026937,
+      "seconds": 1.905,
+      "read": 142591,
+      "records": 142591,
+      "dropped": {},
+      "rss_after": 304726016
+    },
+    {
+      "file": "zeek/2026-10-01/conn.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019783,
+      "seconds": 1.605,
+      "read": 142455,
+      "records": 142455,
+      "dropped": {},
+      "rss_after": 292212736
+    },
+    {
+      "file": "zeek/2026-10-01/conn.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019316,
+      "seconds": 1.939,
+      "read": 142447,
+      "records": 142447,
+      "dropped": {},
+      "rss_after": 319795200
+    },
+    {
+      "file": "zeek/2026-10-01/conn.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5030592,
+      "seconds": 1.714,
+      "read": 142742,
+      "records": 142742,
+      "dropped": {},
+      "rss_after": 318717952
+    },
+    {
+      "file": "zeek/2026-10-01/conn.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025287,
+      "seconds": 1.698,
+      "read": 142546,
+      "records": 142546,
+      "dropped": {},
+      "rss_after": 336973824
+    },
+    {
+      "file": "zeek/2026-10-01/conn.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5008662,
+      "seconds": 1.963,
+      "read": 142224,
+      "records": 142224,
+      "dropped": {},
+      "rss_after": 319365120
+    },
+    {
+      "file": "zeek/2026-10-01/conn.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5015683,
+      "seconds": 1.68,
+      "read": 142228,
+      "records": 142228,
+      "dropped": {},
+      "rss_after": 331526144
+    },
+    {
+      "file": "zeek/2026-10-01/conn.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5027759,
+      "seconds": 2.04,
+      "read": 142633,
+      "records": 142633,
+      "dropped": {},
+      "rss_after": 318578688
+    },
+    {
+      "file": "zeek/2026-10-01/conn.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5015964,
+      "seconds": 1.643,
+      "read": 142251,
+      "records": 142251,
+      "dropped": {},
+      "rss_after": 299540480
+    },
+    {
+      "file": "zeek/2026-10-01/conn.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5030246,
+      "seconds": 1.92,
+      "read": 142600,
+      "records": 142600,
+      "dropped": {},
+      "rss_after": 311603200
+    },
+    {
+      "file": "zeek/2026-10-01/conn.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5027760,
+      "seconds": 1.662,
+      "read": 142670,
+      "records": 142670,
+      "dropped": {},
+      "rss_after": 304771072
+    },
+    {
+      "file": "zeek/2026-10-01/conn.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017844,
+      "seconds": 1.645,
+      "read": 142373,
+      "records": 142373,
+      "dropped": {},
+      "rss_after": 308228096
+    },
+    {
+      "file": "zeek/2026-10-01/conn.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5037976,
+      "seconds": 1.954,
+      "read": 142868,
+      "records": 142868,
+      "dropped": {},
+      "rss_after": 325787648
+    },
+    {
+      "file": "zeek/2026-10-01/conn.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022067,
+      "seconds": 1.611,
+      "read": 142473,
+      "records": 142473,
+      "dropped": {},
+      "rss_after": 292757504
+    },
+    {
+      "file": "zeek/2026-10-01/conn.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023181,
+      "seconds": 1.968,
+      "read": 142574,
+      "records": 142574,
+      "dropped": {},
+      "rss_after": 307531776
+    },
+    {
+      "file": "zeek/2026-10-01/conn.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019606,
+      "seconds": 1.623,
+      "read": 142460,
+      "records": 142460,
+      "dropped": {},
+      "rss_after": 281137152
+    },
+    {
+      "file": "zeek/2026-10-01/conn.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022812,
+      "seconds": 1.98,
+      "read": 142578,
+      "records": 142578,
+      "dropped": {},
+      "rss_after": 291377152
+    },
+    {
+      "file": "zeek/2026-10-01/conn.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026500,
+      "seconds": 1.719,
+      "read": 142653,
+      "records": 142653,
+      "dropped": {},
+      "rss_after": 318042112
+    },
+    {
+      "file": "zeek/2026-10-01/conn.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5029370,
+      "seconds": 1.654,
+      "read": 142694,
+      "records": 142694,
+      "dropped": {},
+      "rss_after": 284028928
+    },
+    {
+      "file": "zeek/2026-10-01/conn.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023285,
+      "seconds": 1.957,
+      "read": 142620,
+      "records": 142620,
+      "dropped": {},
+      "rss_after": 282165248
+    },
+    {
+      "file": "zeek/2026-10-01/conn.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018400,
+      "seconds": 1.645,
+      "read": 142308,
+      "records": 142308,
+      "dropped": {},
+      "rss_after": 307318784
+    },
+    {
+      "file": "zeek/2026-10-01/conn.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5027163,
+      "seconds": 1.964,
+      "read": 142664,
+      "records": 142664,
+      "dropped": {},
+      "rss_after": 267862016
+    },
+    {
+      "file": "zeek/2026-10-01/dns.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835253,
+      "seconds": 0.573,
+      "read": 46370,
+      "records": 46370,
+      "dropped": {},
+      "rss_after": 264785920
+    },
+    {
+      "file": "zeek/2026-10-01/dns.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835499,
+      "seconds": 0.572,
+      "read": 46384,
+      "records": 46384,
+      "dropped": {},
+      "rss_after": 264814592
+    },
+    {
+      "file": "zeek/2026-10-01/dns.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835814,
+      "seconds": 0.564,
+      "read": 46344,
+      "records": 46344,
+      "dropped": {},
+      "rss_after": 264818688
+    },
+    {
+      "file": "zeek/2026-10-01/dns.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834770,
+      "seconds": 0.584,
+      "read": 46356,
+      "records": 46356,
+      "dropped": {},
+      "rss_after": 264830976
+    },
+    {
+      "file": "zeek/2026-10-01/dns.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833829,
+      "seconds": 0.608,
+      "read": 46370,
+      "records": 46370,
+      "dropped": {},
+      "rss_after": 264843264
+    },
+    {
+      "file": "zeek/2026-10-01/dns.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834703,
+      "seconds": 0.61,
+      "read": 46393,
+      "records": 46393,
+      "dropped": {},
+      "rss_after": 264859648
+    },
+    {
+      "file": "zeek/2026-10-01/dns.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835453,
+      "seconds": 0.607,
+      "read": 46358,
+      "records": 46358,
+      "dropped": {},
+      "rss_after": 264859648
+    },
+    {
+      "file": "zeek/2026-10-01/dns.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832460,
+      "seconds": 0.6,
+      "read": 46376,
+      "records": 46376,
+      "dropped": {},
+      "rss_after": 264863744
+    },
+    {
+      "file": "zeek/2026-10-01/dns.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834695,
+      "seconds": 0.594,
+      "read": 46370,
+      "records": 46370,
+      "dropped": {},
+      "rss_after": 264863744
+    },
+    {
+      "file": "zeek/2026-10-01/dns.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835179,
+      "seconds": 0.594,
+      "read": 46335,
+      "records": 46335,
+      "dropped": {},
+      "rss_after": 264871936
+    },
+    {
+      "file": "zeek/2026-10-01/dns.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835909,
+      "seconds": 0.606,
+      "read": 46395,
+      "records": 46395,
+      "dropped": {},
+      "rss_after": 264876032
+    },
+    {
+      "file": "zeek/2026-10-01/dns.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833937,
+      "seconds": 0.591,
+      "read": 46368,
+      "records": 46368,
+      "dropped": {},
+      "rss_after": 264876032
+    },
+    {
+      "file": "zeek/2026-10-01/dns.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835113,
+      "seconds": 0.6,
+      "read": 46365,
+      "records": 46365,
+      "dropped": {},
+      "rss_after": 264876032
+    },
+    {
+      "file": "zeek/2026-10-01/dns.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832921,
+      "seconds": 0.591,
+      "read": 46402,
+      "records": 46402,
+      "dropped": {},
+      "rss_after": 264880128
+    },
+    {
+      "file": "zeek/2026-10-01/dns.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835558,
+      "seconds": 0.594,
+      "read": 46356,
+      "records": 46356,
+      "dropped": {},
+      "rss_after": 264880128
+    },
+    {
+      "file": "zeek/2026-10-01/dns.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834401,
+      "seconds": 0.588,
+      "read": 46386,
+      "records": 46386,
+      "dropped": {},
+      "rss_after": 264884224
+    },
+    {
+      "file": "zeek/2026-10-01/dns.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834489,
+      "seconds": 0.586,
+      "read": 46391,
+      "records": 46391,
+      "dropped": {},
+      "rss_after": 264884224
+    },
+    {
+      "file": "zeek/2026-10-01/dns.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832099,
+      "seconds": 0.601,
+      "read": 46396,
+      "records": 46396,
+      "dropped": {},
+      "rss_after": 264884224
+    },
+    {
+      "file": "zeek/2026-10-01/dns.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836489,
+      "seconds": 0.589,
+      "read": 46379,
+      "records": 46379,
+      "dropped": {},
+      "rss_after": 264884224
+    },
+    {
+      "file": "zeek/2026-10-01/dns.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833674,
+      "seconds": 0.603,
+      "read": 46389,
+      "records": 46389,
+      "dropped": {},
+      "rss_after": 264904704
+    },
+    {
+      "file": "zeek/2026-10-01/dns.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835892,
+      "seconds": 0.595,
+      "read": 46374,
+      "records": 46374,
+      "dropped": {},
+      "rss_after": 264908800
+    },
+    {
+      "file": "zeek/2026-10-01/dns.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833623,
+      "seconds": 0.596,
+      "read": 46376,
+      "records": 46376,
+      "dropped": {},
+      "rss_after": 264908800
+    },
+    {
+      "file": "zeek/2026-10-01/dns.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834676,
+      "seconds": 0.595,
+      "read": 46372,
+      "records": 46372,
+      "dropped": {},
+      "rss_after": 264908800
+    },
+    {
+      "file": "zeek/2026-10-01/dns.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836537,
+      "seconds": 0.598,
+      "read": 46373,
+      "records": 46373,
+      "dropped": {},
+      "rss_after": 264912896
+    },
+    {
+      "file": "zeek/2026-10-02/conn.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021144,
+      "seconds": 1.654,
+      "read": 142532,
+      "records": 142532,
+      "dropped": {},
+      "rss_after": 258842624
+    },
+    {
+      "file": "zeek/2026-10-02/conn.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026607,
+      "seconds": 1.648,
+      "read": 142582,
+      "records": 142582,
+      "dropped": {},
+      "rss_after": 281894912
+    },
+    {
+      "file": "zeek/2026-10-02/conn.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022568,
+      "seconds": 1.991,
+      "read": 142486,
+      "records": 142486,
+      "dropped": {},
+      "rss_after": 324059136
+    },
+    {
+      "file": "zeek/2026-10-02/conn.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5000704,
+      "seconds": 1.66,
+      "read": 141979,
+      "records": 141979,
+      "dropped": {},
+      "rss_after": 320303104
+    },
+    {
+      "file": "zeek/2026-10-02/conn.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5015785,
+      "seconds": 1.978,
+      "read": 142332,
+      "records": 142332,
+      "dropped": {},
+      "rss_after": 290750464
+    },
+    {
+      "file": "zeek/2026-10-02/conn.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5016602,
+      "seconds": 1.655,
+      "read": 142382,
+      "records": 142382,
+      "dropped": {},
+      "rss_after": 297967616
+    },
+    {
+      "file": "zeek/2026-10-02/conn.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5033327,
+      "seconds": 1.955,
+      "read": 142694,
+      "records": 142694,
+      "dropped": {},
+      "rss_after": 276418560
+    },
+    {
+      "file": "zeek/2026-10-02/conn.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5028299,
+      "seconds": 1.627,
+      "read": 142556,
+      "records": 142556,
+      "dropped": {},
+      "rss_after": 301662208
+    },
+    {
+      "file": "zeek/2026-10-02/conn.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023129,
+      "seconds": 1.627,
+      "read": 142466,
+      "records": 142466,
+      "dropped": {},
+      "rss_after": 303603712
+    },
+    {
+      "file": "zeek/2026-10-02/conn.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019637,
+      "seconds": 1.968,
+      "read": 142501,
+      "records": 142501,
+      "dropped": {},
+      "rss_after": 337297408
+    },
+    {
+      "file": "zeek/2026-10-02/conn.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5027604,
+      "seconds": 1.648,
+      "read": 142660,
+      "records": 142660,
+      "dropped": {},
+      "rss_after": 302231552
+    },
+    {
+      "file": "zeek/2026-10-02/conn.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5030708,
+      "seconds": 2.001,
+      "read": 142736,
+      "records": 142736,
+      "dropped": {},
+      "rss_after": 325136384
+    },
+    {
+      "file": "zeek/2026-10-02/conn.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025531,
+      "seconds": 1.619,
+      "read": 142578,
+      "records": 142578,
+      "dropped": {},
+      "rss_after": 279891968
+    },
+    {
+      "file": "zeek/2026-10-02/conn.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026575,
+      "seconds": 1.907,
+      "read": 142585,
+      "records": 142585,
+      "dropped": {},
+      "rss_after": 305188864
+    },
+    {
+      "file": "zeek/2026-10-02/conn.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019044,
+      "seconds": 1.634,
+      "read": 142517,
+      "records": 142517,
+      "dropped": {},
+      "rss_after": 288436224
+    },
+    {
+      "file": "zeek/2026-10-02/conn.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019907,
+      "seconds": 1.627,
+      "read": 142477,
+      "records": 142477,
+      "dropped": {},
+      "rss_after": 304836608
+    },
+    {
+      "file": "zeek/2026-10-02/conn.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5027232,
+      "seconds": 1.955,
+      "read": 142772,
+      "records": 142772,
+      "dropped": {},
+      "rss_after": 312762368
+    },
+    {
+      "file": "zeek/2026-10-02/conn.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5029937,
+      "seconds": 1.652,
+      "read": 142741,
+      "records": 142741,
+      "dropped": {},
+      "rss_after": 272592896
+    },
+    {
+      "file": "zeek/2026-10-02/conn.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5030324,
+      "seconds": 1.955,
+      "read": 142761,
+      "records": 142761,
+      "dropped": {},
+      "rss_after": 293560320
+    },
+    {
+      "file": "zeek/2026-10-02/conn.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025405,
+      "seconds": 1.608,
+      "read": 142536,
+      "records": 142536,
+      "dropped": {},
+      "rss_after": 284577792
+    },
+    {
+      "file": "zeek/2026-10-02/conn.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5030714,
+      "seconds": 1.935,
+      "read": 142766,
+      "records": 142766,
+      "dropped": {},
+      "rss_after": 288559104
+    },
+    {
+      "file": "zeek/2026-10-02/conn.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022062,
+      "seconds": 1.609,
+      "read": 142569,
+      "records": 142569,
+      "dropped": {},
+      "rss_after": 305909760
+    },
+    {
+      "file": "zeek/2026-10-02/conn.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025213,
+      "seconds": 1.63,
+      "read": 142626,
+      "records": 142626,
+      "dropped": {},
+      "rss_after": 307081216
+    },
+    {
+      "file": "zeek/2026-10-02/conn.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5028258,
+      "seconds": 1.926,
+      "read": 142701,
+      "records": 142701,
+      "dropped": {},
+      "rss_after": 278388736
+    },
+    {
+      "file": "zeek/2026-10-02/dns.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834236,
+      "seconds": 0.56,
+      "read": 46365,
+      "records": 46365,
+      "dropped": {},
+      "rss_after": 275443712
+    },
+    {
+      "file": "zeek/2026-10-02/dns.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834607,
+      "seconds": 0.569,
+      "read": 46386,
+      "records": 46386,
+      "dropped": {},
+      "rss_after": 275472384
+    },
+    {
+      "file": "zeek/2026-10-02/dns.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833171,
+      "seconds": 0.579,
+      "read": 46387,
+      "records": 46387,
+      "dropped": {},
+      "rss_after": 275476480
+    },
+    {
+      "file": "zeek/2026-10-02/dns.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835389,
+      "seconds": 0.56,
+      "read": 46368,
+      "records": 46368,
+      "dropped": {},
+      "rss_after": 275476480
+    },
+    {
+      "file": "zeek/2026-10-02/dns.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834743,
+      "seconds": 0.564,
+      "read": 46367,
+      "records": 46367,
+      "dropped": {},
+      "rss_after": 275484672
+    },
+    {
+      "file": "zeek/2026-10-02/dns.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835387,
+      "seconds": 0.57,
+      "read": 46354,
+      "records": 46354,
+      "dropped": {},
+      "rss_after": 275488768
+    },
+    {
+      "file": "zeek/2026-10-02/dns.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833351,
+      "seconds": 0.581,
+      "read": 46381,
+      "records": 46381,
+      "dropped": {},
+      "rss_after": 275496960
+    },
+    {
+      "file": "zeek/2026-10-02/dns.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835161,
+      "seconds": 0.588,
+      "read": 46375,
+      "records": 46375,
+      "dropped": {},
+      "rss_after": 275501056
+    },
+    {
+      "file": "zeek/2026-10-02/dns.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834892,
+      "seconds": 0.59,
+      "read": 46371,
+      "records": 46371,
+      "dropped": {},
+      "rss_after": 275509248
+    },
+    {
+      "file": "zeek/2026-10-02/dns.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834062,
+      "seconds": 0.597,
+      "read": 46399,
+      "records": 46399,
+      "dropped": {},
+      "rss_after": 275509248
+    },
+    {
+      "file": "zeek/2026-10-02/dns.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832452,
+      "seconds": 0.59,
+      "read": 46400,
+      "records": 46400,
+      "dropped": {},
+      "rss_after": 275513344
+    },
+    {
+      "file": "zeek/2026-10-02/dns.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831866,
+      "seconds": 0.588,
+      "read": 46404,
+      "records": 46404,
+      "dropped": {},
+      "rss_after": 275521536
+    },
+    {
+      "file": "zeek/2026-10-02/dns.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833283,
+      "seconds": 0.591,
+      "read": 46349,
+      "records": 46349,
+      "dropped": {},
+      "rss_after": 275521536
+    },
+    {
+      "file": "zeek/2026-10-02/dns.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835089,
+      "seconds": 0.591,
+      "read": 46387,
+      "records": 46387,
+      "dropped": {},
+      "rss_after": 275521536
+    },
+    {
+      "file": "zeek/2026-10-02/dns.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835261,
+      "seconds": 0.588,
+      "read": 46377,
+      "records": 46377,
+      "dropped": {},
+      "rss_after": 275521536
+    },
+    {
+      "file": "zeek/2026-10-02/dns.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833432,
+      "seconds": 0.59,
+      "read": 46392,
+      "records": 46392,
+      "dropped": {},
+      "rss_after": 275521536
+    },
+    {
+      "file": "zeek/2026-10-02/dns.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832760,
+      "seconds": 0.611,
+      "read": 46396,
+      "records": 46396,
+      "dropped": {},
+      "rss_after": 275529728
+    },
+    {
+      "file": "zeek/2026-10-02/dns.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834311,
+      "seconds": 0.591,
+      "read": 46374,
+      "records": 46374,
+      "dropped": {},
+      "rss_after": 275533824
+    },
+    {
+      "file": "zeek/2026-10-02/dns.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834461,
+      "seconds": 0.591,
+      "read": 46389,
+      "records": 46389,
+      "dropped": {},
+      "rss_after": 275537920
+    },
+    {
+      "file": "zeek/2026-10-02/dns.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1837252,
+      "seconds": 0.596,
+      "read": 46340,
+      "records": 46340,
+      "dropped": {},
+      "rss_after": 275542016
+    },
+    {
+      "file": "zeek/2026-10-02/dns.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836426,
+      "seconds": 0.589,
+      "read": 46375,
+      "records": 46375,
+      "dropped": {},
+      "rss_after": 275554304
+    },
+    {
+      "file": "zeek/2026-10-02/dns.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832398,
+      "seconds": 0.597,
+      "read": 46394,
+      "records": 46394,
+      "dropped": {},
+      "rss_after": 275554304
+    },
+    {
+      "file": "zeek/2026-10-02/dns.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836677,
+      "seconds": 0.596,
+      "read": 46364,
+      "records": 46364,
+      "dropped": {},
+      "rss_after": 275558400
+    },
+    {
+      "file": "zeek/2026-10-02/dns.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834579,
+      "seconds": 0.586,
+      "read": 46391,
+      "records": 46391,
+      "dropped": {},
+      "rss_after": 275558400
+    },
+    {
+      "file": "zeek/2026-10-03/conn.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018207,
+      "seconds": 1.672,
+      "read": 142429,
+      "records": 142429,
+      "dropped": {},
+      "rss_after": 301465600
+    },
+    {
+      "file": "zeek/2026-10-03/conn.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021591,
+      "seconds": 1.992,
+      "read": 142570,
+      "records": 142570,
+      "dropped": {},
+      "rss_after": 334602240
+    },
+    {
+      "file": "zeek/2026-10-03/conn.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019279,
+      "seconds": 1.617,
+      "read": 142460,
+      "records": 142460,
+      "dropped": {},
+      "rss_after": 340103168
+    },
+    {
+      "file": "zeek/2026-10-03/conn.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5009154,
+      "seconds": 1.903,
+      "read": 142189,
+      "records": 142189,
+      "dropped": {},
+      "rss_after": 317075456
+    },
+    {
+      "file": "zeek/2026-10-03/conn.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020839,
+      "seconds": 1.648,
+      "read": 142552,
+      "records": 142552,
+      "dropped": {},
+      "rss_after": 312688640
+    },
+    {
+      "file": "zeek/2026-10-03/conn.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022014,
+      "seconds": 1.643,
+      "read": 142512,
+      "records": 142512,
+      "dropped": {},
+      "rss_after": 336728064
+    },
+    {
+      "file": "zeek/2026-10-03/conn.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024355,
+      "seconds": 1.94,
+      "read": 142542,
+      "records": 142542,
+      "dropped": {},
+      "rss_after": 303259648
+    },
+    {
+      "file": "zeek/2026-10-03/conn.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5014321,
+      "seconds": 1.628,
+      "read": 142230,
+      "records": 142230,
+      "dropped": {},
+      "rss_after": 305102848
+    },
+    {
+      "file": "zeek/2026-10-03/conn.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5028208,
+      "seconds": 1.937,
+      "read": 142663,
+      "records": 142663,
+      "dropped": {},
+      "rss_after": 306208768
+    },
+    {
+      "file": "zeek/2026-10-03/conn.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5029113,
+      "seconds": 1.629,
+      "read": 142739,
+      "records": 142739,
+      "dropped": {},
+      "rss_after": 296267776
+    },
+    {
+      "file": "zeek/2026-10-03/conn.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026198,
+      "seconds": 1.947,
+      "read": 142610,
+      "records": 142610,
+      "dropped": {},
+      "rss_after": 321740800
+    },
+    {
+      "file": "zeek/2026-10-03/conn.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017261,
+      "seconds": 1.64,
+      "read": 142337,
+      "records": 142337,
+      "dropped": {},
+      "rss_after": 322932736
+    },
+    {
+      "file": "zeek/2026-10-03/conn.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025382,
+      "seconds": 1.63,
+      "read": 142599,
+      "records": 142599,
+      "dropped": {},
+      "rss_after": 321810432
+    },
+    {
+      "file": "zeek/2026-10-03/conn.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026932,
+      "seconds": 1.93,
+      "read": 142676,
+      "records": 142676,
+      "dropped": {},
+      "rss_after": 286441472
+    },
+    {
+      "file": "zeek/2026-10-03/conn.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5027194,
+      "seconds": 1.643,
+      "read": 142660,
+      "records": 142660,
+      "dropped": {},
+      "rss_after": 273141760
+    },
+    {
+      "file": "zeek/2026-10-03/conn.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018152,
+      "seconds": 1.991,
+      "read": 142522,
+      "records": 142522,
+      "dropped": {},
+      "rss_after": 338907136
+    },
+    {
+      "file": "zeek/2026-10-03/conn.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018605,
+      "seconds": 1.627,
+      "read": 142397,
+      "records": 142397,
+      "dropped": {},
+      "rss_after": 269688832
+    },
+    {
+      "file": "zeek/2026-10-03/conn.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018278,
+      "seconds": 1.624,
+      "read": 142387,
+      "records": 142387,
+      "dropped": {},
+      "rss_after": 245104640
+    },
+    {
+      "file": "zeek/2026-10-03/conn.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021351,
+      "seconds": 1.93,
+      "read": 142569,
+      "records": 142569,
+      "dropped": {},
+      "rss_after": 282992640
+    },
+    {
+      "file": "zeek/2026-10-03/conn.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022594,
+      "seconds": 1.68,
+      "read": 142492,
+      "records": 142492,
+      "dropped": {},
+      "rss_after": 291725312
+    },
+    {
+      "file": "zeek/2026-10-03/conn.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020158,
+      "seconds": 1.967,
+      "read": 142429,
+      "records": 142429,
+      "dropped": {},
+      "rss_after": 324276224
+    },
+    {
+      "file": "zeek/2026-10-03/conn.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024441,
+      "seconds": 1.654,
+      "read": 142618,
+      "records": 142618,
+      "dropped": {},
+      "rss_after": 317386752
+    },
+    {
+      "file": "zeek/2026-10-03/conn.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024990,
+      "seconds": 1.965,
+      "read": 142580,
+      "records": 142580,
+      "dropped": {},
+      "rss_after": 312238080
+    },
+    {
+      "file": "zeek/2026-10-03/conn.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5029359,
+      "seconds": 1.646,
+      "read": 142762,
+      "records": 142762,
+      "dropped": {},
+      "rss_after": 316743680
+    },
+    {
+      "file": "zeek/2026-10-03/dns.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836145,
+      "seconds": 0.585,
+      "read": 46376,
+      "records": 46376,
+      "dropped": {},
+      "rss_after": 316858368
+    },
+    {
+      "file": "zeek/2026-10-03/dns.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834523,
+      "seconds": 0.588,
+      "read": 46387,
+      "records": 46387,
+      "dropped": {},
+      "rss_after": 316874752
+    },
+    {
+      "file": "zeek/2026-10-03/dns.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834306,
+      "seconds": 0.603,
+      "read": 46378,
+      "records": 46378,
+      "dropped": {},
+      "rss_after": 316891136
+    },
+    {
+      "file": "zeek/2026-10-03/dns.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832535,
+      "seconds": 0.604,
+      "read": 46384,
+      "records": 46384,
+      "dropped": {},
+      "rss_after": 316899328
+    },
+    {
+      "file": "zeek/2026-10-03/dns.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836356,
+      "seconds": 0.606,
+      "read": 46364,
+      "records": 46364,
+      "dropped": {},
+      "rss_after": 316903424
+    },
+    {
+      "file": "zeek/2026-10-03/dns.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831179,
+      "seconds": 0.63,
+      "read": 46410,
+      "records": 46410,
+      "dropped": {},
+      "rss_after": 316911616
+    },
+    {
+      "file": "zeek/2026-10-03/dns.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832641,
+      "seconds": 0.61,
+      "read": 46393,
+      "records": 46393,
+      "dropped": {},
+      "rss_after": 316915712
+    },
+    {
+      "file": "zeek/2026-10-03/dns.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835959,
+      "seconds": 0.608,
+      "read": 46350,
+      "records": 46350,
+      "dropped": {},
+      "rss_after": 316915712
+    },
+    {
+      "file": "zeek/2026-10-03/dns.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834161,
+      "seconds": 0.593,
+      "read": 46363,
+      "records": 46363,
+      "dropped": {},
+      "rss_after": 316915712
+    },
+    {
+      "file": "zeek/2026-10-03/dns.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832452,
+      "seconds": 0.601,
+      "read": 46367,
+      "records": 46367,
+      "dropped": {},
+      "rss_after": 316923904
+    },
+    {
+      "file": "zeek/2026-10-03/dns.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1837559,
+      "seconds": 0.6,
+      "read": 46381,
+      "records": 46381,
+      "dropped": {},
+      "rss_after": 316932096
+    },
+    {
+      "file": "zeek/2026-10-03/dns.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834194,
+      "seconds": 0.602,
+      "read": 46381,
+      "records": 46381,
+      "dropped": {},
+      "rss_after": 316932096
+    },
+    {
+      "file": "zeek/2026-10-03/dns.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831740,
+      "seconds": 0.599,
+      "read": 46386,
+      "records": 46386,
+      "dropped": {},
+      "rss_after": 317071360
+    },
+    {
+      "file": "zeek/2026-10-03/dns.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836348,
+      "seconds": 0.606,
+      "read": 46402,
+      "records": 46402,
+      "dropped": {},
+      "rss_after": 317075456
+    },
+    {
+      "file": "zeek/2026-10-03/dns.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834370,
+      "seconds": 0.612,
+      "read": 46367,
+      "records": 46367,
+      "dropped": {},
+      "rss_after": 317079552
+    },
+    {
+      "file": "zeek/2026-10-03/dns.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834654,
+      "seconds": 0.603,
+      "read": 46386,
+      "records": 46386,
+      "dropped": {},
+      "rss_after": 317087744
+    },
+    {
+      "file": "zeek/2026-10-03/dns.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833705,
+      "seconds": 0.595,
+      "read": 46372,
+      "records": 46372,
+      "dropped": {},
+      "rss_after": 317091840
+    },
+    {
+      "file": "zeek/2026-10-03/dns.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832888,
+      "seconds": 0.611,
+      "read": 46376,
+      "records": 46376,
+      "dropped": {},
+      "rss_after": 317095936
+    },
+    {
+      "file": "zeek/2026-10-03/dns.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834424,
+      "seconds": 0.606,
+      "read": 46373,
+      "records": 46373,
+      "dropped": {},
+      "rss_after": 317100032
+    },
+    {
+      "file": "zeek/2026-10-03/dns.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832612,
+      "seconds": 0.607,
+      "read": 46379,
+      "records": 46379,
+      "dropped": {},
+      "rss_after": 317100032
+    },
+    {
+      "file": "zeek/2026-10-03/dns.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835793,
+      "seconds": 0.605,
+      "read": 46380,
+      "records": 46380,
+      "dropped": {},
+      "rss_after": 317100032
+    },
+    {
+      "file": "zeek/2026-10-03/dns.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833731,
+      "seconds": 0.604,
+      "read": 46360,
+      "records": 46360,
+      "dropped": {},
+      "rss_after": 317100032
+    },
+    {
+      "file": "zeek/2026-10-03/dns.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833437,
+      "seconds": 0.596,
+      "read": 46411,
+      "records": 46411,
+      "dropped": {},
+      "rss_after": 317100032
+    },
+    {
+      "file": "zeek/2026-10-03/dns.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834872,
+      "seconds": 0.606,
+      "read": 46379,
+      "records": 46379,
+      "dropped": {},
+      "rss_after": 317100032
+    },
+    {
+      "file": "zeek/2026-10-04/conn.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022966,
+      "seconds": 1.652,
+      "read": 142553,
+      "records": 142553,
+      "dropped": {},
+      "rss_after": 311525376
+    },
+    {
+      "file": "zeek/2026-10-04/conn.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5041286,
+      "seconds": 1.931,
+      "read": 142998,
+      "records": 142998,
+      "dropped": {},
+      "rss_after": 318484480
+    },
+    {
+      "file": "zeek/2026-10-04/conn.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021440,
+      "seconds": 1.671,
+      "read": 142521,
+      "records": 142521,
+      "dropped": {},
+      "rss_after": 246235136
+    },
+    {
+      "file": "zeek/2026-10-04/conn.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026716,
+      "seconds": 1.974,
+      "read": 142677,
+      "records": 142677,
+      "dropped": {},
+      "rss_after": 314978304
+    },
+    {
+      "file": "zeek/2026-10-04/conn.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022485,
+      "seconds": 1.681,
+      "read": 142679,
+      "records": 142679,
+      "dropped": {},
+      "rss_after": 308150272
+    },
+    {
+      "file": "zeek/2026-10-04/conn.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021694,
+      "seconds": 1.949,
+      "read": 142533,
+      "records": 142533,
+      "dropped": {},
+      "rss_after": 336367616
+    },
+    {
+      "file": "zeek/2026-10-04/conn.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5016086,
+      "seconds": 1.654,
+      "read": 142414,
+      "records": 142414,
+      "dropped": {},
+      "rss_after": 306323456
+    },
+    {
+      "file": "zeek/2026-10-04/conn.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5016820,
+      "seconds": 1.675,
+      "read": 142359,
+      "records": 142359,
+      "dropped": {},
+      "rss_after": 329105408
+    },
+    {
+      "file": "zeek/2026-10-04/conn.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019651,
+      "seconds": 2.017,
+      "read": 142486,
+      "records": 142486,
+      "dropped": {},
+      "rss_after": 326406144
+    },
+    {
+      "file": "zeek/2026-10-04/conn.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5031911,
+      "seconds": 1.667,
+      "read": 142849,
+      "records": 142849,
+      "dropped": {},
+      "rss_after": 330219520
+    },
+    {
+      "file": "zeek/2026-10-04/conn.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017859,
+      "seconds": 1.964,
+      "read": 142393,
+      "records": 142393,
+      "dropped": {},
+      "rss_after": 356995072
+    },
+    {
+      "file": "zeek/2026-10-04/conn.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024888,
+      "seconds": 1.631,
+      "read": 142611,
+      "records": 142611,
+      "dropped": {},
+      "rss_after": 327467008
+    },
+    {
+      "file": "zeek/2026-10-04/conn.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026221,
+      "seconds": 1.967,
+      "read": 142638,
+      "records": 142638,
+      "dropped": {},
+      "rss_after": 326742016
+    },
+    {
+      "file": "zeek/2026-10-04/conn.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5030148,
+      "seconds": 1.618,
+      "read": 142657,
+      "records": 142657,
+      "dropped": {},
+      "rss_after": 277372928
+    },
+    {
+      "file": "zeek/2026-10-04/conn.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025969,
+      "seconds": 1.647,
+      "read": 142576,
+      "records": 142576,
+      "dropped": {},
+      "rss_after": 280424448
+    },
+    {
+      "file": "zeek/2026-10-04/conn.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5011073,
+      "seconds": 1.918,
+      "read": 142191,
+      "records": 142191,
+      "dropped": {},
+      "rss_after": 284848128
+    },
+    {
+      "file": "zeek/2026-10-04/conn.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5015701,
+      "seconds": 1.637,
+      "read": 142262,
+      "records": 142262,
+      "dropped": {},
+      "rss_after": 304791552
+    },
+    {
+      "file": "zeek/2026-10-04/conn.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019508,
+      "seconds": 1.959,
+      "read": 142394,
+      "records": 142394,
+      "dropped": {},
+      "rss_after": 315662336
+    },
+    {
+      "file": "zeek/2026-10-04/conn.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021667,
+      "seconds": 1.614,
+      "read": 142585,
+      "records": 142585,
+      "dropped": {},
+      "rss_after": 285888512
+    },
+    {
+      "file": "zeek/2026-10-04/conn.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5028853,
+      "seconds": 1.904,
+      "read": 142640,
+      "records": 142640,
+      "dropped": {},
+      "rss_after": 301264896
+    },
+    {
+      "file": "zeek/2026-10-04/conn.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021137,
+      "seconds": 1.612,
+      "read": 142520,
+      "records": 142520,
+      "dropped": {},
+      "rss_after": 292093952
+    },
+    {
+      "file": "zeek/2026-10-04/conn.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5016982,
+      "seconds": 1.644,
+      "read": 142380,
+      "records": 142380,
+      "dropped": {},
+      "rss_after": 267083776
+    },
+    {
+      "file": "zeek/2026-10-04/conn.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023925,
+      "seconds": 1.971,
+      "read": 142526,
+      "records": 142526,
+      "dropped": {},
+      "rss_after": 259100672
+    },
+    {
+      "file": "zeek/2026-10-04/conn.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019892,
+      "seconds": 1.645,
+      "read": 142532,
+      "records": 142532,
+      "dropped": {},
+      "rss_after": 275611648
+    },
+    {
+      "file": "zeek/2026-10-04/dns.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836045,
+      "seconds": 0.594,
+      "read": 46352,
+      "records": 46352,
+      "dropped": {},
+      "rss_after": 275808256
+    },
+    {
+      "file": "zeek/2026-10-04/dns.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833358,
+      "seconds": 0.65,
+      "read": 46400,
+      "records": 46400,
+      "dropped": {},
+      "rss_after": 275816448
+    },
+    {
+      "file": "zeek/2026-10-04/dns.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834427,
+      "seconds": 0.589,
+      "read": 46365,
+      "records": 46365,
+      "dropped": {},
+      "rss_after": 275832832
+    },
+    {
+      "file": "zeek/2026-10-04/dns.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835013,
+      "seconds": 0.575,
+      "read": 46377,
+      "records": 46377,
+      "dropped": {},
+      "rss_after": 275836928
+    },
+    {
+      "file": "zeek/2026-10-04/dns.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835378,
+      "seconds": 0.599,
+      "read": 46385,
+      "records": 46385,
+      "dropped": {},
+      "rss_after": 275853312
+    },
+    {
+      "file": "zeek/2026-10-04/dns.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836314,
+      "seconds": 0.587,
+      "read": 46346,
+      "records": 46346,
+      "dropped": {},
+      "rss_after": 275857408
+    },
+    {
+      "file": "zeek/2026-10-04/dns.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833174,
+      "seconds": 0.566,
+      "read": 46381,
+      "records": 46381,
+      "dropped": {},
+      "rss_after": 275861504
+    },
+    {
+      "file": "zeek/2026-10-04/dns.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1830967,
+      "seconds": 0.593,
+      "read": 46375,
+      "records": 46375,
+      "dropped": {},
+      "rss_after": 275877888
+    },
+    {
+      "file": "zeek/2026-10-04/dns.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834786,
+      "seconds": 0.605,
+      "read": 46363,
+      "records": 46363,
+      "dropped": {},
+      "rss_after": 275881984
+    },
+    {
+      "file": "zeek/2026-10-04/dns.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836575,
+      "seconds": 0.602,
+      "read": 46355,
+      "records": 46355,
+      "dropped": {},
+      "rss_after": 275890176
+    },
+    {
+      "file": "zeek/2026-10-04/dns.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832865,
+      "seconds": 0.597,
+      "read": 46382,
+      "records": 46382,
+      "dropped": {},
+      "rss_after": 275894272
+    },
+    {
+      "file": "zeek/2026-10-04/dns.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835974,
+      "seconds": 0.608,
+      "read": 46388,
+      "records": 46388,
+      "dropped": {},
+      "rss_after": 275894272
+    },
+    {
+      "file": "zeek/2026-10-04/dns.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833993,
+      "seconds": 0.596,
+      "read": 46368,
+      "records": 46368,
+      "dropped": {},
+      "rss_after": 275894272
+    },
+    {
+      "file": "zeek/2026-10-04/dns.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833590,
+      "seconds": 0.598,
+      "read": 46399,
+      "records": 46399,
+      "dropped": {},
+      "rss_after": 275902464
+    },
+    {
+      "file": "zeek/2026-10-04/dns.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834935,
+      "seconds": 0.603,
+      "read": 46374,
+      "records": 46374,
+      "dropped": {},
+      "rss_after": 275902464
+    },
+    {
+      "file": "zeek/2026-10-04/dns.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834670,
+      "seconds": 0.591,
+      "read": 46357,
+      "records": 46357,
+      "dropped": {},
+      "rss_after": 275906560
+    },
+    {
+      "file": "zeek/2026-10-04/dns.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835151,
+      "seconds": 0.597,
+      "read": 46373,
+      "records": 46373,
+      "dropped": {},
+      "rss_after": 275906560
+    },
+    {
+      "file": "zeek/2026-10-04/dns.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833689,
+      "seconds": 0.599,
+      "read": 46394,
+      "records": 46394,
+      "dropped": {},
+      "rss_after": 275914752
+    },
+    {
+      "file": "zeek/2026-10-04/dns.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833219,
+      "seconds": 0.633,
+      "read": 46362,
+      "records": 46362,
+      "dropped": {},
+      "rss_after": 275914752
+    },
+    {
+      "file": "zeek/2026-10-04/dns.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834630,
+      "seconds": 0.597,
+      "read": 46390,
+      "records": 46390,
+      "dropped": {},
+      "rss_after": 275918848
+    },
+    {
+      "file": "zeek/2026-10-04/dns.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834467,
+      "seconds": 0.597,
+      "read": 46375,
+      "records": 46375,
+      "dropped": {},
+      "rss_after": 275918848
+    },
+    {
+      "file": "zeek/2026-10-04/dns.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836234,
+      "seconds": 0.605,
+      "read": 46320,
+      "records": 46320,
+      "dropped": {},
+      "rss_after": 275918848
+    },
+    {
+      "file": "zeek/2026-10-04/dns.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833292,
+      "seconds": 0.602,
+      "read": 46382,
+      "records": 46382,
+      "dropped": {},
+      "rss_after": 275918848
+    },
+    {
+      "file": "zeek/2026-10-04/dns.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834963,
+      "seconds": 0.607,
+      "read": 46344,
+      "records": 46344,
+      "dropped": {},
+      "rss_after": 275918848
+    },
+    {
+      "file": "zeek/2026-10-05/conn.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5013823,
+      "seconds": 2.001,
+      "read": 142344,
+      "records": 142344,
+      "dropped": {},
+      "rss_after": 288845824
+    },
+    {
+      "file": "zeek/2026-10-05/conn.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022059,
+      "seconds": 1.642,
+      "read": 142480,
+      "records": 142480,
+      "dropped": {},
+      "rss_after": 296267776
+    },
+    {
+      "file": "zeek/2026-10-05/conn.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5028818,
+      "seconds": 1.909,
+      "read": 142599,
+      "records": 142599,
+      "dropped": {},
+      "rss_after": 298504192
+    },
+    {
+      "file": "zeek/2026-10-05/conn.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024943,
+      "seconds": 1.614,
+      "read": 142688,
+      "records": 142688,
+      "dropped": {},
+      "rss_after": 300224512
+    },
+    {
+      "file": "zeek/2026-10-05/conn.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026500,
+      "seconds": 1.595,
+      "read": 142607,
+      "records": 142607,
+      "dropped": {},
+      "rss_after": 285913088
+    },
+    {
+      "file": "zeek/2026-10-05/conn.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5016370,
+      "seconds": 1.932,
+      "read": 142433,
+      "records": 142433,
+      "dropped": {},
+      "rss_after": 274497536
+    },
+    {
+      "file": "zeek/2026-10-05/conn.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022053,
+      "seconds": 1.621,
+      "read": 142483,
+      "records": 142483,
+      "dropped": {},
+      "rss_after": 311955456
+    },
+    {
+      "file": "zeek/2026-10-05/conn.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019912,
+      "seconds": 1.911,
+      "read": 142386,
+      "records": 142386,
+      "dropped": {},
+      "rss_after": 333242368
+    },
+    {
+      "file": "zeek/2026-10-05/conn.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5027383,
+      "seconds": 1.624,
+      "read": 142640,
+      "records": 142640,
+      "dropped": {},
+      "rss_after": 290181120
+    },
+    {
+      "file": "zeek/2026-10-05/conn.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5033175,
+      "seconds": 1.977,
+      "read": 142839,
+      "records": 142839,
+      "dropped": {},
+      "rss_after": 331542528
+    },
+    {
+      "file": "zeek/2026-10-05/conn.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5028940,
+      "seconds": 1.614,
+      "read": 142698,
+      "records": 142698,
+      "dropped": {},
+      "rss_after": 329355264
+    },
+    {
+      "file": "zeek/2026-10-05/conn.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021150,
+      "seconds": 1.608,
+      "read": 142557,
+      "records": 142557,
+      "dropped": {},
+      "rss_after": 330465280
+    },
+    {
+      "file": "zeek/2026-10-05/conn.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026270,
+      "seconds": 1.93,
+      "read": 142688,
+      "records": 142688,
+      "dropped": {},
+      "rss_after": 355356672
+    },
+    {
+      "file": "zeek/2026-10-05/conn.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019245,
+      "seconds": 1.623,
+      "read": 142395,
+      "records": 142395,
+      "dropped": {},
+      "rss_after": 334864384
+    },
+    {
+      "file": "zeek/2026-10-05/conn.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024611,
+      "seconds": 1.907,
+      "read": 142519,
+      "records": 142519,
+      "dropped": {},
+      "rss_after": 326082560
+    },
+    {
+      "file": "zeek/2026-10-05/conn.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5016770,
+      "seconds": 1.647,
+      "read": 142294,
+      "records": 142294,
+      "dropped": {},
+      "rss_after": 321560576
+    },
+    {
+      "file": "zeek/2026-10-05/conn.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019096,
+      "seconds": 1.644,
+      "read": 142603,
+      "records": 142603,
+      "dropped": {},
+      "rss_after": 323706880
+    },
+    {
+      "file": "zeek/2026-10-05/conn.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5034526,
+      "seconds": 2.063,
+      "read": 142771,
+      "records": 142771,
+      "dropped": {},
+      "rss_after": 323710976
+    },
+    {
+      "file": "zeek/2026-10-05/conn.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025898,
+      "seconds": 1.677,
+      "read": 142756,
+      "records": 142756,
+      "dropped": {},
+      "rss_after": 320323584
+    },
+    {
+      "file": "zeek/2026-10-05/conn.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018266,
+      "seconds": 1.962,
+      "read": 142343,
+      "records": 142343,
+      "dropped": {},
+      "rss_after": 302485504
+    },
+    {
+      "file": "zeek/2026-10-05/conn.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025163,
+      "seconds": 1.644,
+      "read": 142603,
+      "records": 142603,
+      "dropped": {},
+      "rss_after": 305344512
+    },
+    {
+      "file": "zeek/2026-10-05/conn.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025352,
+      "seconds": 1.923,
+      "read": 142563,
+      "records": 142563,
+      "dropped": {},
+      "rss_after": 282939392
+    },
+    {
+      "file": "zeek/2026-10-05/conn.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023968,
+      "seconds": 1.621,
+      "read": 142621,
+      "records": 142621,
+      "dropped": {},
+      "rss_after": 306876416
+    },
+    {
+      "file": "zeek/2026-10-05/conn.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5030038,
+      "seconds": 1.64,
+      "read": 142644,
+      "records": 142644,
+      "dropped": {},
+      "rss_after": 336556032
+    },
+    {
+      "file": "zeek/2026-10-05/dns.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835344,
+      "seconds": 0.591,
+      "read": 46377,
+      "records": 46377,
+      "dropped": {},
+      "rss_after": 336736256
+    },
+    {
+      "file": "zeek/2026-10-05/dns.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833727,
+      "seconds": 0.612,
+      "read": 46378,
+      "records": 46378,
+      "dropped": {},
+      "rss_after": 336744448
+    },
+    {
+      "file": "zeek/2026-10-05/dns.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833751,
+      "seconds": 0.618,
+      "read": 46363,
+      "records": 46363,
+      "dropped": {},
+      "rss_after": 336752640
+    },
+    {
+      "file": "zeek/2026-10-05/dns.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834403,
+      "seconds": 0.681,
+      "read": 46385,
+      "records": 46385,
+      "dropped": {},
+      "rss_after": 336764928
+    },
+    {
+      "file": "zeek/2026-10-05/dns.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834065,
+      "seconds": 0.604,
+      "read": 46400,
+      "records": 46400,
+      "dropped": {},
+      "rss_after": 336773120
+    },
+    {
+      "file": "zeek/2026-10-05/dns.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834467,
+      "seconds": 0.607,
+      "read": 46367,
+      "records": 46367,
+      "dropped": {},
+      "rss_after": 336777216
+    },
+    {
+      "file": "zeek/2026-10-05/dns.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833783,
+      "seconds": 0.621,
+      "read": 46382,
+      "records": 46382,
+      "dropped": {},
+      "rss_after": 336785408
+    },
+    {
+      "file": "zeek/2026-10-05/dns.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834774,
+      "seconds": 0.598,
+      "read": 46340,
+      "records": 46340,
+      "dropped": {},
+      "rss_after": 336789504
+    },
+    {
+      "file": "zeek/2026-10-05/dns.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835260,
+      "seconds": 0.608,
+      "read": 46364,
+      "records": 46364,
+      "dropped": {},
+      "rss_after": 336789504
+    },
+    {
+      "file": "zeek/2026-10-05/dns.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836770,
+      "seconds": 0.615,
+      "read": 46354,
+      "records": 46354,
+      "dropped": {},
+      "rss_after": 336789504
+    },
+    {
+      "file": "zeek/2026-10-05/dns.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835053,
+      "seconds": 0.613,
+      "read": 46368,
+      "records": 46368,
+      "dropped": {},
+      "rss_after": 336789504
+    },
+    {
+      "file": "zeek/2026-10-05/dns.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833536,
+      "seconds": 0.608,
+      "read": 46375,
+      "records": 46375,
+      "dropped": {},
+      "rss_after": 336789504
+    },
+    {
+      "file": "zeek/2026-10-05/dns.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834201,
+      "seconds": 0.615,
+      "read": 46405,
+      "records": 46405,
+      "dropped": {},
+      "rss_after": 336789504
+    },
+    {
+      "file": "zeek/2026-10-05/dns.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835372,
+      "seconds": 0.601,
+      "read": 46359,
+      "records": 46359,
+      "dropped": {},
+      "rss_after": 336793600
+    },
+    {
+      "file": "zeek/2026-10-05/dns.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832500,
+      "seconds": 0.661,
+      "read": 46385,
+      "records": 46385,
+      "dropped": {},
+      "rss_after": 336805888
+    },
+    {
+      "file": "zeek/2026-10-05/dns.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835071,
+      "seconds": 0.606,
+      "read": 46385,
+      "records": 46385,
+      "dropped": {},
+      "rss_after": 336809984
+    },
+    {
+      "file": "zeek/2026-10-05/dns.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834493,
+      "seconds": 0.618,
+      "read": 46400,
+      "records": 46400,
+      "dropped": {},
+      "rss_after": 336809984
+    },
+    {
+      "file": "zeek/2026-10-05/dns.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832757,
+      "seconds": 0.646,
+      "read": 46392,
+      "records": 46392,
+      "dropped": {},
+      "rss_after": 336809984
+    },
+    {
+      "file": "zeek/2026-10-05/dns.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835905,
+      "seconds": 0.673,
+      "read": 46388,
+      "records": 46388,
+      "dropped": {},
+      "rss_after": 336809984
+    },
+    {
+      "file": "zeek/2026-10-05/dns.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832726,
+      "seconds": 0.67,
+      "read": 46381,
+      "records": 46381,
+      "dropped": {},
+      "rss_after": 336814080
+    },
+    {
+      "file": "zeek/2026-10-05/dns.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832591,
+      "seconds": 0.621,
+      "read": 46364,
+      "records": 46364,
+      "dropped": {},
+      "rss_after": 336818176
+    },
+    {
+      "file": "zeek/2026-10-05/dns.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831916,
+      "seconds": 0.606,
+      "read": 46368,
+      "records": 46368,
+      "dropped": {},
+      "rss_after": 336818176
+    },
+    {
+      "file": "zeek/2026-10-05/dns.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831673,
+      "seconds": 0.622,
+      "read": 46384,
+      "records": 46384,
+      "dropped": {},
+      "rss_after": 336818176
+    },
+    {
+      "file": "zeek/2026-10-05/dns.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834296,
+      "seconds": 0.62,
+      "read": 46373,
+      "records": 46373,
+      "dropped": {},
+      "rss_after": 336818176
+    },
+    {
+      "file": "zeek/2026-10-06/conn.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5028244,
+      "seconds": 1.998,
+      "read": 142715,
+      "records": 142715,
+      "dropped": {},
+      "rss_after": 347586560
+    },
+    {
+      "file": "zeek/2026-10-06/conn.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026877,
+      "seconds": 1.681,
+      "read": 142633,
+      "records": 142633,
+      "dropped": {},
+      "rss_after": 344207360
+    },
+    {
+      "file": "zeek/2026-10-06/conn.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018094,
+      "seconds": 2.12,
+      "read": 142330,
+      "records": 142330,
+      "dropped": {},
+      "rss_after": 333242368
+    },
+    {
+      "file": "zeek/2026-10-06/conn.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020411,
+      "seconds": 1.716,
+      "read": 142489,
+      "records": 142489,
+      "dropped": {},
+      "rss_after": 331227136
+    },
+    {
+      "file": "zeek/2026-10-06/conn.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5032908,
+      "seconds": 1.978,
+      "read": 142826,
+      "records": 142826,
+      "dropped": {},
+      "rss_after": 279859200
+    },
+    {
+      "file": "zeek/2026-10-06/conn.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025691,
+      "seconds": 1.627,
+      "read": 142614,
+      "records": 142614,
+      "dropped": {},
+      "rss_after": 302919680
+    },
+    {
+      "file": "zeek/2026-10-06/conn.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5013652,
+      "seconds": 1.648,
+      "read": 142329,
+      "records": 142329,
+      "dropped": {},
+      "rss_after": 311816192
+    },
+    {
+      "file": "zeek/2026-10-06/conn.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019320,
+      "seconds": 1.944,
+      "read": 142492,
+      "records": 142492,
+      "dropped": {},
+      "rss_after": 285892608
+    },
+    {
+      "file": "zeek/2026-10-06/conn.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022354,
+      "seconds": 1.711,
+      "read": 142588,
+      "records": 142588,
+      "dropped": {},
+      "rss_after": 260874240
+    },
+    {
+      "file": "zeek/2026-10-06/conn.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026893,
+      "seconds": 2.032,
+      "read": 142665,
+      "records": 142665,
+      "dropped": {},
+      "rss_after": 311595008
+    },
+    {
+      "file": "zeek/2026-10-06/conn.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025454,
+      "seconds": 1.662,
+      "read": 142618,
+      "records": 142618,
+      "dropped": {},
+      "rss_after": 319545344
+    },
+    {
+      "file": "zeek/2026-10-06/conn.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022181,
+      "seconds": 1.939,
+      "read": 142567,
+      "records": 142567,
+      "dropped": {},
+      "rss_after": 290107392
+    },
+    {
+      "file": "zeek/2026-10-06/conn.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019340,
+      "seconds": 1.681,
+      "read": 142425,
+      "records": 142425,
+      "dropped": {},
+      "rss_after": 302055424
+    },
+    {
+      "file": "zeek/2026-10-06/conn.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026929,
+      "seconds": 1.702,
+      "read": 142622,
+      "records": 142622,
+      "dropped": {},
+      "rss_after": 351727616
+    },
+    {
+      "file": "zeek/2026-10-06/conn.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5015275,
+      "seconds": 1.977,
+      "read": 142298,
+      "records": 142298,
+      "dropped": {},
+      "rss_after": 360017920
+    },
+    {
+      "file": "zeek/2026-10-06/conn.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021392,
+      "seconds": 1.696,
+      "read": 142419,
+      "records": 142419,
+      "dropped": {},
+      "rss_after": 355553280
+    },
+    {
+      "file": "zeek/2026-10-06/conn.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025467,
+      "seconds": 1.951,
+      "read": 142660,
+      "records": 142660,
+      "dropped": {},
+      "rss_after": 319295488
+    },
+    {
+      "file": "zeek/2026-10-06/conn.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021946,
+      "seconds": 1.679,
+      "read": 142532,
+      "records": 142532,
+      "dropped": {},
+      "rss_after": 318115840
+    },
+    {
+      "file": "zeek/2026-10-06/conn.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5015046,
+      "seconds": 1.981,
+      "read": 142281,
+      "records": 142281,
+      "dropped": {},
+      "rss_after": 320557056
+    },
+    {
+      "file": "zeek/2026-10-06/conn.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024024,
+      "seconds": 1.619,
+      "read": 142552,
+      "records": 142552,
+      "dropped": {},
+      "rss_after": 326529024
+    },
+    {
+      "file": "zeek/2026-10-06/conn.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024489,
+      "seconds": 1.658,
+      "read": 142626,
+      "records": 142626,
+      "dropped": {},
+      "rss_after": 300285952
+    },
+    {
+      "file": "zeek/2026-10-06/conn.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018642,
+      "seconds": 1.966,
+      "read": 142411,
+      "records": 142411,
+      "dropped": {},
+      "rss_after": 310558720
+    },
+    {
+      "file": "zeek/2026-10-06/conn.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023294,
+      "seconds": 1.653,
+      "read": 142565,
+      "records": 142565,
+      "dropped": {},
+      "rss_after": 312774656
+    },
+    {
+      "file": "zeek/2026-10-06/conn.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023489,
+      "seconds": 1.951,
+      "read": 142621,
+      "records": 142621,
+      "dropped": {},
+      "rss_after": 308752384
+    },
+    {
+      "file": "zeek/2026-10-06/dns.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832103,
+      "seconds": 0.583,
+      "read": 46405,
+      "records": 46405,
+      "dropped": {},
+      "rss_after": 303370240
+    },
+    {
+      "file": "zeek/2026-10-06/dns.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833533,
+      "seconds": 0.604,
+      "read": 46359,
+      "records": 46359,
+      "dropped": {},
+      "rss_after": 303529984
+    },
+    {
+      "file": "zeek/2026-10-06/dns.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832441,
+      "seconds": 0.601,
+      "read": 46401,
+      "records": 46401,
+      "dropped": {},
+      "rss_after": 303538176
+    },
+    {
+      "file": "zeek/2026-10-06/dns.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836706,
+      "seconds": 0.6,
+      "read": 46366,
+      "records": 46366,
+      "dropped": {},
+      "rss_after": 303542272
+    },
+    {
+      "file": "zeek/2026-10-06/dns.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1830808,
+      "seconds": 0.598,
+      "read": 46383,
+      "records": 46383,
+      "dropped": {},
+      "rss_after": 303542272
+    },
+    {
+      "file": "zeek/2026-10-06/dns.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833765,
+      "seconds": 0.602,
+      "read": 46368,
+      "records": 46368,
+      "dropped": {},
+      "rss_after": 303550464
+    },
+    {
+      "file": "zeek/2026-10-06/dns.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831683,
+      "seconds": 0.58,
+      "read": 46398,
+      "records": 46398,
+      "dropped": {},
+      "rss_after": 303550464
+    },
+    {
+      "file": "zeek/2026-10-06/dns.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835613,
+      "seconds": 0.58,
+      "read": 46378,
+      "records": 46378,
+      "dropped": {},
+      "rss_after": 303554560
+    },
+    {
+      "file": "zeek/2026-10-06/dns.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832263,
+      "seconds": 0.581,
+      "read": 46361,
+      "records": 46361,
+      "dropped": {},
+      "rss_after": 303689728
+    },
+    {
+      "file": "zeek/2026-10-06/dns.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833792,
+      "seconds": 0.597,
+      "read": 46390,
+      "records": 46390,
+      "dropped": {},
+      "rss_after": 303693824
+    },
+    {
+      "file": "zeek/2026-10-06/dns.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831669,
+      "seconds": 0.589,
+      "read": 46402,
+      "records": 46402,
+      "dropped": {},
+      "rss_after": 303702016
+    },
+    {
+      "file": "zeek/2026-10-06/dns.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835136,
+      "seconds": 0.587,
+      "read": 46341,
+      "records": 46341,
+      "dropped": {},
+      "rss_after": 303706112
+    },
+    {
+      "file": "zeek/2026-10-06/dns.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835681,
+      "seconds": 0.596,
+      "read": 46381,
+      "records": 46381,
+      "dropped": {},
+      "rss_after": 303706112
+    },
+    {
+      "file": "zeek/2026-10-06/dns.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833505,
+      "seconds": 0.585,
+      "read": 46381,
+      "records": 46381,
+      "dropped": {},
+      "rss_after": 303710208
+    },
+    {
+      "file": "zeek/2026-10-06/dns.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835021,
+      "seconds": 0.585,
+      "read": 46366,
+      "records": 46366,
+      "dropped": {},
+      "rss_after": 303714304
+    },
+    {
+      "file": "zeek/2026-10-06/dns.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833944,
+      "seconds": 0.589,
+      "read": 46396,
+      "records": 46396,
+      "dropped": {},
+      "rss_after": 303722496
+    },
+    {
+      "file": "zeek/2026-10-06/dns.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1837452,
+      "seconds": 0.598,
+      "read": 46326,
+      "records": 46326,
+      "dropped": {},
+      "rss_after": 303722496
+    },
+    {
+      "file": "zeek/2026-10-06/dns.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836417,
+      "seconds": 0.594,
+      "read": 46373,
+      "records": 46373,
+      "dropped": {},
+      "rss_after": 303726592
+    },
+    {
+      "file": "zeek/2026-10-06/dns.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833954,
+      "seconds": 0.59,
+      "read": 46414,
+      "records": 46414,
+      "dropped": {},
+      "rss_after": 303726592
+    },
+    {
+      "file": "zeek/2026-10-06/dns.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833577,
+      "seconds": 0.595,
+      "read": 46389,
+      "records": 46389,
+      "dropped": {},
+      "rss_after": 303726592
+    },
+    {
+      "file": "zeek/2026-10-06/dns.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831408,
+      "seconds": 0.587,
+      "read": 46406,
+      "records": 46406,
+      "dropped": {},
+      "rss_after": 303726592
+    },
+    {
+      "file": "zeek/2026-10-06/dns.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834178,
+      "seconds": 0.587,
+      "read": 46374,
+      "records": 46374,
+      "dropped": {},
+      "rss_after": 303730688
+    },
+    {
+      "file": "zeek/2026-10-06/dns.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832539,
+      "seconds": 0.594,
+      "read": 46401,
+      "records": 46401,
+      "dropped": {},
+      "rss_after": 303730688
+    },
+    {
+      "file": "zeek/2026-10-06/dns.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834320,
+      "seconds": 0.587,
+      "read": 46368,
+      "records": 46368,
+      "dropped": {},
+      "rss_after": 303730688
+    },
+    {
+      "file": "zeek/2026-10-07/conn.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020804,
+      "seconds": 1.689,
+      "read": 142542,
+      "records": 142542,
+      "dropped": {},
+      "rss_after": 250118144
+    },
+    {
+      "file": "zeek/2026-10-07/conn.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024060,
+      "seconds": 2.002,
+      "read": 142481,
+      "records": 142481,
+      "dropped": {},
+      "rss_after": 269070336
+    },
+    {
+      "file": "zeek/2026-10-07/conn.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020415,
+      "seconds": 1.678,
+      "read": 142437,
+      "records": 142437,
+      "dropped": {},
+      "rss_after": 300761088
+    },
+    {
+      "file": "zeek/2026-10-07/conn.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019317,
+      "seconds": 1.687,
+      "read": 142476,
+      "records": 142476,
+      "dropped": {},
+      "rss_after": 312696832
+    },
+    {
+      "file": "zeek/2026-10-07/conn.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024937,
+      "seconds": 2.004,
+      "read": 142535,
+      "records": 142535,
+      "dropped": {},
+      "rss_after": 319311872
+    },
+    {
+      "file": "zeek/2026-10-07/conn.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5015261,
+      "seconds": 1.727,
+      "read": 142333,
+      "records": 142333,
+      "dropped": {},
+      "rss_after": 312422400
+    },
+    {
+      "file": "zeek/2026-10-07/conn.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5016736,
+      "seconds": 2.102,
+      "read": 142272,
+      "records": 142272,
+      "dropped": {},
+      "rss_after": 339546112
+    },
+    {
+      "file": "zeek/2026-10-07/conn.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5013808,
+      "seconds": 1.762,
+      "read": 142341,
+      "records": 142341,
+      "dropped": {},
+      "rss_after": 328892416
+    },
+    {
+      "file": "zeek/2026-10-07/conn.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018500,
+      "seconds": 1.984,
+      "read": 142430,
+      "records": 142430,
+      "dropped": {},
+      "rss_after": 325144576
+    },
+    {
+      "file": "zeek/2026-10-07/conn.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020372,
+      "seconds": 1.627,
+      "read": 142377,
+      "records": 142377,
+      "dropped": {},
+      "rss_after": 304357376
+    },
+    {
+      "file": "zeek/2026-10-07/conn.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5028131,
+      "seconds": 1.706,
+      "read": 142731,
+      "records": 142731,
+      "dropped": {},
+      "rss_after": 294449152
+    },
+    {
+      "file": "zeek/2026-10-07/conn.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5012659,
+      "seconds": 2.082,
+      "read": 142300,
+      "records": 142300,
+      "dropped": {},
+      "rss_after": 278437888
+    },
+    {
+      "file": "zeek/2026-10-07/conn.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5027734,
+      "seconds": 1.698,
+      "read": 142644,
+      "records": 142644,
+      "dropped": {},
+      "rss_after": 278138880
+    },
+    {
+      "file": "zeek/2026-10-07/conn.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022423,
+      "seconds": 2.033,
+      "read": 142492,
+      "records": 142492,
+      "dropped": {},
+      "rss_after": 278675456
+    },
+    {
+      "file": "zeek/2026-10-07/conn.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018512,
+      "seconds": 1.672,
+      "read": 142403,
+      "records": 142403,
+      "dropped": {},
+      "rss_after": 237617152
+    },
+    {
+      "file": "zeek/2026-10-07/conn.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023008,
+      "seconds": 1.72,
+      "read": 142656,
+      "records": 142656,
+      "dropped": {},
+      "rss_after": 254300160
+    },
+    {
+      "file": "zeek/2026-10-07/conn.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022378,
+      "seconds": 2.058,
+      "read": 142515,
+      "records": 142515,
+      "dropped": {},
+      "rss_after": 290271232
+    },
+    {
+      "file": "zeek/2026-10-07/conn.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5005675,
+      "seconds": 1.684,
+      "read": 142006,
+      "records": 142006,
+      "dropped": {},
+      "rss_after": 313163776
+    },
+    {
+      "file": "zeek/2026-10-07/conn.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023802,
+      "seconds": 2.106,
+      "read": 142547,
+      "records": 142547,
+      "dropped": {},
+      "rss_after": 348737536
+    },
+    {
+      "file": "zeek/2026-10-07/conn.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019462,
+      "seconds": 1.706,
+      "read": 142424,
+      "records": 142424,
+      "dropped": {},
+      "rss_after": 308965376
+    },
+    {
+      "file": "zeek/2026-10-07/conn.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019862,
+      "seconds": 2.012,
+      "read": 142368,
+      "records": 142368,
+      "dropped": {},
+      "rss_after": 338755584
+    },
+    {
+      "file": "zeek/2026-10-07/conn.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017886,
+      "seconds": 1.678,
+      "read": 142244,
+      "records": 142244,
+      "dropped": {},
+      "rss_after": 338227200
+    },
+    {
+      "file": "zeek/2026-10-07/conn.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5014453,
+      "seconds": 1.765,
+      "read": 142215,
+      "records": 142215,
+      "dropped": {},
+      "rss_after": 328318976
+    },
+    {
+      "file": "zeek/2026-10-07/conn.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5014119,
+      "seconds": 2.081,
+      "read": 142277,
+      "records": 142277,
+      "dropped": {},
+      "rss_after": 359497728
+    },
+    {
+      "file": "zeek/2026-10-07/dns.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833669,
+      "seconds": 0.642,
+      "read": 46375,
+      "records": 46375,
+      "dropped": {},
+      "rss_after": 334520320
+    },
+    {
+      "file": "zeek/2026-10-07/dns.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836739,
+      "seconds": 0.573,
+      "read": 46339,
+      "records": 46339,
+      "dropped": {},
+      "rss_after": 334688256
+    },
+    {
+      "file": "zeek/2026-10-07/dns.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835715,
+      "seconds": 0.678,
+      "read": 46345,
+      "records": 46345,
+      "dropped": {},
+      "rss_after": 334696448
+    },
+    {
+      "file": "zeek/2026-10-07/dns.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833613,
+      "seconds": 0.732,
+      "read": 46388,
+      "records": 46388,
+      "dropped": {},
+      "rss_after": 334700544
+    },
+    {
+      "file": "zeek/2026-10-07/dns.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834546,
+      "seconds": 0.699,
+      "read": 46421,
+      "records": 46421,
+      "dropped": {},
+      "rss_after": 334704640
+    },
+    {
+      "file": "zeek/2026-10-07/dns.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834647,
+      "seconds": 0.689,
+      "read": 46362,
+      "records": 46362,
+      "dropped": {},
+      "rss_after": 334708736
+    },
+    {
+      "file": "zeek/2026-10-07/dns.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836622,
+      "seconds": 0.684,
+      "read": 46343,
+      "records": 46343,
+      "dropped": {},
+      "rss_after": 334712832
+    },
+    {
+      "file": "zeek/2026-10-07/dns.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835598,
+      "seconds": 0.68,
+      "read": 46344,
+      "records": 46344,
+      "dropped": {},
+      "rss_after": 334721024
+    },
+    {
+      "file": "zeek/2026-10-07/dns.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835325,
+      "seconds": 0.685,
+      "read": 46377,
+      "records": 46377,
+      "dropped": {},
+      "rss_after": 334721024
+    },
+    {
+      "file": "zeek/2026-10-07/dns.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833864,
+      "seconds": 0.679,
+      "read": 46356,
+      "records": 46356,
+      "dropped": {},
+      "rss_after": 334721024
+    },
+    {
+      "file": "zeek/2026-10-07/dns.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836326,
+      "seconds": 0.696,
+      "read": 46358,
+      "records": 46358,
+      "dropped": {},
+      "rss_after": 334733312
+    },
+    {
+      "file": "zeek/2026-10-07/dns.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833484,
+      "seconds": 0.696,
+      "read": 46347,
+      "records": 46347,
+      "dropped": {},
+      "rss_after": 334737408
+    },
+    {
+      "file": "zeek/2026-10-07/dns.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835073,
+      "seconds": 0.696,
+      "read": 46362,
+      "records": 46362,
+      "dropped": {},
+      "rss_after": 334741504
+    },
+    {
+      "file": "zeek/2026-10-07/dns.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835538,
+      "seconds": 0.736,
+      "read": 46372,
+      "records": 46372,
+      "dropped": {},
+      "rss_after": 334741504
+    },
+    {
+      "file": "zeek/2026-10-07/dns.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835054,
+      "seconds": 0.694,
+      "read": 46405,
+      "records": 46405,
+      "dropped": {},
+      "rss_after": 334741504
+    },
+    {
+      "file": "zeek/2026-10-07/dns.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834282,
+      "seconds": 0.683,
+      "read": 46355,
+      "records": 46355,
+      "dropped": {},
+      "rss_after": 334741504
+    },
+    {
+      "file": "zeek/2026-10-07/dns.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834315,
+      "seconds": 0.68,
+      "read": 46351,
+      "records": 46351,
+      "dropped": {},
+      "rss_after": 334741504
+    },
+    {
+      "file": "zeek/2026-10-07/dns.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836124,
+      "seconds": 0.686,
+      "read": 46371,
+      "records": 46371,
+      "dropped": {},
+      "rss_after": 334741504
+    },
+    {
+      "file": "zeek/2026-10-07/dns.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831734,
+      "seconds": 0.707,
+      "read": 46382,
+      "records": 46382,
+      "dropped": {},
+      "rss_after": 334741504
+    },
+    {
+      "file": "zeek/2026-10-07/dns.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833699,
+      "seconds": 0.679,
+      "read": 46392,
+      "records": 46392,
+      "dropped": {},
+      "rss_after": 334741504
+    },
+    {
+      "file": "zeek/2026-10-07/dns.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832775,
+      "seconds": 0.686,
+      "read": 46387,
+      "records": 46387,
+      "dropped": {},
+      "rss_after": 334749696
+    },
+    {
+      "file": "zeek/2026-10-07/dns.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835503,
+      "seconds": 0.696,
+      "read": 46353,
+      "records": 46353,
+      "dropped": {},
+      "rss_after": 334753792
+    },
+    {
+      "file": "zeek/2026-10-07/dns.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832731,
+      "seconds": 0.716,
+      "read": 46403,
+      "records": 46403,
+      "dropped": {},
+      "rss_after": 334757888
+    },
+    {
+      "file": "zeek/2026-10-07/dns.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1830488,
+      "seconds": 0.71,
+      "read": 46407,
+      "records": 46407,
+      "dropped": {},
+      "rss_after": 334757888
+    },
+    {
+      "file": "zeek/2026-10-08/conn.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023805,
+      "seconds": 1.746,
+      "read": 142606,
+      "records": 142606,
+      "dropped": {},
+      "rss_after": 322535424
+    },
+    {
+      "file": "zeek/2026-10-08/conn.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025048,
+      "seconds": 2.162,
+      "read": 142611,
+      "records": 142611,
+      "dropped": {},
+      "rss_after": 360554496
+    },
+    {
+      "file": "zeek/2026-10-08/conn.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5014068,
+      "seconds": 1.745,
+      "read": 142343,
+      "records": 142343,
+      "dropped": {},
+      "rss_after": 363016192
+    },
+    {
+      "file": "zeek/2026-10-08/conn.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022295,
+      "seconds": 2.058,
+      "read": 142423,
+      "records": 142423,
+      "dropped": {},
+      "rss_after": 371466240
+    },
+    {
+      "file": "zeek/2026-10-08/conn.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020044,
+      "seconds": 1.663,
+      "read": 142520,
+      "records": 142520,
+      "dropped": {},
+      "rss_after": 371953664
+    },
+    {
+      "file": "zeek/2026-10-08/conn.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023279,
+      "seconds": 1.678,
+      "read": 142505,
+      "records": 142505,
+      "dropped": {},
+      "rss_after": 365281280
+    },
+    {
+      "file": "zeek/2026-10-08/conn.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017351,
+      "seconds": 1.997,
+      "read": 142422,
+      "records": 142422,
+      "dropped": {},
+      "rss_after": 366473216
+    },
+    {
+      "file": "zeek/2026-10-08/conn.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5015758,
+      "seconds": 1.718,
+      "read": 142350,
+      "records": 142350,
+      "dropped": {},
+      "rss_after": 356384768
+    },
+    {
+      "file": "zeek/2026-10-08/conn.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022371,
+      "seconds": 2.052,
+      "read": 142580,
+      "records": 142580,
+      "dropped": {},
+      "rss_after": 320692224
+    },
+    {
+      "file": "zeek/2026-10-08/conn.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5033726,
+      "seconds": 1.661,
+      "read": 142766,
+      "records": 142766,
+      "dropped": {},
+      "rss_after": 320323584
+    },
+    {
+      "file": "zeek/2026-10-08/conn.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017193,
+      "seconds": 2.029,
+      "read": 142425,
+      "records": 142425,
+      "dropped": {},
+      "rss_after": 345952256
+    },
+    {
+      "file": "zeek/2026-10-08/conn.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021819,
+      "seconds": 1.685,
+      "read": 142464,
+      "records": 142464,
+      "dropped": {},
+      "rss_after": 320000000
+    },
+    {
+      "file": "zeek/2026-10-08/conn.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017749,
+      "seconds": 1.655,
+      "read": 142374,
+      "records": 142374,
+      "dropped": {},
+      "rss_after": 310734848
+    },
+    {
+      "file": "zeek/2026-10-08/conn.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5032739,
+      "seconds": 2.022,
+      "read": 142844,
+      "records": 142844,
+      "dropped": {},
+      "rss_after": 325926912
+    },
+    {
+      "file": "zeek/2026-10-08/conn.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5031272,
+      "seconds": 1.68,
+      "read": 142729,
+      "records": 142729,
+      "dropped": {},
+      "rss_after": 314466304
+    },
+    {
+      "file": "zeek/2026-10-08/conn.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024091,
+      "seconds": 1.97,
+      "read": 142622,
+      "records": 142622,
+      "dropped": {},
+      "rss_after": 266022912
+    },
+    {
+      "file": "zeek/2026-10-08/conn.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019288,
+      "seconds": 1.656,
+      "read": 142439,
+      "records": 142439,
+      "dropped": {},
+      "rss_after": 291340288
+    },
+    {
+      "file": "zeek/2026-10-08/conn.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5008454,
+      "seconds": 1.986,
+      "read": 142194,
+      "records": 142194,
+      "dropped": {},
+      "rss_after": 275247104
+    },
+    {
+      "file": "zeek/2026-10-08/conn.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024562,
+      "seconds": 1.718,
+      "read": 142529,
+      "records": 142529,
+      "dropped": {},
+      "rss_after": 307695616
+    },
+    {
+      "file": "zeek/2026-10-08/conn.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023271,
+      "seconds": 1.773,
+      "read": 142539,
+      "records": 142539,
+      "dropped": {},
+      "rss_after": 270569472
+    },
+    {
+      "file": "zeek/2026-10-08/conn.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025167,
+      "seconds": 2.104,
+      "read": 142622,
+      "records": 142622,
+      "dropped": {},
+      "rss_after": 308895744
+    },
+    {
+      "file": "zeek/2026-10-08/conn.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5029472,
+      "seconds": 1.728,
+      "read": 142754,
+      "records": 142754,
+      "dropped": {},
+      "rss_after": 284835840
+    },
+    {
+      "file": "zeek/2026-10-08/conn.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019142,
+      "seconds": 1.989,
+      "read": 142400,
+      "records": 142400,
+      "dropped": {},
+      "rss_after": 295194624
+    },
+    {
+      "file": "zeek/2026-10-08/conn.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5015377,
+      "seconds": 1.704,
+      "read": 142407,
+      "records": 142407,
+      "dropped": {},
+      "rss_after": 304582656
+    },
+    {
+      "file": "zeek/2026-10-08/dns.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835673,
+      "seconds": 0.597,
+      "read": 46411,
+      "records": 46411,
+      "dropped": {},
+      "rss_after": 305143808
+    },
+    {
+      "file": "zeek/2026-10-08/dns.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832693,
+      "seconds": 0.705,
+      "read": 46369,
+      "records": 46369,
+      "dropped": {},
+      "rss_after": 305152000
+    },
+    {
+      "file": "zeek/2026-10-08/dns.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832678,
+      "seconds": 0.709,
+      "read": 46403,
+      "records": 46403,
+      "dropped": {},
+      "rss_after": 305164288
+    },
+    {
+      "file": "zeek/2026-10-08/dns.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834249,
+      "seconds": 0.717,
+      "read": 46379,
+      "records": 46379,
+      "dropped": {},
+      "rss_after": 305172480
+    },
+    {
+      "file": "zeek/2026-10-08/dns.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833840,
+      "seconds": 0.723,
+      "read": 46359,
+      "records": 46359,
+      "dropped": {},
+      "rss_after": 305180672
+    },
+    {
+      "file": "zeek/2026-10-08/dns.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1837213,
+      "seconds": 0.739,
+      "read": 46330,
+      "records": 46330,
+      "dropped": {},
+      "rss_after": 305180672
+    },
+    {
+      "file": "zeek/2026-10-08/dns.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831778,
+      "seconds": 0.72,
+      "read": 46382,
+      "records": 46382,
+      "dropped": {},
+      "rss_after": 305188864
+    },
+    {
+      "file": "zeek/2026-10-08/dns.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835860,
+      "seconds": 0.765,
+      "read": 46368,
+      "records": 46368,
+      "dropped": {},
+      "rss_after": 305197056
+    },
+    {
+      "file": "zeek/2026-10-08/dns.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832300,
+      "seconds": 0.744,
+      "read": 46366,
+      "records": 46366,
+      "dropped": {},
+      "rss_after": 305197056
+    },
+    {
+      "file": "zeek/2026-10-08/dns.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833231,
+      "seconds": 0.688,
+      "read": 46360,
+      "records": 46360,
+      "dropped": {},
+      "rss_after": 305197056
+    },
+    {
+      "file": "zeek/2026-10-08/dns.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832492,
+      "seconds": 0.7,
+      "read": 46398,
+      "records": 46398,
+      "dropped": {},
+      "rss_after": 305201152
+    },
+    {
+      "file": "zeek/2026-10-08/dns.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832967,
+      "seconds": 0.731,
+      "read": 46372,
+      "records": 46372,
+      "dropped": {},
+      "rss_after": 305201152
+    },
+    {
+      "file": "zeek/2026-10-08/dns.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1830858,
+      "seconds": 0.701,
+      "read": 46404,
+      "records": 46404,
+      "dropped": {},
+      "rss_after": 305201152
+    },
+    {
+      "file": "zeek/2026-10-08/dns.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835874,
+      "seconds": 0.696,
+      "read": 46390,
+      "records": 46390,
+      "dropped": {},
+      "rss_after": 305205248
+    },
+    {
+      "file": "zeek/2026-10-08/dns.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833891,
+      "seconds": 0.7,
+      "read": 46378,
+      "records": 46378,
+      "dropped": {},
+      "rss_after": 305213440
+    },
+    {
+      "file": "zeek/2026-10-08/dns.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835007,
+      "seconds": 0.706,
+      "read": 46367,
+      "records": 46367,
+      "dropped": {},
+      "rss_after": 305217536
+    },
+    {
+      "file": "zeek/2026-10-08/dns.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834038,
+      "seconds": 0.697,
+      "read": 46351,
+      "records": 46351,
+      "dropped": {},
+      "rss_after": 305221632
+    },
+    {
+      "file": "zeek/2026-10-08/dns.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832720,
+      "seconds": 0.695,
+      "read": 46400,
+      "records": 46400,
+      "dropped": {},
+      "rss_after": 305221632
+    },
+    {
+      "file": "zeek/2026-10-08/dns.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831766,
+      "seconds": 0.696,
+      "read": 46397,
+      "records": 46397,
+      "dropped": {},
+      "rss_after": 305229824
+    },
+    {
+      "file": "zeek/2026-10-08/dns.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834483,
+      "seconds": 0.702,
+      "read": 46359,
+      "records": 46359,
+      "dropped": {},
+      "rss_after": 305229824
+    },
+    {
+      "file": "zeek/2026-10-08/dns.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833290,
+      "seconds": 0.688,
+      "read": 46376,
+      "records": 46376,
+      "dropped": {},
+      "rss_after": 305229824
+    },
+    {
+      "file": "zeek/2026-10-08/dns.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834842,
+      "seconds": 0.694,
+      "read": 46396,
+      "records": 46396,
+      "dropped": {},
+      "rss_after": 305229824
+    },
+    {
+      "file": "zeek/2026-10-08/dns.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833959,
+      "seconds": 0.7,
+      "read": 46367,
+      "records": 46367,
+      "dropped": {},
+      "rss_after": 305233920
+    },
+    {
+      "file": "zeek/2026-10-08/dns.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835387,
+      "seconds": 0.695,
+      "read": 46381,
+      "records": 46381,
+      "dropped": {},
+      "rss_after": 305238016
+    },
+    {
+      "file": "zeek/2026-10-09/conn.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5016380,
+      "seconds": 1.796,
+      "read": 142325,
+      "records": 142325,
+      "dropped": {},
+      "rss_after": 321536000
+    },
+    {
+      "file": "zeek/2026-10-09/conn.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5032217,
+      "seconds": 2.074,
+      "read": 142665,
+      "records": 142665,
+      "dropped": {},
+      "rss_after": 341094400
+    },
+    {
+      "file": "zeek/2026-10-09/conn.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5013929,
+      "seconds": 1.762,
+      "read": 142274,
+      "records": 142274,
+      "dropped": {},
+      "rss_after": 309768192
+    },
+    {
+      "file": "zeek/2026-10-09/conn.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017345,
+      "seconds": 2.007,
+      "read": 142389,
+      "records": 142389,
+      "dropped": {},
+      "rss_after": 314134528
+    },
+    {
+      "file": "zeek/2026-10-09/conn.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5015583,
+      "seconds": 1.686,
+      "read": 142309,
+      "records": 142309,
+      "dropped": {},
+      "rss_after": 244404224
+    },
+    {
+      "file": "zeek/2026-10-09/conn.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025237,
+      "seconds": 2.065,
+      "read": 142620,
+      "records": 142620,
+      "dropped": {},
+      "rss_after": 296222720
+    },
+    {
+      "file": "zeek/2026-10-09/conn.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5013157,
+      "seconds": 1.682,
+      "read": 142202,
+      "records": 142202,
+      "dropped": {},
+      "rss_after": 316575744
+    },
+    {
+      "file": "zeek/2026-10-09/conn.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026826,
+      "seconds": 1.673,
+      "read": 142669,
+      "records": 142669,
+      "dropped": {},
+      "rss_after": 300265472
+    },
+    {
+      "file": "zeek/2026-10-09/conn.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5027138,
+      "seconds": 2.01,
+      "read": 142546,
+      "records": 142546,
+      "dropped": {},
+      "rss_after": 338059264
+    },
+    {
+      "file": "zeek/2026-10-09/conn.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017353,
+      "seconds": 1.665,
+      "read": 142342,
+      "records": 142342,
+      "dropped": {},
+      "rss_after": 314101760
+    },
+    {
+      "file": "zeek/2026-10-09/conn.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024951,
+      "seconds": 2.04,
+      "read": 142448,
+      "records": 142448,
+      "dropped": {},
+      "rss_after": 322920448
+    },
+    {
+      "file": "zeek/2026-10-09/conn.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024531,
+      "seconds": 1.675,
+      "read": 142605,
+      "records": 142605,
+      "dropped": {},
+      "rss_after": 299409408
+    },
+    {
+      "file": "zeek/2026-10-09/conn.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021145,
+      "seconds": 2.147,
+      "read": 142489,
+      "records": 142489,
+      "dropped": {},
+      "rss_after": 347009024
+    },
+    {
+      "file": "zeek/2026-10-09/conn.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5016482,
+      "seconds": 1.759,
+      "read": 142329,
+      "records": 142329,
+      "dropped": {},
+      "rss_after": 345038848
+    },
+    {
+      "file": "zeek/2026-10-09/conn.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5030053,
+      "seconds": 1.69,
+      "read": 142683,
+      "records": 142683,
+      "dropped": {},
+      "rss_after": 346394624
+    },
+    {
+      "file": "zeek/2026-10-09/conn.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5033900,
+      "seconds": 2.049,
+      "read": 142806,
+      "records": 142806,
+      "dropped": {},
+      "rss_after": 329494528
+    },
+    {
+      "file": "zeek/2026-10-09/conn.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024108,
+      "seconds": 1.663,
+      "read": 142678,
+      "records": 142678,
+      "dropped": {},
+      "rss_after": 292114432
+    },
+    {
+      "file": "zeek/2026-10-09/conn.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5028418,
+      "seconds": 2.027,
+      "read": 142644,
+      "records": 142644,
+      "dropped": {},
+      "rss_after": 300630016
+    },
+    {
+      "file": "zeek/2026-10-09/conn.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5030028,
+      "seconds": 1.694,
+      "read": 142776,
+      "records": 142776,
+      "dropped": {},
+      "rss_after": 299872256
+    },
+    {
+      "file": "zeek/2026-10-09/conn.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018113,
+      "seconds": 1.985,
+      "read": 142435,
+      "records": 142435,
+      "dropped": {},
+      "rss_after": 337129472
+    },
+    {
+      "file": "zeek/2026-10-09/conn.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022214,
+      "seconds": 1.691,
+      "read": 142447,
+      "records": 142447,
+      "dropped": {},
+      "rss_after": 351371264
+    },
+    {
+      "file": "zeek/2026-10-09/conn.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020307,
+      "seconds": 1.626,
+      "read": 142549,
+      "records": 142549,
+      "dropped": {},
+      "rss_after": 345821184
+    },
+    {
+      "file": "zeek/2026-10-09/conn.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5030495,
+      "seconds": 2.006,
+      "read": 142674,
+      "records": 142674,
+      "dropped": {},
+      "rss_after": 341725184
+    },
+    {
+      "file": "zeek/2026-10-09/conn.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5023143,
+      "seconds": 1.622,
+      "read": 142526,
+      "records": 142526,
+      "dropped": {},
+      "rss_after": 310902784
+    },
+    {
+      "file": "zeek/2026-10-09/dns.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835042,
+      "seconds": 0.582,
+      "read": 46364,
+      "records": 46364,
+      "dropped": {},
+      "rss_after": 311205888
+    },
+    {
+      "file": "zeek/2026-10-09/dns.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836576,
+      "seconds": 0.604,
+      "read": 46373,
+      "records": 46373,
+      "dropped": {},
+      "rss_after": 311218176
+    },
+    {
+      "file": "zeek/2026-10-09/dns.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833953,
+      "seconds": 0.688,
+      "read": 46379,
+      "records": 46379,
+      "dropped": {},
+      "rss_after": 311226368
+    },
+    {
+      "file": "zeek/2026-10-09/dns.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835278,
+      "seconds": 0.694,
+      "read": 46388,
+      "records": 46388,
+      "dropped": {},
+      "rss_after": 311234560
+    },
+    {
+      "file": "zeek/2026-10-09/dns.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835772,
+      "seconds": 0.692,
+      "read": 46361,
+      "records": 46361,
+      "dropped": {},
+      "rss_after": 311234560
+    },
+    {
+      "file": "zeek/2026-10-09/dns.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832798,
+      "seconds": 0.726,
+      "read": 46384,
+      "records": 46384,
+      "dropped": {},
+      "rss_after": 311238656
+    },
+    {
+      "file": "zeek/2026-10-09/dns.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831718,
+      "seconds": 0.69,
+      "read": 46386,
+      "records": 46386,
+      "dropped": {},
+      "rss_after": 311242752
+    },
+    {
+      "file": "zeek/2026-10-09/dns.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833702,
+      "seconds": 0.698,
+      "read": 46353,
+      "records": 46353,
+      "dropped": {},
+      "rss_after": 311250944
+    },
+    {
+      "file": "zeek/2026-10-09/dns.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1837390,
+      "seconds": 0.688,
+      "read": 46370,
+      "records": 46370,
+      "dropped": {},
+      "rss_after": 311250944
+    },
+    {
+      "file": "zeek/2026-10-09/dns.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1837459,
+      "seconds": 0.689,
+      "read": 46353,
+      "records": 46353,
+      "dropped": {},
+      "rss_after": 311255040
+    },
+    {
+      "file": "zeek/2026-10-09/dns.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833348,
+      "seconds": 0.715,
+      "read": 46371,
+      "records": 46371,
+      "dropped": {},
+      "rss_after": 311263232
+    },
+    {
+      "file": "zeek/2026-10-09/dns.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834964,
+      "seconds": 0.689,
+      "read": 46404,
+      "records": 46404,
+      "dropped": {},
+      "rss_after": 311271424
+    },
+    {
+      "file": "zeek/2026-10-09/dns.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833791,
+      "seconds": 0.695,
+      "read": 46388,
+      "records": 46388,
+      "dropped": {},
+      "rss_after": 311279616
+    },
+    {
+      "file": "zeek/2026-10-09/dns.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835266,
+      "seconds": 0.682,
+      "read": 46341,
+      "records": 46341,
+      "dropped": {},
+      "rss_after": 311279616
+    },
+    {
+      "file": "zeek/2026-10-09/dns.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832101,
+      "seconds": 0.683,
+      "read": 46417,
+      "records": 46417,
+      "dropped": {},
+      "rss_after": 311279616
+    },
+    {
+      "file": "zeek/2026-10-09/dns.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1837844,
+      "seconds": 0.704,
+      "read": 46366,
+      "records": 46366,
+      "dropped": {},
+      "rss_after": 311283712
+    },
+    {
+      "file": "zeek/2026-10-09/dns.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833248,
+      "seconds": 0.694,
+      "read": 46364,
+      "records": 46364,
+      "dropped": {},
+      "rss_after": 311287808
+    },
+    {
+      "file": "zeek/2026-10-09/dns.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833106,
+      "seconds": 0.696,
+      "read": 46380,
+      "records": 46380,
+      "dropped": {},
+      "rss_after": 311287808
+    },
+    {
+      "file": "zeek/2026-10-09/dns.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834774,
+      "seconds": 0.691,
+      "read": 46349,
+      "records": 46349,
+      "dropped": {},
+      "rss_after": 311287808
+    },
+    {
+      "file": "zeek/2026-10-09/dns.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833566,
+      "seconds": 0.696,
+      "read": 46384,
+      "records": 46384,
+      "dropped": {},
+      "rss_after": 311287808
+    },
+    {
+      "file": "zeek/2026-10-09/dns.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832531,
+      "seconds": 0.704,
+      "read": 46376,
+      "records": 46376,
+      "dropped": {},
+      "rss_after": 311296000
+    },
+    {
+      "file": "zeek/2026-10-09/dns.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834719,
+      "seconds": 0.758,
+      "read": 46377,
+      "records": 46377,
+      "dropped": {},
+      "rss_after": 311296000
+    },
+    {
+      "file": "zeek/2026-10-09/dns.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835882,
+      "seconds": 0.745,
+      "read": 46399,
+      "records": 46399,
+      "dropped": {},
+      "rss_after": 311296000
+    },
+    {
+      "file": "zeek/2026-10-09/dns.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832370,
+      "seconds": 0.695,
+      "read": 46388,
+      "records": 46388,
+      "dropped": {},
+      "rss_after": 311296000
+    },
+    {
+      "file": "zeek/2026-10-10/conn.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5013559,
+      "seconds": 2.165,
+      "read": 142209,
+      "records": 142209,
+      "dropped": {},
+      "rss_after": 325775360
+    },
+    {
+      "file": "zeek/2026-10-10/conn.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020986,
+      "seconds": 1.711,
+      "read": 142612,
+      "records": 142612,
+      "dropped": {},
+      "rss_after": 340402176
+    },
+    {
+      "file": "zeek/2026-10-10/conn.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5031286,
+      "seconds": 2.013,
+      "read": 142720,
+      "records": 142720,
+      "dropped": {},
+      "rss_after": 352436224
+    },
+    {
+      "file": "zeek/2026-10-10/conn.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022665,
+      "seconds": 1.637,
+      "read": 142565,
+      "records": 142565,
+      "dropped": {},
+      "rss_after": 341630976
+    },
+    {
+      "file": "zeek/2026-10-10/conn.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5016544,
+      "seconds": 1.636,
+      "read": 142390,
+      "records": 142390,
+      "dropped": {},
+      "rss_after": 316088320
+    },
+    {
+      "file": "zeek/2026-10-10/conn.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020961,
+      "seconds": 2.003,
+      "read": 142447,
+      "records": 142447,
+      "dropped": {},
+      "rss_after": 312049664
+    },
+    {
+      "file": "zeek/2026-10-10/conn.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5014999,
+      "seconds": 1.644,
+      "read": 142332,
+      "records": 142332,
+      "dropped": {},
+      "rss_after": 275451904
+    },
+    {
+      "file": "zeek/2026-10-10/conn.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5033665,
+      "seconds": 1.992,
+      "read": 142797,
+      "records": 142797,
+      "dropped": {},
+      "rss_after": 310202368
+    },
+    {
+      "file": "zeek/2026-10-10/conn.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018653,
+      "seconds": 1.645,
+      "read": 142467,
+      "records": 142467,
+      "dropped": {},
+      "rss_after": 307998720
+    },
+    {
+      "file": "zeek/2026-10-10/conn.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020417,
+      "seconds": 2.056,
+      "read": 142560,
+      "records": 142560,
+      "dropped": {},
+      "rss_after": 314818560
+    },
+    {
+      "file": "zeek/2026-10-10/conn.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020896,
+      "seconds": 1.683,
+      "read": 142507,
+      "records": 142507,
+      "dropped": {},
+      "rss_after": 310235136
+    },
+    {
+      "file": "zeek/2026-10-10/conn.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5027125,
+      "seconds": 1.656,
+      "read": 142569,
+      "records": 142569,
+      "dropped": {},
+      "rss_after": 283267072
+    },
+    {
+      "file": "zeek/2026-10-10/conn.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022790,
+      "seconds": 2.092,
+      "read": 142543,
+      "records": 142543,
+      "dropped": {},
+      "rss_after": 314822656
+    },
+    {
+      "file": "zeek/2026-10-10/conn.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017511,
+      "seconds": 1.703,
+      "read": 142394,
+      "records": 142394,
+      "dropped": {},
+      "rss_after": 296091648
+    },
+    {
+      "file": "zeek/2026-10-10/conn.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024023,
+      "seconds": 2.087,
+      "read": 142590,
+      "records": 142590,
+      "dropped": {},
+      "rss_after": 288722944
+    },
+    {
+      "file": "zeek/2026-10-10/conn.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5013184,
+      "seconds": 1.634,
+      "read": 142249,
+      "records": 142249,
+      "dropped": {},
+      "rss_after": 301084672
+    },
+    {
+      "file": "zeek/2026-10-10/conn.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021943,
+      "seconds": 1.998,
+      "read": 142517,
+      "records": 142517,
+      "dropped": {},
+      "rss_after": 292540416
+    },
+    {
+      "file": "zeek/2026-10-10/conn.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026541,
+      "seconds": 1.79,
+      "read": 142701,
+      "records": 142701,
+      "dropped": {},
+      "rss_after": 314372096
+    },
+    {
+      "file": "zeek/2026-10-10/conn.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017374,
+      "seconds": 1.699,
+      "read": 142404,
+      "records": 142404,
+      "dropped": {},
+      "rss_after": 325312512
+    },
+    {
+      "file": "zeek/2026-10-10/conn.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020838,
+      "seconds": 2.036,
+      "read": 142372,
+      "records": 142372,
+      "dropped": {},
+      "rss_after": 345296896
+    },
+    {
+      "file": "zeek/2026-10-10/conn.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5026060,
+      "seconds": 1.728,
+      "read": 142600,
+      "records": 142600,
+      "dropped": {},
+      "rss_after": 354631680
+    },
+    {
+      "file": "zeek/2026-10-10/conn.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5028117,
+      "seconds": 2.037,
+      "read": 142744,
+      "records": 142744,
+      "dropped": {},
+      "rss_after": 267567104
+    },
+    {
+      "file": "zeek/2026-10-10/conn.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021203,
+      "seconds": 1.672,
+      "read": 142407,
+      "records": 142407,
+      "dropped": {},
+      "rss_after": 262991872
+    },
+    {
+      "file": "zeek/2026-10-10/conn.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017831,
+      "seconds": 1.672,
+      "read": 142469,
+      "records": 142469,
+      "dropped": {},
+      "rss_after": 274317312
+    },
+    {
+      "file": "zeek/2026-10-10/dns.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834070,
+      "seconds": 0.598,
+      "read": 46355,
+      "records": 46355,
+      "dropped": {},
+      "rss_after": 274628608
+    },
+    {
+      "file": "zeek/2026-10-10/dns.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833220,
+      "seconds": 0.581,
+      "read": 46394,
+      "records": 46394,
+      "dropped": {},
+      "rss_after": 274632704
+    },
+    {
+      "file": "zeek/2026-10-10/dns.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834867,
+      "seconds": 0.641,
+      "read": 46380,
+      "records": 46380,
+      "dropped": {},
+      "rss_after": 274649088
+    },
+    {
+      "file": "zeek/2026-10-10/dns.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835363,
+      "seconds": 0.71,
+      "read": 46357,
+      "records": 46357,
+      "dropped": {},
+      "rss_after": 274661376
+    },
+    {
+      "file": "zeek/2026-10-10/dns.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834866,
+      "seconds": 0.705,
+      "read": 46369,
+      "records": 46369,
+      "dropped": {},
+      "rss_after": 274665472
+    },
+    {
+      "file": "zeek/2026-10-10/dns.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832850,
+      "seconds": 0.703,
+      "read": 46356,
+      "records": 46356,
+      "dropped": {},
+      "rss_after": 274669568
+    },
+    {
+      "file": "zeek/2026-10-10/dns.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834514,
+      "seconds": 0.707,
+      "read": 46398,
+      "records": 46398,
+      "dropped": {},
+      "rss_after": 274677760
+    },
+    {
+      "file": "zeek/2026-10-10/dns.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833360,
+      "seconds": 0.699,
+      "read": 46344,
+      "records": 46344,
+      "dropped": {},
+      "rss_after": 274681856
+    },
+    {
+      "file": "zeek/2026-10-10/dns.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834444,
+      "seconds": 0.707,
+      "read": 46382,
+      "records": 46382,
+      "dropped": {},
+      "rss_after": 274681856
+    },
+    {
+      "file": "zeek/2026-10-10/dns.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835586,
+      "seconds": 0.702,
+      "read": 46379,
+      "records": 46379,
+      "dropped": {},
+      "rss_after": 274681856
+    },
+    {
+      "file": "zeek/2026-10-10/dns.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834235,
+      "seconds": 0.706,
+      "read": 46401,
+      "records": 46401,
+      "dropped": {},
+      "rss_after": 274690048
+    },
+    {
+      "file": "zeek/2026-10-10/dns.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835690,
+      "seconds": 0.705,
+      "read": 46369,
+      "records": 46369,
+      "dropped": {},
+      "rss_after": 274698240
+    },
+    {
+      "file": "zeek/2026-10-10/dns.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833673,
+      "seconds": 0.708,
+      "read": 46372,
+      "records": 46372,
+      "dropped": {},
+      "rss_after": 274698240
+    },
+    {
+      "file": "zeek/2026-10-10/dns.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834882,
+      "seconds": 0.7,
+      "read": 46384,
+      "records": 46384,
+      "dropped": {},
+      "rss_after": 274698240
+    },
+    {
+      "file": "zeek/2026-10-10/dns.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834635,
+      "seconds": 0.7,
+      "read": 46370,
+      "records": 46370,
+      "dropped": {},
+      "rss_after": 274698240
+    },
+    {
+      "file": "zeek/2026-10-10/dns.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832696,
+      "seconds": 0.693,
+      "read": 46366,
+      "records": 46366,
+      "dropped": {},
+      "rss_after": 274698240
+    },
+    {
+      "file": "zeek/2026-10-10/dns.16:00:00-16:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834631,
+      "seconds": 0.705,
+      "read": 46379,
+      "records": 46379,
+      "dropped": {},
+      "rss_after": 274698240
+    },
+    {
+      "file": "zeek/2026-10-10/dns.17:00:00-17:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835482,
+      "seconds": 0.701,
+      "read": 46339,
+      "records": 46339,
+      "dropped": {},
+      "rss_after": 274702336
+    },
+    {
+      "file": "zeek/2026-10-10/dns.18:00:00-18:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833402,
+      "seconds": 0.703,
+      "read": 46364,
+      "records": 46364,
+      "dropped": {},
+      "rss_after": 274706432
+    },
+    {
+      "file": "zeek/2026-10-10/dns.19:00:00-19:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832504,
+      "seconds": 0.699,
+      "read": 46389,
+      "records": 46389,
+      "dropped": {},
+      "rss_after": 274706432
+    },
+    {
+      "file": "zeek/2026-10-10/dns.20:00:00-20:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832340,
+      "seconds": 0.699,
+      "read": 46415,
+      "records": 46415,
+      "dropped": {},
+      "rss_after": 274706432
+    },
+    {
+      "file": "zeek/2026-10-10/dns.21:00:00-21:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835306,
+      "seconds": 0.692,
+      "read": 46350,
+      "records": 46350,
+      "dropped": {},
+      "rss_after": 274706432
+    },
+    {
+      "file": "zeek/2026-10-10/dns.22:00:00-22:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833065,
+      "seconds": 0.705,
+      "read": 46376,
+      "records": 46376,
+      "dropped": {},
+      "rss_after": 274706432
+    },
+    {
+      "file": "zeek/2026-10-10/dns.23:00:00-23:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1833663,
+      "seconds": 0.742,
+      "read": 46385,
+      "records": 46385,
+      "dropped": {},
+      "rss_after": 274714624
+    },
+    {
+      "file": "zeek/2026-10-11/conn.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5027045,
+      "seconds": 2.002,
+      "read": 142630,
+      "records": 142630,
+      "dropped": {},
+      "rss_after": 270802944
+    },
+    {
+      "file": "zeek/2026-10-11/conn.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5030701,
+      "seconds": 1.645,
+      "read": 142837,
+      "records": 142837,
+      "dropped": {},
+      "rss_after": 278306816
+    },
+    {
+      "file": "zeek/2026-10-11/conn.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021756,
+      "seconds": 2.097,
+      "read": 142480,
+      "records": 142480,
+      "dropped": {},
+      "rss_after": 346415104
+    },
+    {
+      "file": "zeek/2026-10-11/conn.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024789,
+      "seconds": 1.641,
+      "read": 142689,
+      "records": 142689,
+      "dropped": {},
+      "rss_after": 344281088
+    },
+    {
+      "file": "zeek/2026-10-11/conn.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5021181,
+      "seconds": 1.949,
+      "read": 142441,
+      "records": 142441,
+      "dropped": {},
+      "rss_after": 350294016
+    },
+    {
+      "file": "zeek/2026-10-11/conn.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5025493,
+      "seconds": 1.654,
+      "read": 142638,
+      "records": 142638,
+      "dropped": {},
+      "rss_after": 336228352
+    },
+    {
+      "file": "zeek/2026-10-11/conn.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5019224,
+      "seconds": 1.692,
+      "read": 142353,
+      "records": 142353,
+      "dropped": {},
+      "rss_after": 335020032
+    },
+    {
+      "file": "zeek/2026-10-11/conn.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5032869,
+      "seconds": 1.94,
+      "read": 142715,
+      "records": 142715,
+      "dropped": {},
+      "rss_after": 308084736
+    },
+    {
+      "file": "zeek/2026-10-11/conn.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5020068,
+      "seconds": 1.637,
+      "read": 142490,
+      "records": 142490,
+      "dropped": {},
+      "rss_after": 327499776
+    },
+    {
+      "file": "zeek/2026-10-11/conn.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5017551,
+      "seconds": 1.967,
+      "read": 142396,
+      "records": 142396,
+      "dropped": {},
+      "rss_after": 280875008
+    },
+    {
+      "file": "zeek/2026-10-11/conn.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5024504,
+      "seconds": 1.638,
+      "read": 142638,
+      "records": 142638,
+      "dropped": {},
+      "rss_after": 279310336
+    },
+    {
+      "file": "zeek/2026-10-11/conn.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5022081,
+      "seconds": 1.931,
+      "read": 142545,
+      "records": 142545,
+      "dropped": {},
+      "rss_after": 282624000
+    },
+    {
+      "file": "zeek/2026-10-11/conn.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018067,
+      "seconds": 1.617,
+      "read": 142365,
+      "records": 142365,
+      "dropped": {},
+      "rss_after": 302788608
+    },
+    {
+      "file": "zeek/2026-10-11/conn.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5018015,
+      "seconds": 1.632,
+      "read": 142408,
+      "records": 142408,
+      "dropped": {},
+      "rss_after": 276033536
+    },
+    {
+      "file": "zeek/2026-10-11/conn.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5035490,
+      "seconds": 1.938,
+      "read": 142950,
+      "records": 142950,
+      "dropped": {},
+      "rss_after": 266510336
+    },
+    {
+      "file": "zeek/2026-10-11/conn.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 5027878,
+      "seconds": 1.69,
+      "read": 142677,
+      "records": 142677,
+      "dropped": {},
+      "rss_after": 287297536
+    },
+    {
+      "file": "zeek/2026-10-11/dns.00:00:00-00:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834714,
+      "seconds": 0.621,
+      "read": 46408,
+      "records": 46408,
+      "dropped": {},
+      "rss_after": 287596544
+    },
+    {
+      "file": "zeek/2026-10-11/dns.01:00:00-01:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835158,
+      "seconds": 0.685,
+      "read": 46376,
+      "records": 46376,
+      "dropped": {},
+      "rss_after": 287600640
+    },
+    {
+      "file": "zeek/2026-10-11/dns.02:00:00-02:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1837348,
+      "seconds": 0.699,
+      "read": 46373,
+      "records": 46373,
+      "dropped": {},
+      "rss_after": 287608832
+    },
+    {
+      "file": "zeek/2026-10-11/dns.03:00:00-03:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835134,
+      "seconds": 0.695,
+      "read": 46380,
+      "records": 46380,
+      "dropped": {},
+      "rss_after": 287621120
+    },
+    {
+      "file": "zeek/2026-10-11/dns.04:00:00-04:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832265,
+      "seconds": 0.699,
+      "read": 46393,
+      "records": 46393,
+      "dropped": {},
+      "rss_after": 287629312
+    },
+    {
+      "file": "zeek/2026-10-11/dns.05:00:00-05:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835724,
+      "seconds": 0.698,
+      "read": 46369,
+      "records": 46369,
+      "dropped": {},
+      "rss_after": 287633408
+    },
+    {
+      "file": "zeek/2026-10-11/dns.06:00:00-06:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834596,
+      "seconds": 0.715,
+      "read": 46342,
+      "records": 46342,
+      "dropped": {},
+      "rss_after": 287641600
+    },
+    {
+      "file": "zeek/2026-10-11/dns.07:00:00-07:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831382,
+      "seconds": 0.715,
+      "read": 46438,
+      "records": 46438,
+      "dropped": {},
+      "rss_after": 287649792
+    },
+    {
+      "file": "zeek/2026-10-11/dns.08:00:00-08:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834881,
+      "seconds": 0.702,
+      "read": 46352,
+      "records": 46352,
+      "dropped": {},
+      "rss_after": 287649792
+    },
+    {
+      "file": "zeek/2026-10-11/dns.09:00:00-09:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834172,
+      "seconds": 0.691,
+      "read": 46379,
+      "records": 46379,
+      "dropped": {},
+      "rss_after": 287649792
+    },
+    {
+      "file": "zeek/2026-10-11/dns.10:00:00-10:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835016,
+      "seconds": 0.704,
+      "read": 46404,
+      "records": 46404,
+      "dropped": {},
+      "rss_after": 287653888
+    },
+    {
+      "file": "zeek/2026-10-11/dns.11:00:00-11:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1834614,
+      "seconds": 0.74,
+      "read": 46388,
+      "records": 46388,
+      "dropped": {},
+      "rss_after": 287653888
+    },
+    {
+      "file": "zeek/2026-10-11/dns.12:00:00-12:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1836973,
+      "seconds": 0.691,
+      "read": 46360,
+      "records": 46360,
+      "dropped": {},
+      "rss_after": 287653888
+    },
+    {
+      "file": "zeek/2026-10-11/dns.13:00:00-13:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1831034,
+      "seconds": 0.694,
+      "read": 46442,
+      "records": 46442,
+      "dropped": {},
+      "rss_after": 287653888
+    },
+    {
+      "file": "zeek/2026-10-11/dns.14:00:00-14:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1835057,
+      "seconds": 0.69,
+      "read": 46373,
+      "records": 46373,
+      "dropped": {},
+      "rss_after": 287662080
+    },
+    {
+      "file": "zeek/2026-10-11/dns.15:00:00-15:59:59.log.gz",
+      "fmt": "zeek",
+      "bytes": 1832663,
+      "seconds": 0.69,
+      "read": 46405,
+      "records": 46405,
+      "dropped": {},
+      "rss_after": 287666176
+    }
+  ],
+  "status": "ok (report skipped)",
+  "rss_limit": 13958643712,
+  "duckdb_memory_limit": "10GB",
+  "workdir_peak": 13434834944,
+  "input": "/home/user/bench/g10",
+  "input_files": 768,
+  "input_bytes_on_disk": 2659242907,
+  "by_format": {
+    "paloalto": {
+      "files": 256,
+      "read": 32239289,
+      "kept": 32239289,
+      "dropped": 0
+    },
+    "zeek": {
+      "files": 512,
+      "read": 48359136,
+      "kept": 48359136,
+      "dropped": 0
+    }
+  },
+  "total_seconds": 1452.52,
+  "ru_maxrss": 11635331072
+}
