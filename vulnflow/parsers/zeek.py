@@ -1,13 +1,12 @@
 """Zeek ASCII/JSON log reader with explicit stream classification."""
 from __future__ import annotations
 
-import gzip
 import json
 import os
 import re
 
 from ..schema import Flow, OTEvent, ParseStats, ThreatEvent, ZeekEvent
-from ._util import clean_ip, clean_port, clean_proto, parse_ts, to_int
+from ._util import clean_ip, clean_port, clean_proto, open_text, parse_ts, to_int
 
 ESTABLISHED_STATES = {"SF", "S1", "S2", "S3", "RSTO", "RSTR"}
 REJECTED_STATES = {"REJ", "RSTOS0", "RSTRH"}
@@ -117,12 +116,11 @@ def _typed_value(value: str, kind: str, set_sep: str, empty: str, unset: str):
 
 
 def parse(path: str, stats: ParseStats):
-    records: list[Flow | ThreatEvent | ZeekEvent] = []
+    """Yield Flow, ThreatEvent, ZeekEvent and OTEvent records one at a time."""
     sep, fields, types, stream = "\t", None, None, stream_from_name(path)
     set_sep, empty, unset = ",", "(empty)", "-"
     generic_streams: set[str] = set()
-    opener = gzip.open if path.lower().endswith(".gz") else open
-    with opener(path, "rt", encoding="utf-8-sig", errors="replace") as fh:
+    with open_text(path) as fh:
         for line in fh:
             line = line.rstrip("\r\n")
             if not line.strip():
@@ -175,7 +173,6 @@ def parse(path: str, stats: ParseStats):
                 item = _event(rec, row_stream)
                 generic_streams.add(row_stream)
             if item is not None:
-                records.append(item)
+                yield item
     if generic_streams:
         stats.note("Zeek stream records preserved as events; only conn sessions and notice alerts affect scoring")
-    return records

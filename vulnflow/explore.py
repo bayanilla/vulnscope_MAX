@@ -17,6 +17,7 @@ import os
 from collections import defaultdict
 
 from .correlate import LATERAL_PORTS, Config, _Net
+from .store import utc
 
 STATIC = os.path.join(os.path.dirname(__file__), "static")
 MAX_HOP2, MAX_NODES = 30, 2000
@@ -46,25 +47,45 @@ class _Pair:
         self.first = self.last = None
         self.examples: list[dict] = []
 
-    def add(self, f):
-        self.sessions += 1
-        ok = f.action == "allow" and f.established
-        self.established += ok
-        self.blocked += f.action != "allow"
-        if f.dst_port is not None:
-            self.tried.add(f.dst_port)
-            if ok:
-                self.ports.add(f.dst_port)
-        self.bytes += (f.bytes_out or 0) + (f.bytes_in or 0)
-        example = {"src_ip": f.src_ip, "src_port": f.src_port,
-                   "dst_ip": f.dst_ip, "dst_port": f.dst_port,
-                   "proto": f.proto, "app": f.app, "action": f.action,
-                   "established": f.established, "source": f.source}
-        if len(self.examples) < MAX_CONNECTION_EXAMPLES and example not in self.examples:
-            self.examples.append(example)
-        if f.ts:
-            self.first = f.ts if self.first is None or f.ts < self.first else self.first
-            self.last = f.ts if self.last is None or f.ts > self.last else self.last
+
+def _pairs(ds) -> dict[tuple, _Pair]:
+    """Per (source, destination) connection rollup, aggregated in DuckDB."""
+    con = ds.flow_store().con
+    pairs: dict[tuple, _Pair] = {}
+    cur = con.cursor()
+    cur.execute("""
+        SELECT src_ip, dst_ip, count(*), count(*) FILTER (action = 'allow' AND established),
+               count(*) FILTER (action <> 'allow'),
+               list(DISTINCT dst_port) FILTER (dst_port IS NOT NULL),
+               list(DISTINCT dst_port) FILTER (dst_port IS NOT NULL AND action = 'allow' AND established),
+               coalesce(sum(bytes_out + bytes_in), 0), min(ts), max(ts)
+        FROM flows WHERE src_ip <> dst_ip GROUP BY src_ip, dst_ip ORDER BY min(seq)""")
+    while rows := cur.fetchmany(10_000):
+        for src, dst, n, est, blocked, tried, ports, nbytes, first, last in rows:
+            p = _Pair()
+            p.sessions, p.established, p.blocked, p.bytes = int(n), int(est), int(blocked), int(nbytes)
+            p.tried, p.ports = set(tried or ()), set(ports or ())
+            p.first, p.last = utc(first), utc(last)
+            pairs[(src, dst)] = p
+    # Examples: the first distinct connections of each pair, in time order. A sorted scan
+    # (which DuckDB spills to disk) keeps memory flat; a window function per pair does not.
+    cur.execute("""
+        SELECT src_ip, dst_ip, src_port, dst_port, proto, app, action, established, source
+        FROM flows WHERE src_ip <> dst_ip ORDER BY src_ip, dst_ip, seq""")
+    p = None
+    while rows := cur.fetchmany(10_000):
+        for src, dst, sport, dport, proto, app, action, est, source in rows:
+            if p is None or p_key != (src, dst):
+                p_key = (src, dst)
+                p = pairs[p_key]
+            if len(p.examples) >= MAX_CONNECTION_EXAMPLES:
+                continue
+            ex = {"src_ip": src, "src_port": sport, "dst_ip": dst, "dst_port": dport, "proto": proto,
+                  "app": app, "action": action, "established": est, "source": source}
+            if ex not in p.examples:
+                p.examples.append(ex)
+    cur.close()
+    return pairs
 
 
 def _iso(ts):
@@ -75,10 +96,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     cfg = cfg or Config(internal_nets=res["config"]["internal_nets"])
     net = _Net(cfg.internal_nets)
     telemetry_only = not res["summary"].get("vulnerability_data_available", True)
-    pairs: dict[tuple, _Pair] = defaultdict(_Pair)
-    for f in ds.flows:
-        if f.src_ip != f.dst_ip:
-            pairs[(f.src_ip, f.dst_ip)].add(f)
+    pairs = _pairs(ds)
     out_of, in_to = defaultdict(set), defaultdict(set)
     for s, d in pairs:
         out_of[s].add(d)

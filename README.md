@@ -13,8 +13,25 @@ matches. It marks vulnerability status as **unknown** and does not assign CVSS s
 priorities. A scan with no parsed findings is treated the same way. At least one parsed network session
 or IPS/IDS alert is required; an empty folder or scan-only input is rejected.
 
-Pure Python 3.10+ standard library. Nothing to install for the core workflow; the optional
-Security Assistant needs `pip install anthropic` only if you choose Anthropic.
+Python 3.10+ with one dependency, [DuckDB](https://duckdb.org): `pip install -r requirements.txt`.
+The optional Security Assistant needs `pip install anthropic` only if you choose Anthropic.
+
+### Large inputs
+
+Inputs are streamed, not loaded into memory. Each parser yields records in batches; network
+sessions are written to Parquet files partitioned by sensor and day in a temporary working
+directory, then sorted, de-duplicated and correlated with DuckDB SQL. Zeek and Palo Alto files
+can be plain or `.gz`. The working directory is deleted when the run ends.
+
+- `--workdir DIR` (or `VULNSCOPE_WORKDIR`) puts the temporary Parquet/DuckDB files on a disk with
+  room for them; plan for roughly the size of the uncompressed session logs. The upload page uses
+  its run folder. `VULNSCOPE_DUCKDB_MEMORY` (default `1GB`) caps DuckDB's memory; it spills to the working directory beyond that.
+- The same session recorded by two sensors (for example Zeek and the firewall) is counted once:
+  records with the same 5-tuple whose start times are within `--dedup-skew` seconds (default 2) are
+  counted once, keeping the firewall record. Use `--dedup-skew -1` to turn this off.
+- Each host's findings are compared with telemetry from `--scan-window-days` (default 7) before
+  the host's Nessus scan start to the same number of days after it ends. `0` uses all telemetry;
+  findings without a scan time always use all telemetry.
 
 Browse the [screenshot gallery](screenshots/README.md) for the upload workflow, reports, Explorer, and Security Assistant.
 

@@ -11,7 +11,9 @@ from .parsers import FORMATS
 
 def _cfg(a) -> Config:
     return Config(internal_nets=a.internal_net or list(DEFAULT_INTERNAL_NETS), hops=a.hops,
-                  min_severity=a.min_severity)
+                  min_severity=a.min_severity,
+                  scan_window_days=a.scan_window_days or None,
+                  dedup_skew_seconds=None if a.dedup_skew < 0 else a.dedup_skew)
 
 
 def _llm_cfg(a, required=True):
@@ -92,6 +94,14 @@ def main(argv=None) -> int:
         p.add_argument("--hops", type=int, default=2, help="blast-radius depth (default 2)")
         p.add_argument("--min-severity", type=int, default=1, choices=range(5),
                        help="lowest Nessus severity to score, 0=Info..4=Critical (default 1)")
+        p.add_argument("--scan-window-days", type=float, default=7, metavar="DAYS",
+                       help="use telemetry within DAYS of each host's scan time (0 = all; default 7)")
+        p.add_argument("--dedup-skew", type=float, default=2.0, metavar="SECONDS",
+                       help="clock skew allowed when matching one session seen by two sensors "
+                            "(default 2; negative disables cross-sensor matching)")
+        p.add_argument("--workdir", metavar="DIR",
+                       help="where to write temporary Parquet/DuckDB files (default: system temp "
+                            "or $VULNSCOPE_WORKDIR); use a disk with room for large inputs")
 
     a = sub.add_parser("analyze", help="run the workflow on local files")
     a.add_argument("files", nargs="+")
@@ -210,7 +220,8 @@ def main(argv=None) -> int:
     try:
         res, paths = run(files, args.out, _cfg(args), overrides,
                          article_previews=not args.no_article_preview,
-                         article_preview_cache=args.article_preview_cache)
+                         article_preview_cache=args.article_preview_cache,
+                         workdir=args.workdir)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

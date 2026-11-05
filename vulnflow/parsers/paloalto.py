@@ -8,7 +8,7 @@ from __future__ import annotations
 import csv
 
 from ..schema import Flow, ParseStats, ThreatEvent
-from ._util import clean_ip, clean_port, clean_proto, norm_header, parse_ts, to_int
+from ._util import clean_ip, clean_port, clean_proto, norm_header, open_text, parse_ts, to_int
 
 # Offsets relative to the "Type" column (which holds TRAFFIC) in syslog CSV.
 SYSLOG_OFFSETS = {
@@ -72,8 +72,8 @@ def _threat(get, stats: ParseStats) -> ThreatEvent | None:
 
 def parse(path: str, stats: ParseStats):
     stats.note("firewall timestamps are assumed to be UTC")
-    flows: list = []          # Flow records plus ThreatEvent records from THREAT rows
-    with open(path, encoding="utf-8-sig", errors="replace", newline="") as fh:
+    # yields Flow records plus ThreatEvent records from THREAT rows; .gz exports are read directly
+    with open_text(path, newline="") as fh:
         first = fh.readline()
         fh.seek(0)
         low = first.lower()
@@ -95,14 +95,14 @@ def parse(path: str, stats: ParseStats):
                 if kind == "THREAT":
                     t = _threat(get, stats)
                     if t:
-                        flows.append(t)
+                        yield t
                     continue
                 if kind != "TRAFFIC":
                     stats.drop(f"{kind} log type not used")
                     continue
                 flow = _flow(get, stats)
                 if flow:
-                    flows.append(flow)
+                    yield flow
         else:
             for line in fh:
                 if not line.strip():
@@ -131,9 +131,8 @@ def parse(path: str, stats: ParseStats):
                 if kind == "THREAT":
                     t = _threat(get, stats)
                     if t:
-                        flows.append(t)
+                        yield t
                     continue
                 flow = _flow(get, stats)
                 if flow:
-                    flows.append(flow)
-    return flows
+                    yield flow
