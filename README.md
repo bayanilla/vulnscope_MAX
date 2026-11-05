@@ -189,14 +189,19 @@ unknown. Click a host, or pick it from the list on the left, and the camera flie
 - **Right: east/west.** Every internal host it has traffic to or from, including failed attempts (dashed
   grey, "no session"). Hosts with completed sessions carry an estimated likelihood that a compromise of
   the selected host could spread there, plus the next hop beyond them.
-- The first 24 on each side are drawn large and labelled; the rest are packed in a block further out
-  (hover for details) and all of them are listed in the panel.
-- **Panel:** the same lists with session counts and up to six distinct recorded connection tuples per
+- The first 24 on each side are drawn large and labelled; up to 400 per side are drawn in the graph.
+  The panel can reach every recorded IP, including addresses beyond the graph's drawing limit.
+- **Panel:** total counts and eight preview rows per side. Search or sort the complete outside and
+  internal IP lists; **Show all** opens pages of 20. Expand an IP row for session counts, reasons,
+  and up to six distinct recorded connection tuples per
   direction: source/originator IP and port → destination/responder IP and port, transport protocol,
   and application label when the log provides one. `?` means a port was not logged. Industrial Zeek
   records show their operation and message side separately; they are not extra sessions. Scan-backed
-  runs also show the reasons behind each estimate and the host's Nessus findings. Click any internal
-  peer to pivot to it; Esc goes back.
+  runs also show the reasons behind each estimate and the host's Nessus findings. Use **Focus** in an
+  internal peer's details to pivot to that host; Esc goes back.
+
+The selected-host panel stays to the right of the chart on desktop and intermediate widths. On
+phone-sized screens (520px or narrower), it moves below the chart to keep the details readable.
 
 Use the host list or `/` to find a host. L toggles labels and M toggles motion.
 Deep links work: `explorer.html#host=10.0.1.10`.

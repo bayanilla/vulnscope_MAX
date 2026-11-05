@@ -19,7 +19,7 @@ from collections import defaultdict
 from .correlate import LATERAL_PORTS, Config, _Net
 
 STATIC = os.path.join(os.path.dirname(__file__), "static")
-MAX_ATTACKERS, MAX_PEERS, MAX_HOP2, MAX_NODES = 400, 400, 30, 2000
+MAX_HOP2, MAX_NODES = 30, 2000
 MAX_CONNECTION_EXAMPLES, MAX_OT_EVENTS_PER_HOST = 6, 40
 SEV = {0: "Info", 1: "Low", 2: "Medium", 3: "High", 4: "Critical"}
 
@@ -204,8 +204,9 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                         "signatures": sorted({t.name for t in al})[:3],
                         "returned": bool(back and back.established),
                         "first": _iso(first), "last": _iso(last)})
-        for src, al in alerts[ip].items():           # IPS-only sources with no session record
-            if ext(src) and not pairs.get((src, ip)):
+        known_outside = {a["ip"] for a in atk}
+        for src, al in alerts[ip].items():           # IPS-only sources with no flow in either direction
+            if ext(src) and src not in known_outside:
                 open_al = [t for t in al if not t.blocked]
                 atk.append({"ip": src, "kind": "alert" if open_al else "blocked", "dir": "in", "sessions": 0,
                             "established": 0, "blocked": 0, "ports": sorted({t.dst_port for t in al if t.dst_port})[:8],
@@ -221,7 +222,6 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         atk.sort(key=lambda a: (rank[a["kind"]], -a["alerts"], -a["alerts_blocked"], -a["established"],
                                 -a["sessions"] - a["out_sessions"], a["ip"]))
         n_ext = len(atk)
-        atk = atk[:MAX_ATTACKERS]
 
         # east/west: every internal peer in either direction (failed attempts too), then onward peers
         peers = []
@@ -245,7 +245,6 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         peers.sort(key=lambda p: (-p["p"], p["band"] == "None", -(p["out"] + p["in"]),
                                   -(p["out_tries"] + p["in_tries"]), p["ip"]))
         n_peers = len(peers)
-        peers = peers[:MAX_PEERS]
         hop1 = {p["ip"]: p["p"] for p in peers}
         hop2 = {}
         for mid, p1 in hop1.items():

@@ -1,4 +1,5 @@
 import json
+import ipaddress
 import os
 import re
 import tempfile
@@ -8,7 +9,7 @@ from datetime import datetime, timezone
 from vulnflow import explore
 from vulnflow.correlate import Config, correlate
 from vulnflow.normalize import Dataset, load
-from vulnflow.schema import Flow, OTEvent
+from vulnflow.schema import Flow, OTEvent, ThreatEvent
 from vulnflow.report import write_all
 from vulnflow.samples import generate
 
@@ -120,6 +121,25 @@ class ExploreTests(unittest.TestCase):
         self.assertTrue(attacker["connection_examples"])
         self.assertTrue(all(e["src_ip"] in ("203.0.113.45", "10.10.1.10")
                             and e["proto"] in ("tcp", "udp") for e in attacker["connection_examples"]))
+
+    def test_panel_data_reaches_past_graph_limit_without_double_counting_alerts(self):
+        host = "10.70.1.10"
+        outside = [str(ipaddress.IPv4Address("198.18.0.1") + i) for i in range(405)]
+        peers = [str(ipaddress.IPv4Address("10.71.0.1") + i) for i in range(405)]
+        flows = ([Flow(None, src, host, 443, "tcp") for src in outside[:-1]] +
+                 [Flow(None, host, outside[-1], 443, "tcp")] +
+                 [Flow(None, host, dst, 445, "tcp") for dst in peers])
+        # An alert on an address that only has outbound flows must not add a duplicate IP row.
+        ds = Dataset(flows=flows, threats=[ThreatEvent(None, outside[-1], host, 443, "IPS signature")])
+        data = explore.build(correlate(ds), ds)
+        focus = data["focus"][host]
+        self.assertEqual(focus["attackers_total"], 405)
+        self.assertEqual(focus["peers_total"], 405)
+        self.assertEqual(len({a["ip"] for a in focus["attackers"]}), 405)
+        self.assertEqual(len({p["ip"] for p in focus["peers"]}), 405)
+        self.assertEqual({a["ip"] for a in focus["attackers"]}, set(outside))
+        self.assertEqual({p["ip"] for p in focus["peers"]}, set(peers))
+        self.assertIn(outside[-1], explore.html(data))
 
 
 if __name__ == "__main__":

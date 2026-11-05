@@ -103,7 +103,7 @@ function domainNode(match) {
   return n;
 }
 const LABELED = 24;                // nodes per side drawn large and labelled; the rest are packed beyond them
-const SIDE_MAX = 400;              // nodes drawn per side; the panel lists every one
+const SIDE_MAX = 400;              // graph drawing limit; the panel can reach every IP
 function arc(list, dir) {
   // two labelled columns of up to 12, curved so both ends bend towards the selected host,
   // then a dense block of small unlabelled nodes further out (hover them for details)
@@ -184,13 +184,16 @@ function focus(id, push = true) {
   keep.forEach(k => { const n = nodes.get(k); minX = Math.min(minX, n.tx); maxX = Math.max(maxX, n.tx); minY = Math.min(minY, n.ty); maxY = Math.max(maxY, n.ty); });
   minX -= 130; maxX += 110;           // room for the labels beside the outer nodes
   const drawerW = document.body.classList.contains('ai-chat-open') && W > 1100 ? $('analyst-chat').getBoundingClientRect().width : 0;
-  const panelW = drawerW ? drawerW + Math.min(100, W * 0.06) : (W > 900 ? 420 : 0);
-  const railW = W > 900 ? 280 : 0, mobileH = W > 900 ? 0 : H * 0.52;
-  const availW = W - panelW - railW - 60, availH = H - 170 - mobileH;
-  cam.tz = Math.min(1.6, Math.max(drawerW ? 0.12 : 0.25,
+  const phoneLayout = W <= 520;
+  const panelW = drawerW ? drawerW + Math.min(100, W * 0.06) :
+    phoneLayout ? 0 : (parseFloat(getComputedStyle($('panel')).width) || 400) + 20;
+  const railW = W > 900 ? 280 : 0;
+  const phonePanelH = phoneLayout ? H * 0.52 : 0;
+  const availW = Math.max(80, W - panelW - railW - 40), availH = H - 170 - phonePanelH;
+  cam.tz = Math.min(1.6, Math.max(drawerW ? 0.12 : W > 900 ? 0.25 : 0.08,
     Math.min(availW / (maxX - minX + 160), availH / (maxY - minY + 120))));
   cam.tx = (minX + maxX) / 2 - (railW - panelW) / 2 / cam.tz;
-  cam.ty = (minY + maxY) / 2 + mobileH / 2 / cam.tz;
+  cam.ty = (minY + maxY) / 2 + phonePanelH / 2 / cam.tz;
   if (!state.motion) snap();
   renderPanel(id); renderList();
 }
@@ -624,32 +627,73 @@ $('hostlist').addEventListener('keydown', e => { const r = e.target.closest('.hr
 $('search').addEventListener('input', renderList);
 $('search').addEventListener('keydown', e => { if (e.key === 'Enter') { const r = document.querySelector('.hrow[data-id]'); if (r) focus(r.dataset.id); } });
 
+const panelLists = {
+  atk: {query: '', sort: 'priority', expanded: false, page: 0},
+  peer: {query: '', sort: 'priority', expanded: false, page: 0},
+};
+const IP_PREVIEW = 8, IP_PAGE = 20;
+function ipRow(kind, item) {
+  if (kind === 'atk') {
+    const a = item;
+    return `<details class="ip-entry" data-k="atk" data-ip="${esc(a.ip)}"><summary class="row"><span class="kind k-${a.kind}" title="${esc(KIND_TXT[a.kind])}"></span>` +
+      `<span class="ip">${esc(a.ip)}</span><span class="lk">${a.sessions ? '← ' + a.sessions : ''}${a.sessions && a.out_sessions ? '  ' : ''}${a.out_sessions ? '→ ' + a.out_sessions : ''}${a.alerts ? ' · ' + a.alerts + ' IPS' : ''}</span></summary>` +
+      `<div class="ip-detail">${esc(KIND_TXT[a.kind])}${iocIds.has('ip:' + a.ip) ? ' · ' + iocButton('ip', a.ip, 'Report overview') : ''}` +
+      `${a.established ? ' · ' + a.established + ' inbound completed' : ''}${a.blocked ? ' · ' + a.blocked + ' firewall blocked' : ''}` +
+      `${a.ports.length ? ' · ports ' + esc(a.ports.join(', ')) : ''}${a.alerts_blocked ? ' · ' + a.alerts_blocked + ' IPS blocked' : ''}` +
+      `${a.dir === 'both' && a.out_sessions ? ' · host also connected out' + (a.out_ports.length ? ' on ' + esc(a.out_ports.join(', ')) : '') : ''}` +
+      `${a.dir === 'out' && a.out_ports.length ? ' · ports ' + esc(a.out_ports.join(', ')) : ''}` +
+      `${a.signatures.length ? '<br>' + esc(a.signatures.join('; ')) : ''}` +
+      connectionExamples(a.connection_examples, a.sessions + a.out_sessions) +
+      (a.connection_examples.length ? '' : alertExamples(a.alert_examples)) + '</div></details>';
+  }
+  const q = item, pd = nodes.get(q.ip)?.d || {name: '', scanned: false, sev: ''};
+  const nm = pd.name ? pd.name.split('.')[0] : q.ip, none = q.band === 'None';
+  const o = none ? q.out_tries : q.out, i = none ? q.in_tries : q.in;
+  const dir = (o ? `→ ${o}` : '') + (o && i ? '  ' : '') + (i ? `← ${i}` : '');
+  return `<details class="ip-entry" data-k="peer" data-ip="${esc(q.ip)}"><summary class="row peer"><div class="bar b-${q.band}"><i style="width:${Math.round(q.p * 100)}%"></i></div>` +
+    `<span>${pd.name ? `${esc(nm)} <span class="ip" style="color:var(--muted);font-size:11px">${esc(q.ip)}</span>` : `<span class="ip">${esc(q.ip)}</span>`}</span>` +
+    `<span class="lk" style="color:${BAND[q.band] || 'var(--muted)'}">${none ? 'no session' : telemetryOnly ? 'observed' : Math.round(q.p * 100) + '% ' + q.band}</span></summary>` +
+    `<div class="ip-detail">${D.focus[q.ip] ? `<button type="button" class="go" data-go="${esc(q.ip)}">Focus ${esc(nm)}</button> · ` : ''}` +
+    `${esc(dir)} ${none ? 'attempts, none completed' : 'completed sessions'}${q.ports_out.length ? ' · ' + (none ? 'tried ' : 'uses ') + esc(q.ports_out.join(', ')) : ''}` +
+    `${telemetryOnly ? ' · vulnerability status unknown' : pd.scanned ? ' · worst ' + esc(pd.sev || 'none') : ' · not scanned'}` +
+    connectionExamples(q.connection_examples, q.out_tries + q.in_tries) +
+    `<ul class="why">${q.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div></details>`;
+}
+function renderIpList(kind) {
+  const F = D.focus[state.focus], s = panelLists[kind];
+  if (!F) return;
+  const list = kind === 'atk' ? F.attackers : F.peers;
+  const query = s.query.trim().toLowerCase();
+  const filtered = query ? list.filter(x => x.ip.toLowerCase().includes(query) ||
+    (kind === 'peer' && (nodes.get(x.ip)?.d.name || '').toLowerCase().includes(query))) : list.slice();
+  if (s.sort === 'ip') filtered.sort((a, b) => a.ip.localeCompare(b.ip, undefined, {numeric: true}));
+  if (s.sort === 'activity') filtered.sort((a, b) =>
+    (kind === 'atk' ? b.sessions + b.out_sessions - a.sessions - a.out_sessions :
+      b.out_tries + b.in_tries - a.out_tries - a.in_tries) || a.ip.localeCompare(b.ip));
+  if (s.sort === 'likelihood' && kind === 'peer') filtered.sort((a, b) => b.p - a.p || a.ip.localeCompare(b.ip));
+  const expanded = s.expanded || !!query, pageSize = expanded ? IP_PAGE : IP_PREVIEW;
+  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  s.page = Math.min(s.page, pages - 1);
+  const start = s.page * pageSize, end = Math.min(filtered.length, start + pageSize);
+  const label = kind === 'atk' ? 'outside addresses' : 'internal peers';
+  const rows = filtered.slice(start, end).map(x => ipRow(kind, x)).join('') ||
+    `<div class="ip-empty">${query ? 'No matching ' + label + '.' : 'No ' + label + ' recorded for this host.'}</div>`;
+  document.querySelector(`[data-ip-results="${kind}"]`).innerHTML =
+    `<div class="ip-list-count">${filtered.length ? `Showing ${start + 1}–${end} of ${filtered.length}` : '0'} ${label}${query ? ` matching “${esc(s.query)}”` : ''}</div>` + rows +
+    (!expanded && filtered.length > IP_PREVIEW ? `<button type="button" class="ip-list-action" data-ip-expand="${kind}">Show all ${filtered.length} ${label}</button>` : '') +
+    (expanded && pages > 1 ? `<div class="ip-pager"><button type="button" data-ip-page="${kind}" data-step="-1" ${s.page ? '' : 'disabled'}>Previous</button>` +
+      `<span>Page ${s.page + 1} of ${pages}</span><button type="button" data-ip-page="${kind}" data-step="1" ${s.page + 1 < pages ? '' : 'disabled'}>Next</button></div>` : '') +
+    (s.expanded && !query && filtered.length > IP_PREVIEW ? `<button type="button" class="ip-list-action" data-ip-collapse="${kind}">Show fewer</button>` : '');
+}
 function renderPanel(id) {
   const F = D.focus[id], d = nodes.get(id).d, p = $('panel');
+  for (const kind of ['atk', 'peer']) panelLists[kind] = {query: '', sort: 'priority', expanded: false, page: 0};
   const nAlert = F.attackers.filter(a => a.kind === 'alert').length;
-  const atk = F.attackers.map(a =>
-    `<div class="row" data-k="atk" data-ip="${esc(a.ip)}"><span class="kind k-${a.kind}" title="${esc(KIND_TXT[a.kind])}"></span>` +
-    `<span class="ip">${iocButton('ip', a.ip)}</span><span class="lk">${a.sessions ? '← ' + a.sessions : ''}${a.sessions && a.out_sessions ? '  ' : ''}${a.out_sessions ? '→ ' + a.out_sessions : ''}${a.alerts ? ' · ' + a.alerts + ' IPS' : ''}</span>` +
-    `<span class="sub">${esc(KIND_TXT[a.kind])}${iocIds.has('ip:' + a.ip) ? ' · ' + iocButton('ip', a.ip, 'Report overview') : ''}${a.ports.length ? ' · ports ' + esc(a.ports.join(', ')) : ''}` +
-    `${a.alerts_blocked ? ' · ' + a.alerts_blocked + ' IPS blocked' : ''}` +
-    `${a.dir === 'both' && a.out_sessions ? ' · <span style="color:var(--violet)">host also connected out' + (a.out_ports.length ? ' on ' + esc(a.out_ports.join(', ')) : '') + '</span>' : ''}` +
-    `${a.dir === 'out' && a.out_ports.length ? ' · ports ' + esc(a.out_ports.join(', ')) : ''}` +
-    `${a.signatures.length ? '<br>' + esc(a.signatures.join('; ')) : ''}</span>` +
-    connectionExamples(a.connection_examples, a.sessions + a.out_sessions) +
-    (a.connection_examples && a.connection_examples.length ? '' : alertExamples(a.alert_examples)) +
-    '</div>').join('') ||
-    '<div class="row"><span></span><span class="sub">No north/south traffic to or from this host in the telemetry.</span></div>';
-  const peers = F.peers.map(q => {
-    const pd = peerNode(q.ip).d, nm = pd.name ? pd.name.split('.')[0] : q.ip, none = q.band === 'None';
-    const o = none ? q.out_tries : q.out, i = none ? q.in_tries : q.in;
-    const dir = (o ? `→ ${o}` : '') + (o && i ? '  ' : '') + (i ? `← ${i}` : '');
-    return `<div class="row peer" data-k="peer" data-ip="${esc(q.ip)}"><div class="bar b-${q.band}"><i style="width:${Math.round(q.p * 100)}%"></i></div>` +
-      `<span>${D.focus[q.ip] ? `<span class="go" data-go="${esc(q.ip)}">${esc(nm)}</span>` : esc(nm)} <span class="ip" style="color:var(--muted);font-size:11px">${esc(q.ip)}</span></span>` +
-      `<span class="lk" style="color:${BAND[q.band]}">${none ? 'no session' : telemetryOnly ? 'observed' : Math.round(q.p * 100) + '% ' + q.band}</span>` +
-      `<span class="sub">${esc(dir)} ${none ? 'attempts, none completed' : 'sessions'}${q.ports_out.length ? ' · ' + (none ? 'tried ' : 'uses ') + esc(q.ports_out.join(', ')) : ''}${telemetryOnly ? ' · vulnerability status unknown' : pd.scanned ? ' · worst ' + esc(pd.sev || 'none') : ' · not scanned'}</span>` +
-      connectionExamples(q.connection_examples, q.out_tries + q.in_tries) +
-      `<ul class="why" hidden>${q.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>`;
-  }).join('') || '<div class="row"><span></span><span class="sub">No east/west traffic to or from this host in the telemetry.</span></div>';
+  const ipSection = (kind, title) => `<section class="ip-section"><h3>${title}</h3><div class="ip-list-tools">` +
+    `<input type="search" data-ip-search="${kind}" aria-label="Search ${kind === 'atk' ? 'outside addresses' : 'internal peers'}" placeholder="Search IP${kind === 'peer' ? ' or name' : ''}">` +
+    `<select data-ip-sort="${kind}" aria-label="Sort ${kind === 'atk' ? 'outside addresses' : 'internal peers'}"><option value="priority">Priority</option>` +
+    `<option value="ip">IP address</option><option value="activity">Activity</option>${kind === 'peer' ? '<option value="likelihood">Likelihood estimate</option>' : ''}</select></div>` +
+    `<div data-ip-results="${kind}"></div></section>`;
   const h2list = F.hop2.filter(q => q.p >= 0.05).slice(0, 12);
   const hop2 = h2list.length ? `<h3>Possible onward connections</h3>` +
     `<p class="onward-note">Each path follows observed connections through a directly connected internal host. These scores are investigation leads, not confirmed compromise.</p>` +
@@ -671,10 +715,8 @@ function renderPanel(id) {
     `<div class="stat pink"><b>${F.peers_total}</b><span>internal hosts (E/W)${telemetryOnly ? '' : ` · ${F.blast.high} high, ${F.blast.medium} med`}</span></div></div>` +
     (state.history.length ? `<p style="margin:10px 0 0"><button id="btn-back">← Back to ${esc(state.history[state.history.length - 1])}</button></p>` : '') +
     `<p class="direction-note">Recorded direction: source/originator → destination/responder. Ports are source → destination; ? means the log did not provide a port. Logged application labels appear only when supplied.</p>` +
-    `<h3>North / south: outside addresses</h3>${atk}` +
-    (F.attackers_total > F.attackers.length ? `<div class="row"><span></span><span class="sub">${F.attackers_total - F.attackers.length} more not shown</span></div>` : '') +
-    `<h3>${telemetryOnly ? 'East / west: observed internal connections' : 'East / west: internal hosts · blast radius if exploited'}</h3>${peers}${hop2}` +
-    (F.peers_total > F.peers.length ? `<div class="row"><span></span><span class="sub">${F.peers_total - F.peers.length} more not shown</span></div>` : '') +
+    ipSection('atk', 'North / south: outside addresses') +
+    ipSection('peer', telemetryOnly ? 'East / west: observed internal connections' : 'East / west: internal hosts · blast radius if exploited') + hop2 +
     otExamples(F.ot_events, F.ot_events_total) +
     `<h3>Vulnerabilities</h3>${telemetryOnly ? '<div class="fd">No vulnerability data available; status unknown.</div>' : fds || '<div class="fd">None at the configured severity.</div>'}` +
     (D.ioc_matches && D.ioc_matches.some(item => item.hosts.includes(id))
@@ -686,14 +728,31 @@ function renderPanel(id) {
     (telemetryOnly ? 'Vulnerability status is unknown. Review alerts and IOC matches as leads; only host evidence confirms a compromise.' :
     `Likelihood is an estimate from observed sessions, the ports in use and the scanner's findings on each peer. Use it to decide where to look first; only host evidence confirms a compromise. Click a row for the reasons.`) + '</div>';
   p.hidden = false; p.scrollTop = 0;
+  renderIpList('atk'); renderIpList('peer');
   const back = $('btn-back'); if (back) back.onclick = () => focus(state.history.pop(), false);
 }
 $('panel').addEventListener('click', e => {
   const go = e.target.closest('[data-go]'); if (go) { focus(go.dataset.go); return; }
+  const expand = e.target.closest('[data-ip-expand]');
+  if (expand) { panelLists[expand.dataset.ipExpand].expanded = true; renderIpList(expand.dataset.ipExpand); return; }
+  const collapse = e.target.closest('[data-ip-collapse]');
+  if (collapse) { const s = panelLists[collapse.dataset.ipCollapse]; s.expanded = false; s.page = 0; renderIpList(collapse.dataset.ipCollapse); return; }
+  const page = e.target.closest('[data-ip-page]');
+  if (page) { const s = panelLists[page.dataset.ipPage]; s.page += Number(page.dataset.step); renderIpList(page.dataset.ipPage); return; }
   const row = e.target.closest('.row.peer'); if (row) { const w = row.querySelector('.why'); if (w) w.hidden = !w.hidden; }
 });
+$('panel').addEventListener('input', e => {
+  if (!e.target.matches('[data-ip-search]')) return;
+  const kind = e.target.dataset.ipSearch, s = panelLists[kind];
+  s.query = e.target.value; s.page = 0; renderIpList(kind);
+});
+$('panel').addEventListener('change', e => {
+  if (!e.target.matches('[data-ip-sort]')) return;
+  const kind = e.target.dataset.ipSort, s = panelLists[kind];
+  s.sort = e.target.value; s.page = 0; renderIpList(kind);
+});
 $('panel').addEventListener('mouseover', e => {
-  const row = e.target.closest('.row[data-ip]'); const F = D.focus[state.focus];
+  const row = e.target.closest('[data-k][data-ip]'); const F = D.focus[state.focus];
   if (!row || !F) { state.hoverEdge = null; return; }
   const ip = row.dataset.ip;
   state.hoverEdge = (row.dataset.k === 'atk' ? F.attackers : F.peers.concat(F.hop2)).find(x => x.ip === ip) || null;
