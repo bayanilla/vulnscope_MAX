@@ -45,6 +45,16 @@ Click an indicator to see its saved article overview and source link. These page
 local files; GitHub's source preview does not run the interactive HTML. AI-generated article
 briefs require a user-provided OpenAI key and the separate generation step below.
 
+**Install once before the first run.** Nothing installs automatically. Run this from the repository
+folder, in the same Python you will run VulnScope with. If you use a virtual environment, activate it
+first. If you start the upload page with VS Code's Run button on `start_upload_page.py`, use the
+interpreter shown in VS Code's status bar. Without this step the tool stops with
+`ModuleNotFoundError: No module named 'duckdb'`.
+
+```bash
+python3 -m pip install -r requirements.txt     # installs DuckDB
+```
+
 ```bash
 # 1. Analyze the bundled 250-host demo with scan findings and 28 source-linked IOC matches
 python3 -m vulnflow analyze samples/scan_and_telemetry \
