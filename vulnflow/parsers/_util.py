@@ -4,6 +4,7 @@ from __future__ import annotations
 import gzip
 import ipaddress
 from datetime import datetime, timezone
+from functools import lru_cache
 
 PROTO_NUMBERS = {"1": "icmp", "6": "tcp", "17": "udp", "58": "icmp"}
 TS_FORMATS = ("%Y/%m/%d %H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S",
@@ -15,7 +16,12 @@ def clean_ip(value) -> str | None:
     """Return a canonical IP string, or None if value is not an IP."""
     if value is None:
         return None
-    s = str(value).strip().strip('"').strip("[]")
+    return _canon_ip(str(value))
+
+
+@lru_cache(maxsize=262144)          # the same addresses repeat across millions of log lines
+def _canon_ip(s: str) -> str | None:
+    s = s.strip().strip('"').strip("[]")
     if not s or s in ("-", "(empty)"):
         return None
     if "%" in s:                      # IPv6 zone id
