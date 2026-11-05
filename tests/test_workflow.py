@@ -1,3 +1,4 @@
+import csv
 import os
 import re
 import gzip
@@ -17,7 +18,7 @@ from vulnflow.correlate import Config, correlate
 from vulnflow.normalize import load
 from vulnflow.parsers import detect
 from vulnflow.pipeline import run
-from vulnflow.samples import generate
+from vulnflow.samples import generate, generate_bundles
 
 
 class Base(unittest.TestCase):
@@ -37,7 +38,8 @@ class ParserTests(Base):
     def test_detects_sample_formats(self):
         got = {os.path.basename(p): detect(p) for p in self.samples}
         self.assertEqual(got, {"zeek_conn.log": "zeek", "paloalto_traffic.csv": "paloalto",
-                               "netflow_segment6.csv": "generic", "quarterly_scan.nessus": "nessus"})
+                               "netflow_segment6.csv": "generic", "quarterly_scan.nessus": "nessus",
+                               "modbus.log": "zeek"})
 
     def test_ioc_csv_links_survive_standalone_reports(self):
         archive = self.write("mucaro-archive.csv",
@@ -311,7 +313,7 @@ class EndToEndTests(Base):
             run([], os.path.join(self.tmp, "empty-input-output"))
 
     def test_alert_only_telemetry(self):
-        notice = os.path.join(os.path.dirname(__file__), "..", "samples", "notice.log")
+        notice = os.path.join(os.path.dirname(__file__), "..", "samples", "scan_and_telemetry", "notice.log")
         res, paths = run([notice], os.path.join(self.tmp, "alert-only-output"))
         self.assertFalse(res["summary"]["vulnerability_data_available"])
         self.assertEqual(res["summary"]["flows"], 0)
@@ -342,9 +344,9 @@ class EndToEndTests(Base):
         for p in self.samples:
             sub = "scans" if p.endswith(".nessus") else "zeek"
             shutil.copy2(p, os.path.join(root, sub, os.path.basename(p)))
-        self.write("modbus.log", '{"ts":1760000001,"uid":"M1","id.orig_h":"10.0.0.1",'
+        self.write("modbus_extra.log", '{"ts":1760000001,"uid":"M1","id.orig_h":"10.0.0.1",'
                    '"id.resp_h":"10.0.0.2","is_orig":true,"func":"READ_COILS"}\n')
-        shutil.copy2(os.path.join(self.tmp, "modbus.log"), os.path.join(root, "zeek", "modbus.log"))
+        shutil.copy2(os.path.join(self.tmp, "modbus_extra.log"), os.path.join(root, "zeek", "modbus_extra.log"))
         for name, field in (("dns", '"query":"plant.example"'),
                             ("smtp", '"mailfrom":"operator@example.com"')):
             source = self.write(name + ".log", '{"ts":1760000002,"uid":"X1",'
@@ -354,12 +356,13 @@ class EndToEndTests(Base):
         self.assertEqual(main(["analyze", root, "-o", out]), 0)
         with open(os.path.join(out, "results.json")) as fh:
             result = json.load(fh)
-        self.assertEqual(result["summary"]["ot_protocol_counts"], {"Modbus": 1})
-        self.assertEqual(result["summary"]["zeek_event_counts"], {"dns": 1, "modbus": 1, "smtp": 1})
-        self.assertEqual(result["summary"]["flows"], 9764)
+        self.assertEqual(result["summary"]["ot_protocol_counts"], {"Modbus": 5})
+        self.assertEqual(result["summary"]["zeek_event_counts"],
+                         {"dns": 1, "modbus": 4, "modbus_extra": 1, "smtp": 1})
+        self.assertEqual(result["summary"]["flows"], len(load(self.samples).flows))
         self.assertEqual(len(result["inputs"]), len(self.samples) + 3)
         with open(os.path.join(out, "normalized", "ot_events.jsonl")) as fh:
-            event = json.loads(fh.readline())
+            event = next(e for e in map(json.loads, fh) if e["operation"] == "READ_COILS")
         self.assertEqual(event["operation"], "READ_COILS")
         self.assertEqual(event["direction"], "originator")
 
@@ -491,6 +494,69 @@ class EndToEndTests(Base):
                              any(f.endswith("x.log") for _, _, fs in os.walk(os.path.join(self.tmp, "runs2")) for f in fs))
         finally:
             srv.shutdown()
+
+
+class BundledSamplesTests(unittest.TestCase):
+    def test_generator_writes_two_distinct_input_folders(self):
+        with tempfile.TemporaryDirectory() as root:
+            paths = generate_bundles(root)
+            self.assertEqual(sorted(os.listdir(root)), ["scan_and_telemetry", "telemetry_only"])
+            self.assertEqual(len(paths), 9)
+            self.assertTrue(os.path.isfile(os.path.join(root, "scan_and_telemetry", "quarterly_scan.nessus")))
+            self.assertFalse(any(name.endswith((".nessus", "scan.csv"))
+                                 for name in os.listdir(os.path.join(root, "telemetry_only"))))
+            self.assertTrue(os.path.isfile(os.path.join(root, "telemetry_only", "modbus.log")))
+
+    def test_checked_in_folders_keep_scan_and_network_only_contracts(self):
+        from vulnflow.cli import _input_files
+        root = os.path.join(os.path.dirname(__file__), "..", "samples")
+        self.assertEqual(sorted(name for name in os.listdir(root) if os.path.isdir(os.path.join(root, name))),
+                         ["scan_and_telemetry", "telemetry_only"])
+        with tempfile.TemporaryDirectory() as output:
+            full_files = _input_files([os.path.join(root, "scan_and_telemetry")], output)
+            network_files = _input_files([os.path.join(root, "telemetry_only")], output)
+            self.assertFalse(any(name.endswith((".nessus", "scan.csv")) for name in network_files))
+            for path in network_files:
+                matching_path = os.path.join(root, "scan_and_telemetry", os.path.basename(path))
+                with open(path, "rb") as network_file, open(matching_path, "rb") as full_file:
+                    self.assertEqual(network_file.read(), full_file.read(), os.path.basename(path))
+            full, _ = run(full_files, os.path.join(output, "full"), article_previews=False)
+            network, paths = run(network_files, os.path.join(output, "network"), article_previews=False)
+            self.assertEqual(full["coverage"]["scanned_hosts"], 250)
+            self.assertTrue({f"10.10.6.{i}" for i in range(10, 15)} <= set(load(full_files).scanned_hosts))
+            self.assertTrue(full["summary"]["vulnerability_data_available"])
+            self.assertTrue(full["findings"])
+            self.assertFalse(network["summary"]["vulnerability_data_available"])
+            self.assertEqual(network["findings"], [])
+            self.assertEqual(full["summary"]["flows"], network["summary"]["flows"])
+            self.assertEqual(full["summary"]["ot_protocol_counts"], {"Modbus": 4})
+            self.assertEqual(network["summary"]["ot_protocol_counts"], {"Modbus": 4})
+            ds = load(network_files)
+            self.assertEqual(sum(f.src_ip == "10.10.6.11" and f.dst_ip == "198.51.100.77"
+                                 for f in ds.flows), 3)
+            self.assertEqual(sum(f.src_ip == "10.10.7.46" and f.dst_ip == "198.51.100.77"
+                                 for f in ds.flows), 2)
+            self.assertEqual(sum(f.src_ip == "10.10.7.46" and f.dst_ip == "10.10.6.11"
+                                 and f.dst_port == 3389 for f in ds.flows), 2)
+            firewall_path = os.path.join(root, "telemetry_only", "paloalto_traffic.csv")
+            with open(firewall_path, newline="") as firewall_file:
+                vpn_access = [row for row in csv.DictReader(firewall_file)
+                              if row["Rule"] == "GlobalProtect-Engineer-VPN"]
+            self.assertEqual(len(vpn_access), 2)
+            self.assertTrue(all(row["Source address"] == "10.10.7.46"
+                                and row["Destination address"] == "10.10.6.11"
+                                and row["Source Zone"] == "vpn" and row["Destination Zone"] == "ot"
+                                and row["Application"] == "ms-rdp" and row["Action"] == "allow"
+                                for row in vpn_access))
+            self.assertEqual({event.operation for event in ds.ot_events},
+                             {"READ_HOLDING_REGISTERS", "READ_INPUT_REGISTERS"})
+            self.assertTrue(all(event.src_ip == "10.10.6.10" and event.dst_ip in
+                                {"10.10.6.13", "10.10.6.14"} for event in ds.ot_events))
+            with open(paths["explorer.html"], encoding="utf-8") as fh:
+                page = fh.read()
+            data = json.loads(re.search(r'<script id="vf-data" type="application/json">(.*?)</script>', page, re.S)[1])
+            self.assertEqual(data["focus"]["10.10.6.10"]["ot_events_total"], 4)
+            self.assertIn("No vulnerability data", page)
 
 
 if __name__ == "__main__":

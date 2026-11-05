@@ -148,13 +148,13 @@ def main(argv=None) -> int:
                    help="saved short source overviews keyed by article URL")
     common(x)
 
-    g = sub.add_parser("samples", help="write synthetic sample inputs")
+    g = sub.add_parser("samples", help="write scan-backed and telemetry-only sample folders")
     g.add_argument("outdir", nargs="?", default="samples")
 
     args = ap.parse_args(argv)
     if args.cmd == "samples":
-        from .samples import generate
-        for p in generate(args.outdir):
+        from .samples import generate_bundles
+        for p in generate_bundles(args.outdir):
             print(p)
         return 0
     if args.cmd == "serve":

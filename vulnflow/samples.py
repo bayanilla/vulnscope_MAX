@@ -10,18 +10,27 @@ Story: web01 (DMZ) runs a vulnerable Apache. An outside address trips the firewa
 IPS signature for that CVE (alert only), web01 then connects back to it, uploads data
 and starts probing internal SMB/RDP. BlueKeep probes against ws-031 are reset by the IPS. Meanwhile
 the scanner missed the domain controller and a new file server.
+
+A small synthetic packaging line reuses five scanned host slots. A remote engineer's laptop
+reuses an existing VPN-pool slot and has allowed OT access through a synthetic GlobalProtect
+VPN policy. Outbound HTTPS from it and the OT engineering workstation is an investigation lead,
+while HMI/PLC Modbus reads are routine.
 """
 from __future__ import annotations
 
 import csv
+import json
 import os
 import random
+import shutil
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 
 START = datetime(2026, 10, 12, tzinfo=timezone.utc)
 ATTACK = datetime(2026, 10, 16, 3, 12, tzinfo=timezone.utc)
 ATTACKER = "203.0.113.45"
+OT_ACTIVITY = datetime(2026, 10, 17, 2, 10, tzinfo=timezone.utc)
+OT_EXTERNAL = "198.51.100.77"  # reserved documentation address; a suspicious contact, not attributed C2
 
 HOSTS = {  # ip: (hostname, os)
     "10.10.1.10": ("web01.corp.example", "Linux Kernel 5.4 on Ubuntu 20.04"),
@@ -88,9 +97,11 @@ SCCM, BACKUP, MON, PRINTSRV, GIT, CI = (f"10.10.2.{i}" for i in range(40, 46))
 JUMP02 = "10.10.3.6"
 PRINTERS = [f"10.10.4.{i}" for i in range(51, 59)]
 CAMERAS = [f"10.10.4.{i}" for i in range(60, 70)]
-OFFICE = [f"10.10.3.{i}" for i in range(48, 200)]
+OFFICE = [f"10.10.3.{i}" for i in range(48, 195)]
 LAPTOPS = [f"10.10.7.{i}" for i in range(10, 47)]   # VPN address pool
+REMOTE_ENG = LAPTOPS[-1]
 CLIENTS = WORKSTATIONS + OFFICE + LAPTOPS
+HMI, ENG, HIST, PLC1, PLC2 = (f"10.10.6.{i}" for i in (10, 11, 12, 13, 14))
 NEW_SERVERS = APPS + DBS + [SQL, FS02, SCCM, BACKUP, MON, PRINTSRV, GIT, CI]
 
 for i, ip in enumerate(DMZ_WEB, 2):
@@ -120,6 +131,12 @@ for ip in OFFICE:
                  _E.choice(["Microsoft Windows 10 Enterprise"] * 3 + ["Microsoft Windows 11 Enterprise"] * 2))
 for ip in LAPTOPS:
     HOSTS[ip] = (f"lt-{ip.split('.')[-1]:0>3}.corp.example", "Microsoft Windows 11 Enterprise")
+HOSTS[REMOTE_ENG] = ("eng-lt01.corp.example", "Microsoft Windows 11 Enterprise")
+HOSTS[HMI] = ("hmi01.plant.example", "Windows 10 IoT Enterprise")
+HOSTS[ENG] = ("eng01.plant.example", "Windows 10 Engineering Workstation")
+HOSTS[HIST] = ("hist01.plant.example", "Linux Process Historian")
+HOSTS[PLC1] = ("plc01.plant.example", "Modbus TCP PLC")
+HOSTS[PLC2] = ("plc02.plant.example", "Modbus TCP PLC")
 
 
 def _v(ip, port, svc, pid, name, sev, cvss, cves, expl, msf, syn, sol, proto="tcp"):
@@ -253,9 +270,9 @@ def _flows(rng):
                          state=state, ob=rng.randint(200, 5000) if ob is None else ob,
                          rb=rng.randint(500, 40000) if rb is None else rb))
 
-    def p(ts, s, d, dp, app, action="allow", fz="untrust", tz="dmz", sent=None, rcvd=None):
+    def p(ts, s, d, dp, app, action="allow", fz="untrust", tz="dmz", sent=None, rcvd=None, rule=None):
         pan.append(dict(ts=ts, s=s, sp=rng.randint(1024, 65535), d=d, dp=dp, app=app, action=action,
-                        fz=fz, tz=tz, sent=rng.randint(400, 3000) if sent is None else sent,
+                        fz=fz, tz=tz, rule=rule, sent=rng.randint(400, 3000) if sent is None else sent,
                         rcvd=(rng.randint(2000, 90000) if action == "allow" else 0) if rcvd is None else rcvd))
 
     # internet -> web01:443 (normal customers), seen by the firewall
@@ -286,6 +303,17 @@ def _flows(rng):
     for _ in range(150):
         p(t(), rng.choice(WORKSTATIONS), f"93.184.{rng.randint(0, 255)}.{rng.randint(1, 254)}", 443, "ssl",
           fz="trust", tz="untrust")
+    # Synthetic OT lead: periodic external contact from the engineering station.
+    for k in range(3):
+        p(OT_ACTIVITY - timedelta(minutes=15 - 5 * k), ENG, OT_EXTERNAL, 443, "ssl",
+          fz="ot", tz="untrust", sent=1500 + k * 120, rcvd=800 + k * 80)
+    for k in range(2):
+        p(OT_ACTIVITY - timedelta(minutes=35 - 10 * k), REMOTE_ENG, OT_EXTERNAL, 443, "ssl",
+          fz="vpn", tz="untrust", sent=1100 + k * 90, rcvd=650 + k * 50)
+    # Authorized remote engineer access through a synthetic GlobalProtect VPN policy.
+    for k in range(2):
+        p(OT_ACTIVITY - timedelta(minutes=20 - 5 * k), REMOTE_ENG, ENG, 3389, "ms-rdp",
+          fz="vpn", tz="ot", rule="GlobalProtect-Engineer-VPN")
 
     # east-west, seen by Zeek on the core switch
     for _ in range(120):
@@ -294,6 +322,12 @@ def _flows(rng):
         z(t(), "10.10.1.10", "10.10.0.53", 53, proto="udp", svc="dns")
     for _ in range(140):
         z(t(), "10.10.1.20", "10.10.2.20", 5432, svc="postgresql")
+    # Small, synthetic packaging line: HMI polls PLCs and the historian collects data.
+    for plc in (PLC1, PLC2):
+        for k in range(4):
+            z(START + timedelta(days=3, minutes=5 * k), HMI, plc, 502, svc="modbus")
+    for k in range(3):
+        z(START + timedelta(days=3, minutes=7 * k), HMI, HIST, 4840, svc="opcua")
     for ws in WORKSTATIONS:
         for _ in range(25):
             z(t(), ws, "10.10.2.25", 445, svc="smb")
@@ -437,9 +471,20 @@ def generate(outdir: str, seed: int = 7) -> list[str]:
         fh.write("#close\t2026-10-18-23-59-59\n")
     paths.append(p)
 
+    p = os.path.join(outdir, "modbus.log")
+    with open(p, "w") as fh:
+        for i, plc in enumerate((PLC1, PLC2)):
+            for k in range(2):
+                event = {"ts": (START + timedelta(days=3, minutes=10 * k + i)).timestamp(),
+                         "uid": f"OT{i}{k}", "id.orig_h": HMI, "id.orig_p": 51000 + i * 10 + k,
+                         "id.resp_h": plc, "id.resp_p": 502, "is_orig": True,
+                         "func": "READ_HOLDING_REGISTERS" if k == 0 else "READ_INPUT_REGISTERS"}
+                fh.write(json.dumps(event, separators=(",", ":")) + "\n")
+    paths.append(p)
+
     p = os.path.join(outdir, "paloalto_traffic.csv")
     with open(p, "w", newline="") as fh:
-        w = csv.writer(fh)
+        w = csv.writer(fh, lineterminator="\n")
         w.writerow(["Receive Time", "Serial #", "Type", "Threat/Content Type", "Source address",
                     "Destination address", "Rule", "Application", "Source Zone", "Destination Zone",
                     "Source Port", "Destination Port", "IP Protocol", "Action", "Bytes", "Bytes Sent",
@@ -453,13 +498,14 @@ def generate(outdir: str, seed: int = 7) -> list[str]:
                             r["name"], r["sev"]])
                 continue
             w.writerow([ts, "016401000001", "TRAFFIC", "end", r["s"], r["d"],
-                        "allow-web" if r["action"] == "allow" else "default-deny", r["app"], r["fz"], r["tz"],
+                        r.get("rule") or ("allow-web" if r["action"] == "allow" else "default-deny"),
+                        r["app"], r["fz"], r["tz"],
                         r["sp"], r["dp"], "tcp", r["action"], r["sent"] + r["rcvd"], r["sent"], r["rcvd"], ts, "", ""])
     paths.append(p)
 
     p = os.path.join(outdir, "netflow_segment6.csv")
     with open(p, "w", newline="") as fh:
-        w = csv.writer(fh)
+        w = csv.writer(fh, lineterminator="\n")
         w.writerow(["ts", "sa", "da", "sp", "dp", "pr", "ibyt"])
         for r in nf:
             w.writerow([r["ts"].strftime("%Y-%m-%d %H:%M:%S"), r["s"], r["d"], r["sp"], r["dp"], "TCP", r["bytes"]])
@@ -469,3 +515,18 @@ def generate(outdir: str, seed: int = 7) -> list[str]:
     _nessus(p)
     paths.append(p)
     return paths
+
+
+def generate_bundles(outdir: str, seed: int = 7) -> list[str]:
+    """Write the scan-backed example and a matching network-only example."""
+    full = generate(os.path.join(outdir, "scan_and_telemetry"), seed)
+    telemetry_dir = os.path.join(outdir, "telemetry_only")
+    os.makedirs(telemetry_dir, exist_ok=True)
+    copied = []
+    for path in full:
+        if path.endswith(".nessus"):
+            continue
+        target = os.path.join(telemetry_dir, os.path.basename(path))
+        shutil.copy2(path, target)
+        copied.append(target)
+    return full + copied

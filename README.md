@@ -29,9 +29,12 @@ local files; GitHub's source preview does not run the interactive HTML. AI-gener
 briefs require a user-provided OpenAI key and the separate generation step below.
 
 ```bash
-# 1. Analyze the bundled 250-host demo with 28 source-linked IOC matches
-python3 -m vulnflow analyze samples \
-    --article-preview-cache samples/article_previews.json -o example_output
+# 1. Analyze the bundled 250-host demo with scan findings and 28 source-linked IOC matches
+python3 -m vulnflow analyze samples/scan_and_telemetry \
+    --article-preview-cache samples/scan_and_telemetry/article_previews.json -o example_output
+
+# Or analyze the same network traffic without vulnerability scans
+python3 -m vulnflow analyze samples/telemetry_only -o telemetry_output
 
 # 2. Run on real data (files or recursively scanned folders, any mix of formats)
 python3 -m vulnflow analyze /path/to/log-bundle -o out \
@@ -53,9 +56,11 @@ python3 -m vulnflow serve --port 8080          # http://127.0.0.1:8080/
 
 Run tests with `python3 -m unittest discover -s tests` (no model or network needed).
 
-For the same demo in the upload page, select the `samples` folder under **Analyze files with
-Múcaro VulnScope** and click **Analyze folder**. The folder already contains its telemetry, scan,
-and IOC CSV. See [the sample guide](samples/README.md) for the synthetic scenario.
+For the same demo in the upload page, select `samples/scan_and_telemetry` under **Analyze files with
+Múcaro VulnScope** and click **Analyze folder**. Select `samples/telemetry_only` to inspect the
+network records without a vulnerability scan. The latter includes flow, firewall, NetFlow, Zeek
+connection, DNS, notice, and Modbus records from a small synthetic OT segment. See
+[the sample guide](samples/README.md).
 
 ### IOC CSV matches
 
@@ -262,7 +267,7 @@ environment, you are prompted for it without echo (keys are not accepted as comm
 stay out of shell history):
 
 ```bash
-python3 -m vulnflow analyze samples -o out --llm --llm-provider openai --llm-model <model>
+python3 -m vulnflow analyze samples/scan_and_telemetry -o out --llm --llm-provider openai --llm-model <model>
 python3 -m vulnflow brief out --llm-provider anthropic                  # model defaults to claude-opus-5-5
 python3 -m vulnflow ask out --llm-provider local --llm-model llama3.1  # interactive Q&A, Ollama default URL
 python3 -m vulnflow ask out --once "How do I confirm the web01 return connection in Zeek?" --llm-provider openai --llm-model <model>

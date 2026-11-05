@@ -1,0 +1,4 @@
+{"ts":1792022400.0,"uid":"OT00","id.orig_h":"10.10.6.10","id.orig_p":51000,"id.resp_h":"10.10.6.13","id.resp_p":502,"is_orig":true,"func":"READ_HOLDING_REGISTERS"}
+{"ts":1792023000.0,"uid":"OT01","id.orig_h":"10.10.6.10","id.orig_p":51001,"id.resp_h":"10.10.6.13","id.resp_p":502,"is_orig":true,"func":"READ_INPUT_REGISTERS"}
+{"ts":1792022460.0,"uid":"OT10","id.orig_h":"10.10.6.10","id.orig_p":51010,"id.resp_h":"10.10.6.14","id.resp_p":502,"is_orig":true,"func":"READ_HOLDING_REGISTERS"}
+{"ts":1792023060.0,"uid":"OT11","id.orig_h":"10.10.6.10","id.orig_p":51011,"id.resp_h":"10.10.6.14","id.resp_p":502,"is_orig":true,"func":"READ_INPUT_REGISTERS"}
