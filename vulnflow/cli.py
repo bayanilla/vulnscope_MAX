@@ -134,7 +134,10 @@ def main(argv=None) -> int:
     _llm_flags(q)
 
     s = sub.add_parser("serve", help="start the local upload page")
-    s.add_argument("--host", default="127.0.0.1")
+    s.add_argument("--host", default="127.0.0.1",
+                   help="address to listen on (default 127.0.0.1; any other address needs --allow-remote)")
+    s.add_argument("--allow-remote", action="store_true",
+                   help="allow a non-loopback --host; every visitor then needs the printed access-token link")
     s.add_argument("--port", type=int, default=8080)
     s.add_argument("--data-dir", default="vulnflow_runs")
     s.add_argument("--max-upload-mb", type=int, default=1024, help="largest accepted upload (default 1024)")
@@ -162,6 +165,8 @@ def main(argv=None) -> int:
     g.add_argument("outdir", nargs="?", default="samples")
 
     args = ap.parse_args(argv)
+    if args.cmd in ("analyze", "explore", "serve"):
+        os.umask(0o077)          # reports, normalized logs and spooled data are private to this account
     if args.cmd == "samples":
         from .samples import generate_bundles
         for p in generate_bundles(args.outdir):
@@ -178,7 +183,7 @@ def main(argv=None) -> int:
                 print(f"warning: {exc} Choose a provider on the AI settings page instead.", file=sys.stderr)
                 llm_cfg = LLMConfig()
         serve(args.host, args.port, args.data_dir, _cfg(args), llm_cfg=llm_cfg,
-              max_upload=args.max_upload_mb * 1024 * 1024)
+              max_upload=args.max_upload_mb * 1024 * 1024, allow_remote=args.allow_remote)
         return 0
     if args.cmd in ("brief", "article-briefs", "ask"):
         from .llm import Analyst, LLMError, load_results, write_brief

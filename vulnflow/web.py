@@ -32,7 +32,7 @@ from .correlate import Config
 from dataclasses import replace
 from urllib.parse import parse_qs
 
-from .llm import PROVIDER_NAMES, Analyst, LLMConfig, LLMError, load_results, log_qa, write_brief
+from .llm import DEFAULT_BASE_URLS, PROVIDER_NAMES, Analyst, LLMConfig, LLMError, load_results, log_qa, write_brief
 from .article_brief import generate_article_briefs
 from .parsers import FORMATS
 from .pipeline import run
@@ -80,6 +80,7 @@ vulnerability status remains unknown.</p>
 </form>
 <h2>Or upload files</h2>
 <form method="post" action="/analyze" enctype="multipart/form-data">
+<input type="hidden" name="csrf" value="{csrf}">
 <label for="folder">Folder of telemetry and scans</label>
 <input id="folder" type="file" name="folder" webkitdirectory directory multiple>
 <div class="hint">Choose one folder to include its files and subfolders in a single analysis. A Nessus scan is optional.</div>
@@ -253,6 +254,30 @@ button.secondary{background:transparent;color:var(--fg);border:1px solid var(--l
 
 
 NATIVE_PICKER = sys.platform == "darwin" and shutil.which("osascript") is not None
+LOOPBACK_NAMES = ("127.0.0.1", "localhost", "[::1]")
+SECURITY_HEADERS = {
+    # The pages carry their own inline scripts and styles; nothing loads from other origins.
+    "Content-Security-Policy": ("default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                                "style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; "
+                                "connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'"),
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "same-origin",       # no-referrer would make browsers send Origin: null
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin",
+}
+TOKEN_COOKIE = "vulnscope_access"
+
+
+def is_loopback_host(host: str) -> bool:
+    """True for a bind address that only this machine can reach."""
+    host = host.strip("[]")
+    if host == "localhost":
+        return True
+    try:
+        import ipaddress
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
 
 
 def list_folder(raw: str) -> dict:
@@ -299,18 +324,90 @@ def native_pick(start: str) -> dict:
 
 
 def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = None,
-                 max_upload: int = MAX_UPLOAD):
-    """llm_cfg None hides the Security Assistant entirely; an unready LLMConfig shows it unconfigured."""
+                 max_upload: int = MAX_UPLOAD, access_token: str | None = None,
+                 allowed_hosts: tuple[str, ...] = ()):
+    """llm_cfg None hides the Security Assistant entirely; an unready LLMConfig shows it unconfigured.
+
+    Without ``access_token`` the server only answers requests whose Host header names this
+    machine's loopback address (or one of ``allowed_hosts``), which defeats DNS rebinding.
+    With ``access_token`` (remote access) every request must carry the token, as a cookie
+    set from the one-time ``?token=`` link printed at start-up.
+    """
     state = {"llm": llm_cfg}
     csrf = secrets.token_urlsafe(24)   # guards form posts from other sites in the same browser
+    extra_hosts = {h.lower() for h in allowed_hosts}
 
     class Handler(BaseHTTPRequestHandler):
+        timeout = 120                  # drop clients that stop sending mid-request
+
         def _llm(self) -> LLMConfig | None:
             return replace(state["llm"]) if state["llm"] is not None else None
+
+        def _host_ok(self) -> bool:
+            """Reject requests for any other host name (DNS rebinding) unless remote access is on."""
+            if access_token:
+                return True
+            host = (self.headers.get("Host") or "").strip().lower()
+            port = self.server.server_address[1]
+            names = {f"{n}:{port}" for n in LOOPBACK_NAMES} | extra_hosts
+            if port == 80:
+                names |= set(LOOPBACK_NAMES)
+            return host in names
+
+        def _token_ok(self) -> bool:
+            if not access_token:
+                return True
+            from http.cookies import SimpleCookie
+            try:
+                jar = SimpleCookie(self.headers.get("Cookie") or "")
+            except Exception:
+                return False
+            got = jar.get(TOKEN_COOKIE)
+            return bool(got) and secrets.compare_digest(got.value, access_token)
+
+        def _gate(self) -> bool:
+            """Host and access-token checks shared by every request. Sends the refusal itself."""
+            if not self._host_ok():
+                self._send(421, "Unknown host name. Open the upload page at the address the server printed.",
+                           "text/plain")
+                return False
+            if access_token and not self._token_ok():
+                query = parse_qs(self.path.split("?", 1)[1]) if "?" in self.path else {}
+                given = query.get("token", [""])[0]
+                if self.command == "GET" and given and secrets.compare_digest(given, access_token):
+                    self._send(303, "", headers={
+                        "Location": self.path.split("?", 1)[0],
+                        "Set-Cookie": f"{TOKEN_COOKIE}={access_token}; HttpOnly; SameSite=Strict; Path=/"})
+                    return False
+                self._send(401, "Open the link with the access token that the server printed at start-up.",
+                           "text/plain")
+                return False
+            return True
 
         def _same_origin(self) -> bool:
             origin = self.headers.get("Origin")
             return origin is None or origin == f"http://{self.headers.get('Host', '')}"
+
+        def _length(self) -> int:
+            """Content-Length as a non-negative int; -1 when missing or malformed."""
+            try:
+                n = int(self.headers.get("Content-Length") or "")
+            except ValueError:
+                return -1
+            return n if n >= 0 else -1
+
+        def _read_body(self, cap: int) -> bytes | None:
+            n = self._length()
+            if n < 0 or n > cap:
+                self.close_connection = True
+                return None
+            return self.rfile.read(n)
+
+        def _read_form(self, cap: int = 20000) -> dict | None:
+            raw = self._read_body(cap)
+            if raw is None:
+                return None
+            return {k: v[0] for k, v in parse_qs(raw.decode(errors="replace")).items()}
 
         def _send(self, code, body, ctype="text/html; charset=utf-8", headers=None):
             data = body.encode() if isinstance(body, str) else body
@@ -318,6 +415,8 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(data)))
             self.send_header("X-Content-Type-Options", "nosniff")
+            for k, v in SECURITY_HEADERS.items():
+                self.send_header(k, v)
             for k, v in (headers or {}).items():
                 self.send_header(k, v)
             self.end_headers()
@@ -333,9 +432,10 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
 
         def _analyze_folder(self):
             """Analyze a folder on the machine running the server, reading the files in place."""
-            length = int(self.headers.get("Content-Length") or 0)
-            form = {k: v[0] for k, v in parse_qs(self.rfile.read(min(length, 20000)).decode(errors="replace")).items()}
-            if form.get("csrf") != csrf:
+            form = self._read_form()
+            if form is None:
+                return self._send(400, "Bad request", "text/plain")
+            if not secrets.compare_digest(form.get("csrf", ""), csrf):
                 return self._send(403, "Forbidden", "text/plain")
             raw = form.get("path", "").strip().strip('"').strip("'")
             folder = os.path.realpath(os.path.expanduser(raw)) if raw else ""
@@ -366,12 +466,16 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             self._send(303, "", headers={"Location": f"/runs/{run_id}/"})
 
         def _read_json(self):
-            length = int(self.headers.get("Content-Length") or 0)
+            raw = self._read_body(20000)
+            if raw is None:
+                return None
             try:
-                body = json.loads(self.rfile.read(min(length, 20000)) or b"{}")
+                body = json.loads(raw or b"{}")
             except ValueError:
                 return None
-            return body if isinstance(body, dict) and body.get("csrf") == csrf else None
+            ok = isinstance(body, dict) and isinstance(body.get("csrf"), str) and \
+                secrets.compare_digest(body["csrf"], csrf)
+            return body if ok else None
 
         def _browse(self):
             """List the subfolders of a folder on this machine, for the folder picker."""
@@ -390,6 +494,8 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             return self._json(200, native_pick(str(body.get("path") or "")))
 
         def do_GET(self):
+            if not self._gate():
+                return
             path = unquote(self.path.split("?", 1)[0])
             if path in ("/", "/index.html"):
                 return self._form()
@@ -408,6 +514,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                     "enabled": cfg is not None, "ready": bool(cfg and cfg.ready),
                     "mock": bool(cfg and cfg.provider == "mock"),
                     "description": _where_text(cfg) if cfg and cfg.ready else "No AI provider selected yet.",
+                    "csrf": csrf,
                 }), "application/json", {"Cache-Control": "no-store"})
             if m[2] == "radar-status":
                 if not os.path.isdir(run_dir):
@@ -543,9 +650,8 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             try:
                 res = load_results(run_dir)
                 if action in ("brief", "article-briefs"):
-                    length = int(self.headers.get("Content-Length") or 0)
-                    form = parse_qs(self.rfile.read(min(length, 10000)).decode(errors="replace"))
-                    if form.get("csrf", [""])[0] != csrf:
+                    form = self._read_form(10000)
+                    if form is None or not secrets.compare_digest(form.get("csrf", ""), csrf):
                         return self._send(403, "Forbidden", "text/plain")
                     if action == "article-briefs":
                         summary = generate_article_briefs(res, cfg)
@@ -561,12 +667,17 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                         return self._send(200, _page("Article briefs", notes))
                     write_brief(res, run_dir, cfg)
                     return self._send(303, "", headers={"Location": f"/runs/{run_id}/ai_analyst_brief.html"})
+                if not secrets.compare_digest(self.headers.get("X-CSRF-Token", ""), csrf):
+                    return self._json(403, {"error": "Forbidden. Reload the page and try again."})
                 if "application/json" not in self.headers.get("Content-Type", ""):
                     return self._json(415, {"error": "Send JSON."})
-                length = int(self.headers.get("Content-Length") or 0)
+                length = self._length()
                 if not 0 < length <= 1_000_000:
+                    self.close_connection = True
                     return self._json(413, {"error": "Request too large."})
                 req = json.loads(self.rfile.read(length))
+                if not isinstance(req, dict):
+                    return self._json(400, {"error": "Malformed request."})
                 question = str(req.get("question", ""))
                 history = req.get("history") if isinstance(req.get("history"), list) else []
                 answer = Analyst(res, cfg).ask(question, history)
@@ -605,9 +716,10 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             self._send(code, _page("Security Assistant settings", body))
 
         def _save_settings(self):
-            length = int(self.headers.get("Content-Length") or 0)
-            form = {k: v[0] for k, v in parse_qs(self.rfile.read(min(length, 20000)).decode(errors="replace")).items()}
-            if form.get("csrf") != csrf:
+            form = self._read_form()
+            if form is None:
+                return self._send(400, "Bad request", "text/plain")
+            if not secrets.compare_digest(form.get("csrf", ""), csrf):
                 return self._send(403, "Forbidden", "text/plain")
             nxt = form.get("next", "/")
             if state["llm"] is None:
@@ -617,10 +729,14 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return self._send(303, "", headers={"Location": nxt if re.fullmatch(r"/(runs/[a-f0-9]{16}/)?", nxt) else "/"})
             cur = state["llm"]
             provider = form.get("provider", "")
-            new = LLMConfig(provider=provider, model=form.get("model", "").strip(),
-                            base_url=form.get("base_url", "").strip(),
-                            # keep the stored key when the field is left blank and the provider is unchanged
-                            api_key=form.get("api_key", "").strip() or (cur.api_key if provider == cur.provider else ""),
+            base_url = form.get("base_url", "").strip()
+            typed_key = form.get("api_key", "").strip()
+            # A stored key is only reused for the same provider AND the same endpoint, so a changed
+            # endpoint can never receive a key the person did not type for it.
+            same_endpoint = provider == cur.provider and \
+                (base_url or DEFAULT_BASE_URLS.get(provider, "")) == cur.base_url
+            new = LLMConfig(provider=provider, model=form.get("model", "").strip(), base_url=base_url,
+                            api_key=typed_key or (cur.api_key if same_endpoint else ""),
                             redact=form.get("redact") == "1")
             if provider == "mock":
                 new.model, new.base_url, new.api_key, new.redact = "mock", "", "", False
@@ -630,7 +746,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             try:
                 if not provider:
                     raise LLMError("Choose a provider.")
-                new.resolved()
+                new.resolved(env_key=not base_url or base_url == DEFAULT_BASE_URLS.get(provider, ""))
                 if new.needs_key():
                     raise LLMError(f"{PROVIDER_NAMES[provider]} needs an API key.")
             except LLMError as exc:
@@ -639,6 +755,8 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             self._send(303, "", headers={"Location": nxt if re.fullmatch(r"/(runs/[a-f0-9]{16}/)?", nxt) else "/"})
 
         def do_POST(self):
+            if not self._gate():
+                return
             if not self._same_origin():
                 return self._send(403, "Cross-origin request refused", "text/plain")
             if self.path == "/settings":
@@ -657,7 +775,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return self._pick_folder()
             if self.path != "/analyze":
                 return self._send(404, "Not found", "text/plain")
-            length = int(self.headers.get("Content-Length") or 0)
+            length = self._length()
             if length <= 0 or length > max_upload:
                 self.close_connection = True              # don't read an oversized body at all
                 return self._form(f"Upload must be between 1 byte and {max_upload // 1048576} MB.")
@@ -675,6 +793,9 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 shutil.rmtree(os.path.join(data_dir, run_id), ignore_errors=True)
                 self.close_connection = True
                 return self._form(str(exc))
+            if not secrets.compare_digest(fields.get("csrf", ""), csrf):
+                shutil.rmtree(os.path.join(data_dir, run_id), ignore_errors=True)
+                return self._send(403, "Forbidden", "text/plain")
             files = [path for _, path in parts]
             nets = fields.get("internal_nets", "").strip()
             if not files:
@@ -697,10 +818,24 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
 
 
 def serve(host: str, port: int, data_dir: str, cfg: Config, llm_cfg: LLMConfig | None = None,
-          max_upload: int = MAX_UPLOAD):
-    os.makedirs(data_dir, exist_ok=True)
-    srv = ThreadingHTTPServer((host, port), make_handler(os.path.abspath(data_dir), cfg, llm_cfg, max_upload))
-    print(f"Upload page: http://{host}:{port}/  (results stored in {os.path.abspath(data_dir)})")
+          max_upload: int = MAX_UPLOAD, allow_remote: bool = False):
+    """Serve on loopback only, unless ``allow_remote``: then every request needs a random access token."""
+    remote = not is_loopback_host(host)
+    if remote and not allow_remote:
+        raise SystemExit(f"Refusing to listen on {host}: the upload page can read any folder this account can. "
+                         "Use the default 127.0.0.1, or pass --allow-remote to require an access token.")
+    os.umask(0o077)                                     # runs hold raw logs and scan results
+    os.makedirs(data_dir, mode=0o700, exist_ok=True)
+    os.chmod(data_dir, 0o700)
+    token = secrets.token_urlsafe(24) if remote else None
+    srv = ThreadingHTTPServer((host, port), make_handler(os.path.abspath(data_dir), cfg, llm_cfg, max_upload,
+                                                         access_token=token, allowed_hosts=(f"{host}:{port}",)))
+    if token:
+        print(f"Upload page (remote access; keep this link private): http://{host}:{port}/?token={token}")
+        print("Traffic is plain HTTP; use it only on a trusted network or through an SSH tunnel.")
+    else:
+        print(f"Upload page: http://{host}:{port}/", end="")
+    print(f"  (results stored in {os.path.abspath(data_dir)})")
     if llm_cfg is not None:
         print(f"Security Assistant: {llm_cfg.label() if llm_cfg.ready else 'no provider yet; choose one at /settings'}")
     try:

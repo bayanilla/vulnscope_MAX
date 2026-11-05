@@ -523,8 +523,23 @@ FINDING_COLUMNS = ["priority", "score", "likelihood", "host", "hostname", "port"
                    "indicators", "solution"]
 
 
+_FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _cell(v):
+    """Neutralise spreadsheet formulas in text taken from logs (CSV injection): a cell such as
+    ``=HYPERLINK(...)`` is written as ``'=HYPERLINK(...)`` so Excel and Sheets show it as text."""
+    if isinstance(v, str) and len(v) > 1 and v.startswith(_FORMULA_START):
+        return "'" + v
+    return v
+
+
+def _row(values) -> list:
+    return [_cell(v) for v in values]
+
+
 def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
-    os.makedirs(os.path.join(outdir, "normalized"), exist_ok=True)
+    os.makedirs(os.path.join(outdir, "normalized"), mode=0o700, exist_ok=True)
     paths = {}
 
     def w(name, text):
@@ -556,12 +571,12 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
         cw.writerow(FINDING_COLUMNS)
         for r in res["findings"]:
             e, b = r["exposure"], blast[r["host"]]
-            cw.writerow([r["priority"], r["score"], r["likelihood"], r["host"], r["hostname"], r["port"],
+            cw.writerow(_row([r["priority"], r["score"], r["likelihood"], r["host"], r["hostname"], r["port"],
                          r["proto"], r["service"], r["plugin_id"], r["plugin_name"], r["severity_name"],
                          r["cvss"], " ".join(r["cves"]), r["exploit_available"], e["label"],
                          e["external_sources"], e["internal_sources"], e["established"], e["denied"],
                          r["blast_factor"], b["reachable_count"], " ".join(b["vulnerable_pivots"]),
-                         " | ".join(i["text"] for i in r["indicators"]), _short(r["solution"], 500)])
+                         " | ".join(i["text"] for i in r["indicators"]), _short(r["solution"], 500)]))
     paths["correlated_findings.csv"] = p
 
     p = os.path.join(outdir, "normalized", "flows.csv")
@@ -571,7 +586,7 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
                 "bytes_out", "bytes_in", "app", "src_zone", "dst_zone", "source"]
         cw.writerow(cols)
         for f in ds.flows:
-            cw.writerow([(f.ts.isoformat() if f.ts else "") if c == "ts" else getattr(f, c) for c in cols])
+            cw.writerow(_row((f.ts.isoformat() if f.ts else "") if c == "ts" else getattr(f, c) for c in cols))
     paths["normalized/flows.csv"] = p
 
     p = os.path.join(outdir, "normalized", "findings.csv")
@@ -584,7 +599,7 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
             row = [getattr(f, c) for c in cols]
             row[cols.index("cves")] = " ".join(f.cves)
             row[cols.index("exploit_frameworks")] = " ".join(f.exploit_frameworks)
-            cw.writerow(row)
+            cw.writerow(_row(row))
     paths["normalized/findings.csv"] = p
     for name, events in (("zeek_events.jsonl", ds.zeek_events), ("ot_events.jsonl", ds.ot_events)):
         p = os.path.join(outdir, "normalized", name)

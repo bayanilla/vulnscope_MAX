@@ -335,7 +335,7 @@ def html(data: dict) -> str:
     from . import ioc_archive
     from .branding import EXPLORER_NAME, PRODUCT_NAME, icon_data_uri
     from .theme_backgrounds import explorer_background_css
-    blob = json.dumps(data, separators=(",", ":"), default=str).replace("</", "<\\/")
+    blob = json.dumps(data, separators=(",", ":"), default=str).replace("<", "\\u003c")
     return ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
             f"<title>{EXPLORER_NAME} · {PRODUCT_NAME}</title><link rel=\"icon\" href=\"{icon_data_uri()}\"><style>" + _read("analyst_chat.css") + _read("explorer.css") + explorer_background_css() + ioc_archive.CSS + "</style></head><body>"

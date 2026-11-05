@@ -253,8 +253,12 @@ class WebTests(Base):
             self.assertTrue(status["ready"])
             self.assertTrue(status["mock"])
             self.assertIn("nothing leaves this machine", status["description"])
-        status, body = self._post(host + run + "ask", json.dumps({"question": "<b>fs01?</b>", "history": []}),
+            status_token = status["csrf"]
+        status, body = self._post(host + run + "ask", json.dumps({"question": "x", "history": []}),
                                   {"Content-Type": "application/json"})
+        self.assertEqual(status, 403)                     # no CSRF token
+        status, body = self._post(host + run + "ask", json.dumps({"question": "<b>fs01?</b>", "history": []}),
+                                  {"Content-Type": "application/json", "X-CSRF-Token": status_token})
         j = json.loads(body)
         self.assertIn("&lt;b&gt;", j["answer_html"])   # model output is escaped
         self.assertNotIn("<b>", j["answer_html"])

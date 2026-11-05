@@ -9,6 +9,14 @@
   const submit = form.querySelector('.ai-chat-submit');
   const busy = form.querySelector('.ai-chat-busy');
   const history = [];
+  let csrfToken = null;
+  async function csrf() {
+    if (csrfToken) return csrfToken;
+    const response = await fetch('ai-status', {cache: 'no-store'});
+    if (!response.ok) throw new Error('The Security Assistant is not available for this page.');
+    csrfToken = (await response.json()).csrf;
+    return csrfToken;
+  }
   const keyHint = document.createElement('span');
   keyHint.className = 'ai-chat-keyhint';
   keyHint.id = input.id + '-keyhint';
@@ -50,7 +58,7 @@
     busy.textContent = 'Thinking…';
     try {
       const response = await fetch(root.dataset.askUrl, {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
+        method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': await csrf()},
         body: JSON.stringify({question, history})
       });
       const result = await response.json();
@@ -99,6 +107,7 @@
   fetch(runUrl + 'ai-status', {cache: 'no-store'})
     .then(response => { if (!response.ok) throw new Error(); return response.json(); })
     .then(config => {
+      if (config.csrf) csrfToken = config.csrf;
       if (!config.enabled) return;
       toggle.hidden = false;
       status.textContent = config.description + (config.ready && !config.mock ? ' Answers are AI-generated; verify before acting.' : '');
