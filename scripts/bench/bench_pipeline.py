@@ -133,16 +133,20 @@ def main():
     parse_seconds = [0.0]
     for fmt, (kind, fn) in list(normalize.FORMATS.items()):
         def timed(path, stats, fn=fn, fmt=fmt):
+            # Parsers may return a list or yield records (streaming); count either way. For a
+            # generator, parse time includes the time load() spends handling each record.
             t = time.time()
-            out = fn(path, stats)
+            n = 0
+            for r in fn(path, stats):
+                n += 1
+                yield r
             dt = time.time() - t
             parse_seconds[0] += dt
             with rec.lock:
                 rec.result["files"].append({"file": os.path.relpath(path, a.input), "fmt": fmt,
                                             "bytes": os.path.getsize(path), "seconds": round(dt, 3),
-                                            "read": stats.read, "records": len(out),
+                                            "read": stats.read, "records": n,
                                             "dropped": dict(stats.dropped), "rss_after": rss()})
-            return out
         normalize.FORMATS[fmt] = (kind, timed)
 
     rec.start_stage("parse+normalize")
@@ -150,7 +154,8 @@ def main():
     rec.finish_stage(parse_seconds=round(parse_seconds[0], 2),
                      flows=len(ds.flows), threats=len(ds.threats), zeek_events=len(ds.zeek_events),
                      ot_events=len(ds.ot_events), findings=len(ds.findings),
-                     duplicate_flows_removed=ds.duplicate_flows)
+                     duplicate_flows_removed=ds.duplicate_flows,
+                     cross_sensor_duplicates_removed=getattr(ds, "cross_sensor_duplicates", None))
     st = rec.result["stages"]["parse+normalize"]
     st["normalize_seconds"] = round(st["seconds"] - st["parse_seconds"], 2)
     by_fmt: dict = {}

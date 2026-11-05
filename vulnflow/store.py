@@ -190,10 +190,17 @@ class FlowWriter:
 
     def __init__(self, store: Store, batch_size: int = DEFAULT_BATCH):
         self.store, self.batch_size, self.rows, self.ord = store, batch_size, [], 0
+        self._days: dict[int, str] = {}
 
     def add(self, f: Flow, sensor: str):
         us = _us(f.ts)
-        day = f.ts.astimezone(timezone.utc).strftime("%Y-%m-%d") if f.ts else "untimed"
+        if us is None:
+            day = "untimed"
+        else:
+            d = us // 86_400_000_000
+            day = self._days.get(d)
+            if day is None:
+                day = self._days[d] = (EPOCH + timedelta(days=d)).strftime("%Y-%m-%d")
         self.rows.append((self.ord, us, f.src_ip, f.dst_ip, f.src_port, f.dst_port, f.proto, f.action,
                           f.established, f.bytes_out or 0, f.bytes_in or 0, f.app, f.src_zone,
                           f.dst_zone, f.source, sensor, day))

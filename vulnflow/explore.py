@@ -67,19 +67,23 @@ def _pairs(ds) -> dict[tuple, _Pair]:
             p.tried, p.ports = set(tried or ()), set(ports or ())
             p.first, p.last = utc(first), utc(last)
             pairs[(src, dst)] = p
-    cur.execute(f"""
-        SELECT src_ip, dst_ip, src_port, dst_port, proto, app, action, established, source FROM (
-            SELECT *, row_number() OVER (PARTITION BY src_ip, dst_ip ORDER BY first) AS rn FROM (
-                SELECT src_ip, dst_ip, src_port, dst_port, proto, app, action, established, source,
-                       min(seq) AS first
-                FROM flows WHERE src_ip <> dst_ip
-                GROUP BY src_ip, dst_ip, src_port, dst_port, proto, app, action, established, source))
-        WHERE rn <= {MAX_CONNECTION_EXAMPLES} ORDER BY src_ip, dst_ip, rn""")
+    # Examples: the first distinct connections of each pair, in time order. A sorted scan
+    # (which DuckDB spills to disk) keeps memory flat; a window function per pair does not.
+    cur.execute("""
+        SELECT src_ip, dst_ip, src_port, dst_port, proto, app, action, established, source
+        FROM flows WHERE src_ip <> dst_ip ORDER BY src_ip, dst_ip, seq""")
+    p = None
     while rows := cur.fetchmany(10_000):
         for src, dst, sport, dport, proto, app, action, est, source in rows:
-            pairs[(src, dst)].examples.append(
-                {"src_ip": src, "src_port": sport, "dst_ip": dst, "dst_port": dport, "proto": proto,
-                 "app": app, "action": action, "established": est, "source": source})
+            if p is None or p_key != (src, dst):
+                p_key = (src, dst)
+                p = pairs[p_key]
+            if len(p.examples) >= MAX_CONNECTION_EXAMPLES:
+                continue
+            ex = {"src_ip": src, "src_port": sport, "dst_ip": dst, "dst_port": dport, "proto": proto,
+                  "app": app, "action": action, "established": est, "source": source}
+            if ex not in p.examples:
+                p.examples.append(ex)
     cur.close()
     return pairs
 
