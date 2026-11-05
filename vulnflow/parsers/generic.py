@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 
 from ..schema import Flow, ParseStats
-from ._util import clean_ip, clean_port, clean_proto, norm_header, parse_ts, to_int
+from ._util import clean_ip, clean_port, clean_proto, norm_header, open_text, parse_ts, to_int
 
 ALIASES = {
     "src_ip": ["src_ip", "src", "source", "source_ip", "sa", "srcaddr", "src_addr",
@@ -28,8 +28,7 @@ DENY = ("deny", "denied", "drop", "dropped", "reject", "rejected", "block", "blo
 
 
 def parse(path: str, stats: ParseStats):
-    flows: list[Flow] = []
-    with open(path, encoding="utf-8-sig", errors="replace", newline="") as fh:
+    with open_text(path, newline="") as fh:
         sample = fh.read(8192)
         fh.seek(0)
         try:
@@ -50,7 +49,7 @@ def parse(path: str, stats: ParseStats):
             for row in reader:
                 stats.read += 1
                 stats.drop("unmapped columns")
-            return flows
+            return
         for row in reader:
             if not any(c.strip() for c in row):
                 continue
@@ -65,12 +64,11 @@ def parse(path: str, stats: ParseStats):
             ts = parse_ts(get("ts"))
             if ts is None:
                 stats.note("some rows had no parseable timestamp (kept, untimed)")
-            flows.append(Flow(
+            yield Flow(
                 ts=ts, src_ip=src, dst_ip=dst,
                 src_port=clean_port(get("src_port")), dst_port=clean_port(get("dst_port")),
                 proto=clean_proto(get("proto")), action=action,
                 # without response bytes we can only assume allowed == established
                 established=action == "allow" and ("bytes_in" not in idx or b_in > 0),
                 bytes_out=b_out, bytes_in=b_in, app=(get("app") or "").strip(),
-            ))
-    return flows
+            )

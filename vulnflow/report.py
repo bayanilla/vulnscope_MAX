@@ -241,6 +241,7 @@ def technical_report(res: dict) -> str:
         dropped = ", ".join(f"{n} {k}" for k, n in i["dropped"].items()) or "0"
         L.append(f"| {_c(i['file'])} | {i['format']} | {i['read']} | {i['kept']} | {_c(dropped)} | {_c('; '.join(i['notes']))} |")
     L += ["", f"Exact duplicate sessions removed: {s['duplicate_flows_removed']}. "
+              f"Sessions seen by two sensors counted once: {s.get('cross_sensor_duplicates_removed', 0)}. "
               f"Duplicate findings merged across scans: {s['duplicate_findings_merged']}. "
               f"IPS/IDS alerts loaded: {s.get('threat_alerts', 0)}. "
           f"Internal address space: {', '.join(cfg['internal_nets'])}.",

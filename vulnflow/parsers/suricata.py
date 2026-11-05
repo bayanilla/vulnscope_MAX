@@ -4,12 +4,11 @@ from __future__ import annotations
 import json
 
 from ..schema import Flow, ParseStats, ThreatEvent
-from ._util import clean_ip, clean_port, clean_proto, parse_ts, to_int
+from ._util import clean_ip, clean_port, clean_proto, open_text, parse_ts, to_int
 
 
 def parse(path: str, stats: ParseStats):
-    out: list = []
-    with open(path, encoding="utf-8", errors="replace") as fh:
+    with open_text(path) as fh:
         for line in fh:
             if not line.strip():
                 continue
@@ -29,7 +28,7 @@ def parse(path: str, stats: ParseStats):
                 continue
             if kind == "alert":
                 a = ev.get("alert") or {}
-                out.append(ThreatEvent(ts=parse_ts(ev.get("timestamp")), src_ip=src, dst_ip=dst,
+                yield (ThreatEvent(ts=parse_ts(ev.get("timestamp")), src_ip=src, dst_ip=dst,
                                        dst_port=clean_port(ev.get("dest_port")),
                                        name=a.get("signature") or "Suricata alert",
                                        severity=str(a.get("severity", "")),
@@ -37,10 +36,9 @@ def parse(path: str, stats: ParseStats):
             else:
                 f = ev.get("flow") or {}
                 b_out, b_in = to_int(f.get("bytes_toserver"), 0), to_int(f.get("bytes_toclient"), 0)
-                out.append(Flow(ts=parse_ts(f.get("start") or ev.get("timestamp")), src_ip=src, dst_ip=dst,
+                yield (Flow(ts=parse_ts(f.get("start") or ev.get("timestamp")), src_ip=src, dst_ip=dst,
                                 src_port=clean_port(ev.get("src_port")), dst_port=clean_port(ev.get("dest_port")),
                                 proto=clean_proto(ev.get("proto")),
                                 action="deny" if f.get("action") == "drop" else "allow",
                                 established=(f.get("state") in ("established", "closed") and b_in > 0),
                                 bytes_out=b_out, bytes_in=b_in, app=ev.get("app_proto") or ""))
-    return out

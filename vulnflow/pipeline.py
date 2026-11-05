@@ -10,9 +10,21 @@ from .report import write_all
 def run(paths: list[str], outdir: str, cfg: Config | None = None,
         overrides: dict[str, str] | None = None,
         article_previews: bool = True,
-        article_preview_cache: str | None = None) -> tuple[dict, dict[str, str]]:
+        article_preview_cache: str | None = None,
+        workdir: str | None = None) -> tuple[dict, dict[str, str]]:
+    """``workdir`` holds the run's Parquet batches and DuckDB file (default: system temp,
+    or $VULNSCOPE_WORKDIR); it is deleted when the run finishes."""
+    cfg = cfg or Config()
     archive_paths = [path for path in paths if is_archive(path)]
-    ds = load([path for path in paths if path not in archive_paths], overrides)
+    ds = load([path for path in paths if path not in archive_paths], overrides,
+              workdir=workdir, skew_seconds=cfg.dedup_skew_seconds)
+    try:
+        return _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache)
+    finally:
+        ds.close()
+
+
+def _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache):
     if not ds.flows and not ds.threats:
         raise ValueError("No network telemetry was provided (or none could be parsed). "
                          "Add Zeek conn.log, Palo Alto traffic/threat logs, IDS alerts or a flow CSV.")

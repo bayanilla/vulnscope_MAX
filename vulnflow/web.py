@@ -13,6 +13,7 @@ GET/POST /settings     choose the AI provider and enter its API key (kept in mem
 from __future__ import annotations
 
 import html
+import dataclasses
 import os
 import re
 import secrets
@@ -347,8 +348,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             files = [f for f in files if not os.path.realpath(f).startswith(os.path.realpath(data_dir) + os.sep)]
             if not files:
                 return self._form(f"No files found in {folder}.")
-            cfg = Config(internal_nets=base_cfg.internal_nets, hops=base_cfg.hops,
-                         min_severity=base_cfg.min_severity)
+            cfg = dataclasses.replace(base_cfg, internal_nets=list(base_cfg.internal_nets))
             nets = form.get("internal_nets", "").strip()
             if nets:
                 cfg.internal_nets = [n.strip() for n in re.split(r"[,\s]+", nets) if n.strip()]
@@ -356,7 +356,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             with open(os.path.join(data_dir, run_id, "in", "SOURCE.txt"), "w", encoding="utf-8") as fh:
                 fh.write(f"Read in place from {folder}\n" + "\n".join(files) + "\n")
             try:
-                run(files, out_dir, cfg)
+                run(files, out_dir, cfg, workdir=os.path.join(data_dir, run_id))
             except ValueError as exc:
                 shutil.rmtree(os.path.join(data_dir, run_id), ignore_errors=True)
                 return self._form(str(exc))
@@ -680,12 +680,11 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             if not files:
                 shutil.rmtree(os.path.join(data_dir, run_id), ignore_errors=True)
                 return self._form("Please choose at least one telemetry file and one scan file.")
-            cfg = Config(internal_nets=base_cfg.internal_nets, hops=base_cfg.hops,
-                         min_severity=base_cfg.min_severity)
+            cfg = dataclasses.replace(base_cfg, internal_nets=list(base_cfg.internal_nets))
             if nets:
                 cfg.internal_nets = [n.strip() for n in re.split(r"[,\s]+", nets) if n.strip()]
             try:
-                run(files, os.path.join(data_dir, run_id, "out"), cfg)
+                run(files, os.path.join(data_dir, run_id, "out"), cfg, workdir=os.path.join(data_dir, run_id))
             except ValueError as exc:
                 shutil.rmtree(os.path.join(data_dir, run_id), ignore_errors=True)
                 return self._form(str(exc))

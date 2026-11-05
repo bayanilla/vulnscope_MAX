@@ -96,6 +96,8 @@ class Finding:
     solution: str = ""
     plugin_output: str = ""
     source: str = ""
+    scan_start: datetime | None = None   # when the scanner checked this host (HOST_START)
+    scan_end: datetime | None = None
 
     @property
     def severity_name(self) -> str:

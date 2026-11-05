@@ -5,7 +5,7 @@ import csv
 import xml.etree.ElementTree as ET
 
 from ..schema import Finding, ParseStats
-from ._util import clean_ip, norm_header, to_int
+from ._util import clean_ip, norm_header, open_text, parse_ts, to_int
 
 RISK_TO_SEV = {"none": 0, "info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 FRAMEWORKS = {"exploit_framework_metasploit": "Metasploit",
@@ -22,7 +22,8 @@ def _float(v):
 
 def parse_xml(path: str, stats: ParseStats):
     findings: list[Finding] = []
-    for _, host in ET.iterparse(path, events=("end",)):
+    source = open_text(path) if path.lower().endswith(".gz") else path
+    for _, host in ET.iterparse(source, events=("end",)):
         if host.tag != "ReportHost":
             continue
         props = {t.get("name"): (t.text or "").strip()
@@ -37,6 +38,8 @@ def parse_xml(path: str, stats: ParseStats):
             stats.note(f"host '{name}' had no IP; add host-ip or scan by IP to correlate it")
             host.clear()
             continue
+        scan_start = parse_ts(props.get("HOST_START_TIMESTAMP")) or parse_ts(props.get("HOST_START"))
+        scan_end = parse_ts(props.get("HOST_END_TIMESTAMP")) or parse_ts(props.get("HOST_END"))
         for item in host.findall("ReportItem"):
             stats.read += 1
             child = lambda t: (item.findtext(t) or "").strip()
@@ -54,6 +57,7 @@ def parse_xml(path: str, stats: ParseStats):
                 exploit_frameworks=[n for t, n in FRAMEWORKS.items() if child(t).lower() == "true"],
                 synopsis=child("synopsis"), solution=child("solution"),
                 plugin_output=child("plugin_output")[:2000],
+                scan_start=scan_start, scan_end=scan_end,
             ))
         host.clear()
     return findings
@@ -62,7 +66,7 @@ def parse_xml(path: str, stats: ParseStats):
 def parse_csv(path: str, stats: ParseStats):
     """The CSV export has one row per CVE, so rows are merged per host/port/plugin."""
     merged: dict[tuple, Finding] = {}
-    with open(path, encoding="utf-8-sig", errors="replace", newline="") as fh:
+    with open_text(path, newline="") as fh:
         for row in csv.DictReader(fh):
             row = {norm_header(k): (v or "").strip() for k, v in row.items() if k}
             stats.read += 1

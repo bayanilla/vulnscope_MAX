@@ -1,6 +1,7 @@
 """Field-level cleaning helpers shared by all parsers."""
 from __future__ import annotations
 
+import gzip
 import ipaddress
 from datetime import datetime, timezone
 
@@ -79,3 +80,10 @@ def parse_ts(value) -> datetime | None:
 
 def norm_header(h: str) -> str:
     return (h or "").strip().strip('"').strip().lower().replace(" ", "_")
+
+
+def open_text(path: str, newline: str | None = None):
+    """Open a plain or gzip-compressed text file (``.gz`` suffix) for streaming reads."""
+    if path.lower().endswith(".gz"):
+        return gzip.open(path, "rt", encoding="utf-8-sig", errors="replace", newline=newline)
+    return open(path, encoding="utf-8-sig", errors="replace", newline=newline)
