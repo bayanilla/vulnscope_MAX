@@ -20,6 +20,7 @@ import json
 import os
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -38,6 +39,15 @@ MAX_HISTORY_TURNS = 20
 
 class LLMError(RuntimeError):
     pass
+
+
+def _is_loopback(host: str) -> bool:
+    if host.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host.strip("[]")).is_loopback
+    except ValueError:
+        return False
 
 
 @dataclass
@@ -60,8 +70,11 @@ class LLMConfig:
                 setattr(cfg, k, v)
         return cfg.resolved() if cfg.provider else cfg
 
-    def resolved(self) -> "LLMConfig":
-        """Fill provider defaults and check the settings are usable. Raises LLMError if not."""
+    def resolved(self, env_key: bool = True) -> "LLMConfig":
+        """Fill provider defaults and check the settings are usable. Raises LLMError if not.
+
+        ``env_key`` False never fills the key from the environment (used when a browser chose
+        a non-default endpoint, so a server-side key cannot be sent somewhere new)."""
         p = self.provider
         if p not in PROVIDER_NAMES:
             raise LLMError(f"Unknown AI provider '{p}'. Choose one of: {', '.join(PROVIDER_NAMES)}.")
@@ -69,8 +82,15 @@ class LLMConfig:
         if not self.model:
             raise LLMError(f"Name the {PROVIDER_NAMES[p]} model to use (e.g. --llm-model or VULNFLOW_LLM_MODEL).")
         self.base_url = (self.base_url or DEFAULT_BASE_URLS.get(p, "")).strip()
-        if p in KEY_ENV and not self.api_key:
+        if p in KEY_ENV and not self.api_key and env_key:
             self.api_key = os.environ.get(KEY_ENV[p], "")
+        if self.api_key and self.base_url and p in ("openai", "local"):
+            parts = urllib.parse.urlsplit(self.base_url)
+            if parts.scheme not in ("https", "http") or not parts.hostname:
+                raise LLMError(f"Endpoint URL must be an http(s) URL: {self.base_url}")
+            if parts.scheme == "http" and not _is_loopback(parts.hostname):
+                raise LLMError("Use an https:// endpoint URL: an API key is never sent over plain HTTP "
+                               "except to this machine.")
         return self
 
     @property

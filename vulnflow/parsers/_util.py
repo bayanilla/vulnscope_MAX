@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import gzip
+import io
 import ipaddress
+import os
 from datetime import datetime, timezone
 from functools import lru_cache
 
@@ -88,8 +90,66 @@ def norm_header(h: str) -> str:
     return (h or "").strip().strip('"').strip().lower().replace(" ", "_")
 
 
+# A .gz file may not expand beyond this many times its own size (real logs compress about
+# 5-20x), nor beyond VULNSCOPE_MAX_GZ_BYTES when that is set. Stops decompression bombs
+# from filling the disk with Parquet and spool files.
+MAX_GZ_RATIO = 200
+MIN_GZ_ALLOWANCE = 256 * 1024 * 1024
+
+
+class DecompressionLimit(ValueError):
+    pass
+
+
+class _CappedGzip(io.RawIOBase):
+    """Binary reader over a gzip file that refuses to produce more than ``limit`` bytes."""
+
+    def __init__(self, path: str, limit: int):
+        self._gz = gzip.open(path, "rb")
+        self._left = limit
+        self._limit = limit
+
+    def readable(self):
+        return True
+
+    def seekable(self):
+        return True
+
+    def seek(self, offset, whence=io.SEEK_SET):
+        pos = self._gz.seek(offset, whence)       # parsers rewind after sniffing the header
+        self._left = max(0, self._limit - pos)
+        return pos
+
+    def tell(self):
+        return self._gz.tell()
+
+    def readinto(self, b):
+        data = self._gz.read(min(len(b), self._left + 1))
+        if len(data) > self._left:
+            raise DecompressionLimit(f"decompresses to more than {self._limit // (1024 * 1024)} MB; "
+                                     "set VULNSCOPE_MAX_GZ_BYTES to allow it")
+        self._left -= len(data)
+        b[:len(data)] = data
+        return len(data)
+
+    def close(self):
+        self._gz.close()
+        super().close()
+
+
+def gz_limit(path: str) -> int:
+    env = os.environ.get("VULNSCOPE_MAX_GZ_BYTES")
+    if env and env.isdigit():
+        return int(env)
+    return max(MIN_GZ_ALLOWANCE, os.path.getsize(path) * MAX_GZ_RATIO)
+
+
+def open_gzip_binary(path: str):
+    return io.BufferedReader(_CappedGzip(path, gz_limit(path)), buffer_size=1 << 16)
+
+
 def open_text(path: str, newline: str | None = None):
     """Open a plain or gzip-compressed text file (``.gz`` suffix) for streaming reads."""
     if path.lower().endswith(".gz"):
-        return gzip.open(path, "rt", encoding="utf-8-sig", errors="replace", newline=newline)
+        return io.TextIOWrapper(open_gzip_binary(path), encoding="utf-8-sig", errors="replace", newline=newline)
     return open(path, encoding="utf-8-sig", errors="replace", newline=newline)

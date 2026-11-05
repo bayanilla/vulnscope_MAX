@@ -372,7 +372,9 @@ class EndToEndTests(Base):
         threading.Thread(target=srv.serve_forever, daemon=True).start()
         try:
             boundary = uuid.uuid4().hex
-            body = b""
+            with urllib.request.urlopen(f"http://127.0.0.1:{srv.server_port}/") as resp:
+                token = re.search(r'name="csrf" value="([^"]+)"', resp.read().decode())[1]
+            body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"csrf\"\r\n\r\n{token}\r\n").encode()
             for p in self.samples:
                 field = "folder"
                 with open(p, "rb") as fh:
@@ -404,7 +406,10 @@ class EndToEndTests(Base):
             telemetry = next(p for p in self.samples if p.endswith("zeek_conn.log"))
             with open(telemetry, "rb") as fh:
                 payload = fh.read()
-            body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"telemetry\"; "
+            with urllib.request.urlopen(f"http://127.0.0.1:{srv.server_port}/") as resp:
+                token = re.search(r'name="csrf" value="([^"]+)"', resp.read().decode())[1]
+            body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"csrf\"\r\n\r\n{token}\r\n"
+                    f"--{boundary}\r\nContent-Disposition: form-data; name=\"telemetry\"; "
                     f"filename=\"zeek_conn.log\"\r\nContent-Type: application/octet-stream\r\n\r\n").encode()
             body += payload + f"\r\n--{boundary}--\r\n".encode()
             req = urllib.request.Request(f"http://127.0.0.1:{srv.server_port}/analyze", data=body,

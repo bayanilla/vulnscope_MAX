@@ -73,6 +73,21 @@ python3 -m vulnflow serve --port 8080          # http://127.0.0.1:8080/
 
 Run tests with `python3 -m unittest discover -s tests` (no model or network needed).
 
+### Upload page security
+
+- The upload page can read any folder your account can, so it listens on `127.0.0.1` only and
+  answers only requests addressed to `127.0.0.1`, `localhost` or `[::1]` (this blocks DNS-rebinding
+  attacks from websites open in the same browser). Every form and API call needs the page's CSRF token.
+- To reach it from another machine, pass `--host 0.0.0.0 --allow-remote`. The server then prints a
+  one-time link with a random access token, and every visitor needs that link. Traffic is plain
+  HTTP, so prefer an SSH tunnel (`ssh -L 8080:127.0.0.1:8080 host`) on untrusted networks.
+- A saved API key is reused only for the same provider and endpoint URL; changing the endpoint
+  asks for the key again. Keys are never sent over plain HTTP to another machine.
+- Run folders and reports are created readable by your account only. Runs are kept until you
+  delete them from the `--data-dir` folder.
+- A `.gz` input may expand to at most 200 times its size (minimum 256 MB). Set
+  `VULNSCOPE_MAX_GZ_BYTES` to raise the limit for unusually compressible logs.
+
 For the same demo in the upload page, select `samples/scan_and_telemetry` under **Analyze files with
 Múcaro VulnScope** and click **Analyze folder**. Select `samples/telemetry_only` to inspect the
 network records without a vulnerability scan. The latter includes flow, firewall, NetFlow, Zeek

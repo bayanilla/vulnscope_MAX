@@ -5,7 +5,7 @@ import csv
 import xml.etree.ElementTree as ET
 
 from ..schema import Finding, ParseStats
-from ._util import clean_ip, norm_header, open_text, parse_ts, to_int
+from ._util import clean_ip, norm_header, open_gzip_binary, open_text, parse_ts, to_int
 
 RISK_TO_SEV = {"none": 0, "info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 FRAMEWORKS = {"exploit_framework_metasploit": "Metasploit",
@@ -20,9 +20,21 @@ def _float(v):
         return None
 
 
+def _refuse_dtd(path: str) -> None:
+    """Refuse a DOCTYPE in the prolog: real .nessus files have none, and DTD entities are how
+    XML entity-expansion bombs and external-entity tricks work."""
+    with (open_gzip_binary(path) if path.lower().endswith(".gz") else open(path, "rb")) as fh:
+        head = fh.read(1 << 20)
+    root = head.find(b"<NessusClientData")
+    doctype = head.upper().find(b"<!DOCTYPE")
+    if doctype >= 0 and (root < 0 or doctype < root):
+        raise ValueError("XML DOCTYPE declarations are not allowed in scan files")
+
+
 def parse_xml(path: str, stats: ParseStats):
     findings: list[Finding] = []
-    source = open_text(path) if path.lower().endswith(".gz") else path
+    _refuse_dtd(path)
+    source = open_gzip_binary(path) if path.lower().endswith(".gz") else path
     for _, host in ET.iterparse(source, events=("end",)):
         if host.tag != "ReportHost":
             continue
