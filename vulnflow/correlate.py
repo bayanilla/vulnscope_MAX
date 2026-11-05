@@ -337,6 +337,7 @@ class Correlator:
     # -- whole run --------------------------------------------------------
     def run(self) -> dict:
         ds, cfg = self.ds, self.cfg
+        vulnerability_data_available = bool(ds.findings)
         todo = [fd for fd in ds.findings if fd.severity >= cfg.min_severity]
         scored = [self.score(fd) for fd in todo]
         # second pass: hosts flagged for investigation make the vulnerable services they reach riskier
@@ -368,10 +369,25 @@ class Correlator:
             h["internet_exposed"] |= r["exposure"]["external_sources"] > 0 and r["exposure"]["scope"] == "port"
             h["indicators"] += len(r["indicators"])
         host_list = sorted(hosts.values(), key=lambda h: (h["priority"], -h["max_score"], h["host"]))
+        if not vulnerability_data_available:
+            # Keep observed internal hosts navigable without assigning a vulnerability score.
+            for ip in sorted({ip for f in ds.flows for ip in (f.src_ip, f.dst_ip)
+                              if self.net.internal(ip)} | {ip for t in ds.threats
+                                                         for ip in (t.src_ip, t.dst_ip)
+                                                         if self.net.internal(ip)}):
+                hosts[ip] = {"host": ip, "hostname": "", "os": "", "findings": 0,
+                             "by_severity": {}, "max_score": None, "priority": None,
+                             "internet_exposed": None, "indicators": 0, "blast": self.blast(ip),
+                             "telemetry_seen": True, "inbound_flows": len(self.inbound.get(ip, [])),
+                             "outbound_flows": len(self.outbound.get(ip, []))}
+            host_list = list(hosts.values())
         for h in host_list:
             h["by_severity"] = dict(h["by_severity"])
 
         internal_seen = {ip for f in ds.flows for ip in (f.src_ip, f.dst_ip) if self.net.internal(ip)}
+        if not vulnerability_data_available:
+            internal_seen |= {ip for t in ds.threats for ip in (t.src_ip, t.dst_ip)
+                              if self.net.internal(ip)}
         servers = defaultdict(Counter)
         for f in ds.flows:
             if f.established and f.action == "allow" and self.net.internal(f.dst_ip) and f.dst_port is not None:
@@ -392,16 +408,20 @@ class Correlator:
         corroborated = {h for h, k in kinds.items() if "corroborated" in k}
         spread = {h for h, k in kinds.items() if k == {"lateral_spread"}}
         investigate = {h for h, k in kinds.items() if k} - corroborated - spread
-        times = [f.ts for f in ds.flows if f.ts]
+        times = [f.ts for f in ds.flows if f.ts] + [t.ts for t in ds.threats if t.ts]
         pc = Counter(r["priority"] for r in scored)
         summary = {
+            "vulnerability_data_available": vulnerability_data_available,
             "flows": len(ds.flows), "findings_total": len(ds.findings), "findings_scored": len(scored),
-            "hosts_with_findings": len(host_list),
-            "priority_counts": {p: pc.get(p, 0) for p in ("P1", "P2", "P3", "P4")},
-            "internet_exposed_findings": sum(1 for r in scored if r["exposure"]["external_sources"]
-                                             and r["exposure"]["scope"] == "port"),
-            "exploitable_and_exposed": sum(1 for r in scored if r["exploit_available"]
-                                           and r["exposure"]["established"] and r["exposure"]["scope"] == "port"),
+            "hosts_with_findings": len({r["host"] for r in scored}),
+            "priority_counts": {p: pc.get(p, 0) if vulnerability_data_available else None
+                                for p in ("P1", "P2", "P3", "P4")},
+            "internet_exposed_findings": (sum(1 for r in scored if r["exposure"]["external_sources"]
+                                              and r["exposure"]["scope"] == "port")
+                                          if vulnerability_data_available else None),
+            "exploitable_and_exposed": (sum(1 for r in scored if r["exploit_available"]
+                                            and r["exposure"]["established"] and r["exposure"]["scope"] == "port")
+                                        if vulnerability_data_available else None),
             "hosts_with_indicators": sorted({r["host"] for r in scored if r["indicators"]}),
             "hosts_corroborated": sorted(corroborated),
             "hosts_to_investigate": sorted(investigate),
@@ -415,6 +435,19 @@ class Correlator:
             "duplicate_flows_removed": ds.duplicate_flows,
             "duplicate_findings_merged": ds.duplicate_findings,
         }
+        network_leads = []
+        if not vulnerability_data_available:
+            for host in hosts:
+                inbound = [f for f in self.inbound.get(host, []) if f.action == "allow"
+                           and f.established and self.net.external_src(f)]
+                for peer in sorted({f.src_ip for f in inbound}):
+                    contact = min((f.ts for f in inbound if f.src_ip == peer and f.ts), default=None)
+                    returned = [f for f in self.outbound.get(host, []) if f.dst_ip == peer
+                                and f.action == "allow" and f.established
+                                and (contact is None or f.ts is None or f.ts >= contact)]
+                    if returned:
+                        network_leads.append({"host": host, "peer": peer, "sessions": len(returned),
+                                              "note": "Host connected to an outside address after inbound contact; this may be legitimate traffic."})
         return {
             "generated": _iso(datetime.now(timezone.utc)),
             "config": {"internal_nets": cfg.internal_nets, "hops": cfg.hops,
@@ -422,6 +455,13 @@ class Correlator:
             "inputs": [{"file": s.file, "format": s.fmt, "read": s.read, "kept": s.kept,
                         "dropped": dict(s.dropped), "notes": s.notes} for s in ds.stats],
             "summary": summary, "coverage": coverage, "hosts": host_list, "findings": scored,
+            "telemetry_leads": [
+                {"host": ip, "alerts": len(alerts), "unblocked": sum(not t.blocked for t in alerts),
+                 "blocked": sum(t.blocked for t in alerts),
+                 "signatures": sorted({t.name for t in alerts}),
+                 "note": "IPS/IDS alerts are investigation leads, not verified exploitation."}
+                for ip, alerts in sorted(self.threats_by_dst.items())] if not vulnerability_data_available else [],
+            "network_leads": network_leads,
         }
 
 

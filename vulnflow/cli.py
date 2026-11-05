@@ -134,7 +134,7 @@ def main(argv=None) -> int:
     # serve: provider/key can also be chosen later on the page's AI settings screen
 
     x = sub.add_parser("explore", help="analyze a folder and open the interactive host explorer")
-    x.add_argument("files", nargs="+", metavar="FOLDER", help="folder (or files) with telemetry and Nessus scans")
+    x.add_argument("files", nargs="+", metavar="FOLDER", help="folder (or files) with telemetry; Nessus scans optional")
     x.add_argument("-o", "--out", default=None, help="output folder (default: vulnflow_out/<folder name>)")
     x.add_argument("--host", dest="focus", metavar="IP", help="open focused on this host")
     x.add_argument("--no-open", action="store_true", help="write the explorer without opening a browser")
@@ -217,10 +217,14 @@ def main(argv=None) -> int:
     s, pc = res["summary"], res["summary"]["priority_counts"]
     for i in res["inputs"]:
         print(f"  {i['file']:<32} {i['format']:<11} read {i['read']:>6}  kept {i['kept']:>6}")
-    print(f"\n{s['flows']} sessions, {s['findings_scored']} findings scored on {s['hosts_with_findings']} hosts")
-    print(f"P1 {pc['P1']}  P2 {pc['P2']}  P3 {pc['P3']}  P4 {pc['P4']}")
-    print(f"corroborated exploitation evidence: {', '.join(s['hosts_corroborated']) or 'none'}; "
-          f"leads to investigate: {', '.join(s['hosts_to_investigate'] + s['hosts_possible_spread']) or 'none'}")
+    if s["vulnerability_data_available"]:
+        print(f"\n{s['flows']} sessions, {s['findings_scored']} findings scored on {s['hosts_with_findings']} hosts")
+        print(f"P1 {pc['P1']}  P2 {pc['P2']}  P3 {pc['P3']}  P4 {pc['P4']}")
+        print(f"corroborated exploitation evidence: {', '.join(s['hosts_corroborated']) or 'none'}; "
+              f"leads to investigate: {', '.join(s['hosts_to_investigate'] + s['hosts_possible_spread']) or 'none'}")
+    else:
+        print(f"\n{s['flows']} sessions. No vulnerability data available; vulnerability status unknown.")
+        print(f"{s['threat_alerts']} IPS/IDS alerts; {len(res['network_leads'])} return-connection leads for review.")
     if "ioc_matches" in res:
         print(f"IOC CSV matches for review: {len(res['ioc_matches'])}")
     if args.cmd == "explore":

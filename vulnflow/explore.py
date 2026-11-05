@@ -1,4 +1,4 @@
-"""Data and page for the host explorer: a GrassMarlin-style logical graph of the scanned hosts.
+"""Data and page for the host explorer: a logical graph of scanned or observed hosts.
 
 Click a host and the view flies in on it. On the left is all of its north/south traffic: every outside
 address that reached, tried to reach, or was contacted by it (with firewall and IPS outcome). On the
@@ -20,6 +20,7 @@ from .correlate import LATERAL_PORTS, Config, _Net
 
 STATIC = os.path.join(os.path.dirname(__file__), "static")
 MAX_ATTACKERS, MAX_PEERS, MAX_HOP2, MAX_NODES = 400, 400, 30, 2000
+MAX_CONNECTION_EXAMPLES, MAX_OT_EVENTS_PER_HOST = 6, 40
 SEV = {0: "Info", 1: "Low", 2: "Medium", 3: "High", 4: "Critical"}
 
 
@@ -36,13 +37,14 @@ def _subnet(ip: str) -> str:
 
 
 class _Pair:
-    __slots__ = ("sessions", "established", "blocked", "ports", "tried", "bytes", "first", "last")
+    __slots__ = ("sessions", "established", "blocked", "ports", "tried", "bytes", "first", "last", "examples")
 
     def __init__(self):
         self.sessions = self.established = self.blocked = self.bytes = 0
         self.ports: set = set()       # ports with completed sessions
         self.tried: set = set()       # every port seen, including blocked attempts
         self.first = self.last = None
+        self.examples: list[dict] = []
 
     def add(self, f):
         self.sessions += 1
@@ -54,6 +56,12 @@ class _Pair:
             if ok:
                 self.ports.add(f.dst_port)
         self.bytes += (f.bytes_out or 0) + (f.bytes_in or 0)
+        example = {"src_ip": f.src_ip, "src_port": f.src_port,
+                   "dst_ip": f.dst_ip, "dst_port": f.dst_port,
+                   "proto": f.proto, "app": f.app, "action": f.action,
+                   "established": f.established, "source": f.source}
+        if len(self.examples) < MAX_CONNECTION_EXAMPLES and example not in self.examples:
+            self.examples.append(example)
         if f.ts:
             self.first = f.ts if self.first is None or f.ts < self.first else self.first
             self.last = f.ts if self.last is None or f.ts > self.last else self.last
@@ -66,6 +74,7 @@ def _iso(ts):
 def build(res: dict, ds, cfg: Config | None = None) -> dict:
     cfg = cfg or Config(internal_nets=res["config"]["internal_nets"])
     net = _Net(cfg.internal_nets)
+    telemetry_only = not res["summary"].get("vulnerability_data_available", True)
     pairs: dict[tuple, _Pair] = defaultdict(_Pair)
     for f in ds.flows:
         if f.src_ip != f.dst_ip:
@@ -82,6 +91,17 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     alerts = defaultdict(lambda: defaultdict(list))
     for t in ds.threats:
         alerts[t.dst_ip][t.src_ip].append(t)
+    ot_by_host = defaultdict(list)
+    ot_counts = defaultdict(int)
+    for event in ds.ot_events:
+        row = {"ts": _iso(event.ts), "src_ip": event.src_ip, "dst_ip": event.dst_ip,
+               "originator": event.fields.get("id.orig_h"), "responder": event.fields.get("id.resp_h"),
+               "protocol": event.protocol, "operation": event.operation,
+               "message_side": event.direction, "source": event.source}
+        for host in {event.src_ip, event.dst_ip, row["originator"], row["responder"]} - {None, ""}:
+            ot_counts[host] += 1
+            if len(ot_by_host[host]) < MAX_OT_EVENTS_PER_HOST:
+                ot_by_host[host].append(row)
 
     def ext(ip):
         try:
@@ -92,6 +112,8 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     def reach(a: str, b: str) -> dict:
         """How easily someone in control of `a` could compromise `b`, from what was observed."""
         fwd, back = pairs.get((a, b)), pairs.get((b, a))
+        if telemetry_only:
+            return {"p": 0.0, "why": ["Vulnerability status unknown; observed connections do not establish compromise likelihood."]}
         why = []
         if fwd and fwd.established:
             r = 1.0
@@ -140,7 +162,8 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         worst = max((r["severity"] for r in fl), default=-1)
         ev = ("likely" if any(i["confidence"] == "corroborated" for r in fl for i in r["indicators"])
               else "lead" if any(r["indicators"] for r in fl) else "")
-        nodes[ip] = {"id": ip, "name": (h or {}).get("hostname", "") or "", "scanned": h is not None,
+        nodes[ip] = {"id": ip, "name": (h or {}).get("hostname", "") or "", "scanned": ip in ds.scanned_hosts,
+                     "observed": h is not None,
                      "subnet": _subnet(ip), "sev": SEV.get(worst, ""), "pri": (h or {}).get("priority", ""),
                      "score": (h or {}).get("max_score", 0), "ev": ev, "os": (h or {}).get("os", "") or ""}
         return nodes[ip]
@@ -173,7 +196,11 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                         "out_sessions": back.sessions if back else 0,
                         "out_established": back.established if back else 0,
                         "out_ports": sorted(back.tried)[:8] if back else [],
+                        "connection_examples": (p.examples if p else []) + (back.examples if back else []),
                         "alerts": len(open_al), "alerts_blocked": len(al) - len(open_al),
+                        "alert_examples": [{"src_ip": t.src_ip, "dst_ip": t.dst_ip,
+                                            "dst_port": t.dst_port, "name": t.name,
+                                            "blocked": t.blocked} for t in al[:MAX_CONNECTION_EXAMPLES]],
                         "signatures": sorted({t.name for t in al})[:3],
                         "returned": bool(back and back.established),
                         "first": _iso(first), "last": _iso(last)})
@@ -183,7 +210,11 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                 atk.append({"ip": src, "kind": "alert" if open_al else "blocked", "dir": "in", "sessions": 0,
                             "established": 0, "blocked": 0, "ports": sorted({t.dst_port for t in al if t.dst_port})[:8],
                             "vuln_ports": [], "out_sessions": 0, "out_established": 0, "out_ports": [],
+                            "connection_examples": [],
                             "alerts": len(open_al), "alerts_blocked": len(al) - len(open_al),
+                            "alert_examples": [{"src_ip": t.src_ip, "dst_ip": t.dst_ip,
+                                                "dst_port": t.dst_port, "name": t.name,
+                                                "blocked": t.blocked} for t in al[:MAX_CONNECTION_EXAMPLES]],
                             "signatures": sorted({t.name for t in al})[:3], "returned": False,
                             "first": None, "last": None})
         rank = {"alert": 0, "vuln": 1, "reached": 2, "outbound": 3, "attempt": 4, "blocked": 5}
@@ -209,7 +240,8 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                           "out_tries": o.sessions if o else 0, "in_tries": i.sessions if i else 0,
                           "ports_out": sorted(o.ports if ok else o.tried)[:8] if o else [],
                           "ports_in": sorted(i.ports if ok else i.tried)[:8] if i else [],
-                          "p": est["p"], "band": _band(est["p"]) if ok else "None", "why": est["why"]})
+                          "connection_examples": (o.examples if o else []) + (i.examples if i else []),
+                          "p": est["p"], "band": ("Unknown" if telemetry_only else _band(est["p"])) if ok else "None", "why": est["why"]})
         peers.sort(key=lambda p: (-p["p"], p["band"] == "None", -(p["out"] + p["in"]),
                                   -(p["out_tries"] + p["in_tries"]), p["ip"]))
         n_peers = len(peers)
@@ -232,6 +264,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
             node(p["ip"])
         focus[ip] = {
             "attackers": atk, "attackers_total": n_ext, "peers": peers, "peers_total": n_peers, "hop2": h2,
+            "ot_events": ot_by_host.get(ip, []), "ot_events_total": ot_counts[ip],
             "findings": [{"pri": r["priority"], "score": r["score"], "name": r["plugin_name"],
                           "port": r["port"], "proto": r["proto"], "sev": r["severity_name"], "cvss": r["cvss"],
                           "cves": r["cves"][:4], "exploit": r["exploit_available"],
@@ -244,7 +277,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         }
 
     # overview edges: internal pairs touching at least one node we keep
-    keep = sorted(nodes, key=lambda n: (not nodes[n]["scanned"], n))[:MAX_NODES]
+    keep = sorted(nodes, key=lambda n: (not nodes[n]["observed"], n))[:MAX_NODES]
     kept = set(keep)
     links = {}
     for (s, d), p in pairs.items():
@@ -263,6 +296,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                 ioc_by_host[host].add(match["id"])
     s = res["summary"]
     return {
+        "vulnerability_data_available": not telemetry_only,
         "generated": res["generated"], "window": [s.get("window_start"), s.get("window_end")],
         "counts": {"hosts": len(scanned), "flows": s["flows"], "p1": s["priority_counts"]["P1"],
                    "alerts": s.get("threat_alerts", 0)},

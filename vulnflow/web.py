@@ -59,9 +59,9 @@ button.secondary{{background:transparent;color:var(--fg);border:1px solid var(--
 #pk-list li{{padding:5px 8px;cursor:pointer;border-bottom:1px solid var(--line)}} #pk-list li:hover,#pk-list li:focus{{background:rgba(127,127,127,.15)}}
 #pk-list li::before{{content:"📁  "}}</style></head><body>{theme_ui}
 <h1>Analyze files with {product_name}</h1>
-<p>Point the workflow at a folder of network telemetry and Nessus results, or upload files. It cleans and
-normalizes the data, correlates scanned hosts with observed traffic, and produces an executive summary and a
-technical report.</p>
+<p>Point the workflow at network telemetry, with optional Nessus results, or upload files. It cleans and
+normalizes the data and produces an executive summary and a technical report. Without scan data,
+vulnerability status remains unknown.</p>
 {error}
 <form method="post" action="/analyze-folder">
 <input type="hidden" name="csrf" value="{csrf}">
@@ -81,13 +81,13 @@ technical report.</p>
 <form method="post" action="/analyze" enctype="multipart/form-data">
 <label for="folder">Folder of telemetry and scans</label>
 <input id="folder" type="file" name="folder" webkitdirectory directory multiple>
-<div class="hint">Choose one folder to include its files and subfolders in a single analysis. Add a Nessus scan here or below.</div>
+<div class="hint">Choose one folder to include its files and subfolders in a single analysis. A Nessus scan is optional.</div>
 <label for="telemetry">Network telemetry</label>
 <input id="telemetry" type="file" name="telemetry" multiple>
 <div class="hint">Optional additional files: Zeek connection, DNS, SMTP and industrial protocol logs; Palo Alto traffic and threat logs; NetFlow / VPC flow / SIEM CSV.</div>
 <label for="scans">Vulnerability scans</label>
 <input id="scans" type="file" name="scans" multiple>
-<div class="hint">Nessus .nessus (preferred) or Nessus CSV export.</div>
+<div class="hint">Optional: Nessus .nessus (preferred) or Nessus CSV export. Without one, no vulnerability score or priority is assigned.</div>
 <label for="ioc_archive">IOC CSV (optional)</label>
 <input id="ioc_archive" type="file" name="ioc_archive" accept=".csv,text/csv">
 <div class="hint">Use a CSV with type and indicator columns. Source links are optional.</div>
@@ -427,12 +427,16 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
         def _run_index(self, run_id, run_dir):
             if not os.path.isdir(run_dir):
                 return self._send(404, "Not found", "text/plain")
+            try:
+                telemetry_only = not load_results(run_dir)["summary"].get("vulnerability_data_available", True)
+            except (OSError, ValueError, LLMError):
+                telemetry_only = False
             links = [("Executive summary", "executive_summary.html"),
                      ("Technical report", "technical_report.html"),
-                     ("Correlated findings (CSV)", "correlated_findings.csv"),
+                     (("Vulnerability findings (CSV; unavailable)" if telemetry_only else "Correlated findings (CSV)"), "correlated_findings.csv"),
                      ("Full results (JSON)", "results.json"),
                      ("Normalized flows (CSV)", "normalized/flows.csv"),
-                     ("Normalized findings (CSV)", "normalized/findings.csv"),
+                     (("Normalized findings (CSV; unavailable)" if telemetry_only else "Normalized findings (CSV)"), "normalized/findings.csv"),
                      ("Zeek stream events (JSONL)", "normalized/zeek_events.jsonl"),
                      ("Industrial protocol events (JSONL)", "normalized/ot_events.jsonl"),
                      ("Executive summary (Markdown)", "executive_summary.md"),
@@ -444,8 +448,9 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             items = "".join(f'<li><a href="/runs/{run_id}/{p}" target="_blank" rel="noopener">{t}</a></li>' for t, p in links)
             if os.path.exists(os.path.join(run_dir, "explorer.html")):
                 items = (f'<p class="explore"><a href="/runs/{run_id}/explorer.html" target="_blank" rel="noopener"><b>Open the host explorer</b></a>'
-                         " Click a host to see who is targeting it and how far a compromise could reach.</p>"
-                         f"<ul>{items}</ul>")
+                         + (" Click a host to inspect observed endpoints, ports, protocols, and direction.</p>"
+                            if telemetry_only else " Click a host to see who is targeting it and how far a compromise could reach.</p>")
+                         + f"<ul>{items}</ul>")
             else:
                 items = f"<ul>{items}</ul>"
             here = f"/runs/{run_id}/"
@@ -463,7 +468,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 trigger = ('<div class="results-assistant-intro">'
                            '<button id="btn-ai" class="results-assistant-trigger" type="button" '
                            'aria-controls="analyst-chat" aria-expanded="false">Security Assistant</button>'
-                           '<span class="hint">Ask about this run’s findings, evidence, and next steps.</span>'
+                           f'<span class="hint">Ask about this run’s {"network observations" if telemetry_only else "findings"}, evidence, and next steps.</span>'
                            '</div>')
             article_ui = ""
             try:
@@ -492,7 +497,9 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 pass
             chat_style = f"<style>{_chat_asset('analyst_chat.css')}{RESULTS_CHAT_CSS}</style>" if ai else ""
             chat_script = f"<script>{_chat_asset('analyst_chat.js')}</script>" if ai else ""
-            body = (f"{chat_style}<h1>Results</h1>{trigger}{items}{article_ui}{ai}"
+            status = ('<p role="status"><strong>No vulnerability data available; vulnerability status unknown.</strong> '
+                      'Network observations and IOC matches are leads for review.</p>' if telemetry_only else '')
+            body = (f"{chat_style}<h1>Results</h1>{status}{trigger}{items}{article_ui}{ai}"
                     f"<p><a href=\"/\">New analysis</a></p>{chat_script}{ARTICLE_PROGRESS_SCRIPT}")
             self._send(200, _page("Results", body))
 

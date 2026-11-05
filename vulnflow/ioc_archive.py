@@ -106,10 +106,10 @@ def read_archives(paths: list[str]) -> tuple[dict, list[ParseStats]]:
     return archive, stats
 
 
-def match_archive(ds, archive: dict) -> list[dict]:
+def match_archive(ds, archive: dict, observed_hosts: set[str] | None = None) -> list[dict]:
     """Exact matches in normalized traffic, findings, and named Zeek fields."""
     seen: dict[tuple[str, str], dict] = {}
-    scanned = set(ds.scanned_hosts)
+    scanned = set(ds.scanned_hosts) or (observed_hosts or set())
 
     def record(key, hosts, label):
         if key not in archive:

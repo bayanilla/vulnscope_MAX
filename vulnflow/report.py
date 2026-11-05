@@ -40,8 +40,63 @@ def _svc(r) -> str:
     return "host-level" if r["port"] == 0 else f"{r['port']}/{r['proto']}" + (f" ({r['service']})" if r["service"] else "")
 
 
+def _telemetry_report(res: dict, technical: bool) -> str:
+    """Describe observations without turning missing scan data into zero risk."""
+    s = res["summary"]
+    title = "Technical Analysis" if technical else "Executive Summary"
+    lines = [f"# {PRODUCT_NAME}: {title}", "", "## Vulnerability status: unknown", "",
+             "No vulnerability data is available for this run. No CVSS scores, vulnerability priorities, "
+             "or conclusions about safety can be drawn from the supplied network telemetry.", "",
+             f"{s['flows']:,} network sessions and {s['threat_alerts']} IPS/IDS alerts were parsed. "
+             f"Observed window: {s['window_start'] or 'unknown'} to {s['window_end'] or 'unknown'}.", "",
+             "## Network observations", "",
+             f"{s['hosts_with_findings']} hosts have scored vulnerability findings. "
+             f"{res['coverage']['telemetry_internal_hosts']} internal addresses were observed. "
+             "Observed connections show activity and reachability, not whether a service is vulnerable.", ""]
+    if technical:
+        lines += ["## Inputs and data quality", "",
+                  "| File | Format | Records read | Kept | Notes |", "|---|---|---|---|---|"]
+        for item in res["inputs"]:
+            lines.append(f"| {_c(item['file'])} | {_c(item['format'])} | {item['read']} | "
+                         f"{item['kept']} | {_c('; '.join(item['notes']))} |")
+        lines += ["", "## Observed hosts", "", "| Host | Inbound sessions | Outbound sessions |",
+                  "|---|---:|---:|"]
+        for host in res["hosts"]:
+            lines.append(f"| {_c(host['host'])} | {host['inbound_flows']} | {host['outbound_flows']} |")
+        lines += [""]
+    lines += ["## IPS/IDS leads", "",
+              "Alerts describe sensor detections. A blocked alert is a stopped attempt; an unblocked alert "
+              "does not prove exploitation.", ""]
+    if res["telemetry_leads"]:
+        for lead in res["telemetry_leads"]:
+            lines.append(f"- **{_c(lead['host'])}**: {lead['unblocked']} unblocked, "
+                         f"{lead['blocked']} blocked alert(s); signatures: "
+                         f"{_c(', '.join(lead['signatures'][:5]))}.")
+    else:
+        lines.append("No IPS/IDS alerts were supplied or parsed.")
+    lines += ["", "## Connection leads", "",
+              "A return connection after outside contact can be routine. Review context before treating it as suspicious.", ""]
+    if res.get("network_leads"):
+        for lead in res["network_leads"][:50]:
+            lines.append(f"- **{_c(lead['host'])}** connected to {_c(lead['peer'])} "
+                         f"in {lead['sessions']} session(s) after inbound contact.")
+    else:
+        lines.append("No return connections of this kind were observed.")
+    lines += ["", "## Next steps", "",
+              "1. Review alerts and exact IOC matches against surrounding telemetry and host logs.",
+              "2. Obtain vulnerability scan data before assigning CVSS scores or remediation priorities.",
+              "3. Confirm suspicious behavior with host evidence; network observations alone cannot prove compromise.", ""]
+    report = "\n".join(lines) + "\n"
+    if "ioc_matches" in res:
+        from .ioc_archive import markdown_section
+        report += "\n" + markdown_section(res["ioc_matches"])
+    return report
+
+
 # ---------------------------------------------------------------- executive
 def executive_summary(res: dict) -> str:
+    if not res["summary"].get("vulnerability_data_available", True):
+        return _telemetry_report(res, False)
     s, cov, F, H = res["summary"], res["coverage"], res["findings"], res["hosts"]
     pc = s["priority_counts"]
     p1_hosts = sorted({r["host"] for r in F if r["priority"] == "P1"})
@@ -175,6 +230,8 @@ def executive_summary(res: dict) -> str:
 
 # ---------------------------------------------------------------- technical
 def technical_report(res: dict) -> str:
+    if not res["summary"].get("vulnerability_data_available", True):
+        return _telemetry_report(res, True)
     s, cov, F, H, cfg = res["summary"], res["coverage"], res["findings"], res["hosts"], res["config"]
     L = [f"# {PRODUCT_NAME}: Technical Analysis", "",
          f"Generated {res['generated']}. Telemetry window {s['window_start'] or 'n/a'} to {s['window_end'] or 'n/a'}.",
@@ -479,12 +536,14 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
     w("executive_summary.md", ex)
     from . import visual
     from .diagram import hostile_activity_svg
-    w("executive_summary.html", md_to_html(ex, "Executive Summary", visual.executive_inserts(res),
+    telemetry_only = not res["summary"].get("vulnerability_data_available", True)
+    w("executive_summary.html", md_to_html(ex, "Executive Summary", None if telemetry_only else visual.executive_inserts(res),
                                            res.get("ioc_matches"), res.get("article_briefs")))
     w("technical_report.md", tech)
-    w("technical_report.html", md_to_html(tech, "Technical Analysis", visual.technical_inserts(res),
+    w("technical_report.html", md_to_html(tech, "Technical Analysis", None if telemetry_only else visual.technical_inserts(res),
                                          res.get("ioc_matches"), res.get("article_briefs")))
-    w("hostile_activity.svg", hostile_activity_svg(res, standalone=True))
+    if not telemetry_only:
+        w("hostile_activity.svg", hostile_activity_svg(res, standalone=True))
     from . import explore
     w("explorer.html", explore.html(explore.build(res, ds)))
     w("results.json", json.dumps(res, indent=2, default=str))
@@ -546,8 +605,8 @@ def save_article_briefs(res: dict, outdir: str) -> None:
 
     pages = {}
     for name, title, inserts in (
-        ("executive_summary", "Executive Summary", visual.executive_inserts(res)),
-        ("technical_report", "Technical Analysis", visual.technical_inserts(res)),
+        ("executive_summary", "Executive Summary", None if not res["summary"].get("vulnerability_data_available", True) else visual.executive_inserts(res)),
+        ("technical_report", "Technical Analysis", None if not res["summary"].get("vulnerability_data_available", True) else visual.technical_inserts(res)),
     ):
         with open(os.path.join(outdir, name + ".md"), encoding="utf-8") as fh:
             markdown = fh.read()

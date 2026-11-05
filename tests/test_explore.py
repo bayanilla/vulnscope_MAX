@@ -3,10 +3,12 @@ import os
 import re
 import tempfile
 import unittest
+from datetime import datetime, timezone
 
 from vulnflow import explore
 from vulnflow.correlate import Config, correlate
-from vulnflow.normalize import load
+from vulnflow.normalize import Dataset, load
+from vulnflow.schema import Flow, OTEvent
 from vulnflow.report import write_all
 from vulnflow.samples import generate
 
@@ -79,6 +81,45 @@ class ExploreTests(unittest.TestCase):
         out = os.path.join(self.tmp, "out")
         write_all(self.res, self.ds, out)
         self.assertTrue(os.path.exists(os.path.join(out, "explorer.html")))
+
+    def test_connection_details_keep_recorded_direction_and_ot_operations(self):
+        ts = datetime(2026, 11, 4, 10, 0, tzinfo=timezone.utc)
+        ds = Dataset(flows=[
+            Flow(ts, "10.70.10.10", "10.70.20.11", 502, "tcp", src_port=53001,
+                 app="Modbus TCP", source="ot_flows.csv"),
+            Flow(ts, "10.70.20.11", "10.70.10.10", 53001, "tcp", src_port=502,
+                 app="Modbus TCP", source="ot_flows.csv"),
+            Flow(ts, "10.70.10.10", "10.70.20.11", None, "udp",
+                 source="partial-flow.csv"),
+        ], ot_events=[OTEvent(ts, "modbus", "M1", "10.70.10.10", "10.70.20.11",
+                             {"id.orig_h": "10.70.10.10", "id.resp_h": "10.70.20.11"},
+                             source="modbus.log", protocol="Modbus",
+                             operation="READ_HOLDING_REGISTERS", direction="originator"),
+                      OTEvent(ts, "dnp3", "D1", None, None,
+                              {"id.orig_h": "10.70.10.10", "id.resp_h": "10.70.20.11"},
+                              source="dnp3.log", protocol="DNP3", operation="READ",
+                              direction="unknown")])
+        data = explore.build(correlate(ds), ds)
+        self.assertFalse(data["vulnerability_data_available"])
+        peer = next(p for p in data["focus"]["10.70.10.10"]["peers"] if p["ip"] == "10.70.20.11")
+        self.assertEqual([(e["src_ip"], e["src_port"], e["dst_ip"], e["dst_port"], e["proto"], e["app"])
+                          for e in peer["connection_examples"]], [
+            ("10.70.10.10", 53001, "10.70.20.11", 502, "tcp", "Modbus TCP"),
+            ("10.70.10.10", None, "10.70.20.11", None, "udp", ""),
+            ("10.70.20.11", 502, "10.70.10.10", 53001, "tcp", "Modbus TCP")])
+        event = data["focus"]["10.70.10.10"]["ot_events"][0]
+        self.assertEqual((event["protocol"], event["operation"], event["message_side"]),
+                         ("Modbus", "READ_HOLDING_REGISTERS", "originator"))
+        self.assertEqual(data["focus"]["10.70.10.10"]["ot_events_total"], 2)
+        self.assertEqual(data["focus"]["10.70.10.10"]["ot_events"][1]["message_side"], "unknown")
+        self.assertEqual(data["focus"]["10.70.10.10"]["findings"], [])
+
+    def test_scan_mode_also_exposes_recorded_connection_details(self):
+        attacker = next(a for a in self.data["focus"]["10.10.1.10"]["attackers"]
+                        if a["ip"] == "203.0.113.45")
+        self.assertTrue(attacker["connection_examples"])
+        self.assertTrue(all(e["src_ip"] in ("203.0.113.45", "10.10.1.10")
+                            and e["proto"] in ("tcp", "udp") for e in attacker["connection_examples"]))
 
 
 if __name__ == "__main__":
