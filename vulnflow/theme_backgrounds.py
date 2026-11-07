@@ -25,10 +25,11 @@ def explorer_background_css() -> str:
     world = texture_data("world")
     return f"""
 #vignette::before{{content:"";position:absolute;inset:0;pointer-events:none;background-position:center;background-size:cover;opacity:.08;filter:blur(2px)}}
-[data-theme="dark"] #vignette::before{{background-image:url('{signal}')}}
-[data-theme="olive-drab"] #vignette::before{{background-image:url('{world}');opacity:.09}}
-[data-theme="matrix"] #vignette::before{{background-image:url('{matrix}')}}
+[data-theme="dark"] #vignette::before,[data-theme="dark"] #attack-paths::before{{background-image:url('{signal}')}}
+[data-theme="olive-drab"] #vignette::before,[data-theme="olive-drab"] #attack-paths::before{{background-image:url('{world}');opacity:.09}}
+[data-theme="matrix"] #vignette::before,[data-theme="matrix"] #attack-paths::before{{background-image:url('{matrix}')}}
+[data-theme="light"] #attack-paths::before{{background-image:radial-gradient(at 8% 0%,#2f4b7c1a,transparent 48%),radial-gradient(at 95% 65%,#2f4b7c10,transparent 50%);opacity:.9}}
 [data-theme="light"] #vignette::before{{background-image:radial-gradient(at 8% 0%,#2f4b7c1a,transparent 48%),radial-gradient(at 95% 65%,#2f4b7c10,transparent 50%);opacity:.55}}
 [data-theme="high-contrast"] #vignette{{background-image:none}}
-[data-theme="high-contrast"] #vignette::before{{display:none}}
+[data-theme="high-contrast"] #vignette::before,[data-theme="high-contrast"] #attack-paths::before{{display:none}}
 """
