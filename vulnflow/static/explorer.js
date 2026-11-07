@@ -34,20 +34,23 @@ document.documentElement.style.setProperty('--bg', BG_OUT);
 const SEV = {Critical: '#ff3b5c', High: '#ff8a3d', Medium: '#ffd23f', Low: '#4dabf7', Info: '#8da2b5', '': '#8da2b5'};
 const RETURN = '#b98cff';
 const KIND = {alert: '#ff3b5c', vuln: '#ff8a3d', reached: '#ffc857', outbound: RETURN, attempt: '#8892a6', blocked: '#5b6b82'};
+const KIND_RANK = {alert: 0, vuln: 1, reached: 2, outbound: 3, attempt: 4, blocked: 5};
 const KIND_TXT = {alert: 'IPS alert, not blocked', vuln: 'Reached a vulnerable service', reached: 'Reached the host',
   outbound: 'Host connected out to it', attempt: 'Tried, no completed session', blocked: 'Blocked by firewall or IPS'};
 const BAND = {High: '#ff2e88', Medium: '#ffb020', Low: '#2ee6d6', None: '#5b6b82', Unknown: '#8da2b5'};
 
 let W = 0, H = 0, DPR = 1;
-const cam = {x: 0, y: 0, z: 0.25, tx: 0, ty: 0, tz: 1};
+const cam = {x: 0, y: 0, z: 0.25, tx: 0, ty: 0, tz: 1, sx: 0, sy: 0, tsx: 0, tsy: 0};
 const still = /[?&#]still\b/.test(location.search + location.hash);
 const state = {mode: 'overview', focus: null, hover: null, labels: true, motion: !reduced && !still, history: []};
 const nodes = new Map();          // id -> render node
 let edges = [];                   // focus-mode edges
 let t0 = performance.now();
-// 3D camera choreography: eased yaw / pitch around the 2D camera target, user orbit, a swing on
-// every transition and a slow idle drift
-const view = {yaw: -0.9, pitch: 1.15, dist: 3, uyaw: 0, upitch: 0, swing: 0, drift: 0, idle: 0, cmix: 1};
+// 3D camera. Overview: the user's own orbit (oyaw around the plane, opitch from straight above);
+// host focus: small offsets (fyaw, fpitch) from a front-on view, reset on each new host.
+// The camera only moves when the user moves it or picks something; it never drifts on its own.
+const VIEWS = {top: 0, tilted: 0.82, low: 1.25};
+const view = {yaw: 0, pitch: VIEWS.tilted, dist: 1.6, oyaw: 0, opitch: VIEWS.tilted, fyaw: 0, fpitch: 0, idle: 0, cmix: 1};
 const hash01 = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return ((h >>> 0) % 10007) / 10007; };
 
 // ---------------------------------------------------------------- layout: overview
@@ -57,23 +60,38 @@ function overviewLayout() {
   const subnets = [...groups.keys()].sort();
   const golden = Math.PI * (3 - Math.sqrt(5));
   const clusters = [];
-  subnets.forEach((s, i) => {
+  // pack subnets by their real size: largest first, each at the first spot on an outward spiral that
+  // clears every placed subnet by GAP, so small subnets no longer pile up in the middle
+  // big subnets pack their hosts a little tighter so one large subnet cannot crowd out the rest
+  const SP = 48, GAP = 110, spacing = n => SP / Math.pow(Math.max(1, n / 30), 0.25);
+  const sized = subnets.map(s => {
     const members = groups.get(s).sort((a, b) => (b.observed - a.observed) || (b.score - a.score) || a.id.localeCompare(b.id));
-    const cr = 40 + 40 * Math.sqrt(members.length);
-    const r = i === 0 ? 0 : 230 * Math.sqrt(i) + cr;
-    const cx = r * Math.cos(i * golden), cy = r * Math.sin(i * golden);
-    // depth: subnets sit on staggered layers; within one, riskier hosts float towards the camera
-    const cz = i === 0 ? 0 : ((i * 0.6180339) % 1 - 0.5) * 420;
-    clusters.push({subnet: s, x: cx, y: cy, z: cz, r: cr + 18});
+    return {s, members, cr: 40 + spacing(members.length) * Math.sqrt(members.length)};
+  }).sort((a, b) => b.members.length - a.members.length || a.s.localeCompare(b.s));
+  const placed = [];
+  sized.forEach(({s, members, cr}, i) => {
+    let cx = 0, cy = 0;
+    if (i) for (let t = 0; t < 20000; t++) {
+      const a = t * 0.12, r = 6 * a;
+      const x = r * Math.cos(a), y = r * Math.sin(a) * 0.8;
+      if (placed.every(p => Math.hypot(p.x - x, p.y - y) >= p.r + cr + GAP)) { cx = x; cy = y; break; }
+    }
+    placed.push({x: cx, y: cy, r: cr});
+    clusters.push({subnet: s, x: cx, y: cy, z: 0, r: cr + 18});
     members.forEach((n, k) => {
-      const rr = k === 0 && members.length === 1 ? 0 : 40 * Math.sqrt(k + 0.5);
+      const rr = k === 0 && members.length === 1 ? 0 : spacing(members.length) * Math.sqrt(k + 0.5);
       const a = k * golden;
       const rn = node(n);
       rn.ox = cx + rr * Math.cos(a); rn.oy = cy + rr * Math.sin(a);
-      rn.oz = cz + (n.observed ? Math.min(100, n.score || 0) * 1.1 : -40) + (hash01(n.id) - 0.5) * 30;
+      rn.oz = pillarH(n);
     });
   });
   return clusters;
+}
+// pillar height in the 3D overview: risk score with a scan, outside exposure without one
+function pillarH(d) {
+  if (!d.observed) return 4;
+  return telemetryOnly ? 14 + 26 * Math.log2(1 + (d.ext || 0)) : 12 + Math.min(100, d.score || 0) * 2.6;
 }
 function node(d) {
   if (nodes.has(d.id)) return nodes.get(d.id);
@@ -86,7 +104,73 @@ function node(d) {
 const clusters = overviewLayout();
 const links = D.links.map(([a, b, w]) => ({a: nodes.get(a), b: nodes.get(b), w})).filter(l => l.a && l.b);
 nodes.forEach(n => { n.x = n.ox * 1.8; n.y = n.oy * 1.8; n.tx = n.ox; n.ty = n.oy;
-  n.z = n.oz - 1200 - hash01(n.id + '~') * 900; n.tz = n.oz; });
+  n.z = -40 - hash01(n.id + '~') * 260; n.tz = n.oz; });
+// 3D overview summaries (explore.py _overview_summary): complete per-subnet totals, bundled traffic
+// between subnets, the risky host-to-host paths, and the most significant outside addresses
+const fewP1 = D.nodes.filter(n => n.pri === 'P1').length <= 40;   // 3D overview labels every P1 only when there are few
+const subnetInfo = new Map((D.subnets || []).map(x => [x.id, x]));
+const clusterOf = new Map(clusters.map(c => [c.subnet, c]));
+// with many subnets, label only the ones that matter most (the rest on hover)
+[...clusters].sort((a, b) => {
+  const A = subnetInfo.get(a.subnet) || {}, B = subnetInfo.get(b.subnet) || {};
+  return (B.likely || 0) - (A.likely || 0) || (B.p1 || 0) - (A.p1 || 0) || (B.hosts || 0) - (A.hosts || 0);
+}).forEach((c, i) => { c.labelled = i < 14; });
+const subLinks = (D.subnet_links || []).map(([a, b, w, lw]) => ({a: clusterOf.get(a), b: clusterOf.get(b), w, lw})).filter(l => l.a && l.b);
+const riskyLinks = (D.risky_links || []).map(([a, b, w, why, lvl]) => ({a: nodes.get(a), b: nodes.get(b), w, why, lvl})).filter(l => l.a && l.b);
+const ring = (() => {
+  let minX = 0, maxX = 0, minY = 0, maxY = 0;
+  clusters.forEach(c => { minX = Math.min(minX, c.x - c.r); maxX = Math.max(maxX, c.x + c.r); minY = Math.min(minY, c.y - c.r); maxY = Math.max(maxY, c.y + c.r); });
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, R = Math.max(260, Math.hypot(maxX - minX, maxY - minY) / 2 * 1.05);
+  return {cx, cy, R, z: 200 + R * 0.4};
+})();
+const inetNodes = [];
+// the internet arc always sits overhead on the far side of the network from the camera, so it never
+// blocks the view; when the view is rotated the arc glides round to stay behind
+const ARC = Math.PI - 0.6;
+const arcCenter = yaw => 1.5 * Math.PI - yaw;
+function placeInet(yaw) {
+  const rx = Math.cos(yaw), ry = -Math.sin(yaw);   // screen-right direction on the plane
+  const order = inetNodes.map(n => {
+    let sx = 0, k = 0;
+    n.info.targets.forEach(t => { const h = nodes.get(t[0]); if (h) { sx += (h.ox - ring.cx) * rx + (h.oy - ring.cy) * ry; k++; } });
+    return {n, x: k ? sx / k : (n.hash - 0.5) * ring.R};
+  }).sort((a, b) => a.x - b.x || (a.n.id < b.n.id ? -1 : 1));
+  order.forEach(({n}, i) => {
+    const f = order.length > 1 ? i / (order.length - 1) : 0.5;
+    const ang = arcCenter(yaw) - (f - 0.5) * ARC;
+    n.ox = ring.cx + ring.R * 1.08 * Math.cos(ang); n.oy = ring.cy + ring.R * 1.08 * Math.sin(ang);
+    if (n.ta > 0) { n.tx = n.ox; n.ty = n.oy; }
+  });
+}
+(D.internet || []).slice(0, 48).forEach((e, i) => {
+  const id = 'inet:' + e.ip;
+  const n = {d: {id: e.ip, name: '', scanned: false, sev: ''}, id, x: ring.cx, y: ring.cy, z: ring.z + 400, tx: 0, ty: 0, tz: 0,
+    ox: ring.cx, oy: ring.cy, oz: ring.z + (i % 3) * 26, hash: hash01(e.ip),
+    a: 0, ta: 0, r: 5 + Math.min(6, Math.log2(1 + e.hosts_total) * 2), tr: 0, color: KIND[e.kind], ext: true, inet: true,
+    born: 0, info: e, labelled: false};
+  n.tr = n.r; n.tz = n.oz;
+  nodes.set(id, n); inetNodes.push(n);
+});
+placeInet(0);
+inetNodes.forEach(n => { n.tx = n.ox; n.ty = n.oy; });
+[...inetNodes].sort((a, b) => KIND_RANK[a.info.kind] - KIND_RANK[b.info.kind] || b.info.hosts_total - a.info.hosts_total)
+  .slice(0, 6).forEach(n => { n.labelled = true; });
+function showInet(on) { inetNodes.forEach(n => { n.ta = on ? 1 : 0; n.tx = n.ox; n.ty = n.oy; n.tz = n.oz; }); }
+function clusterAt(sx, sy) {
+  if (!R3 || state.mode !== 'overview') return null;
+  let best = null, bd = 1e9;
+  clusters.forEach(c => {
+    const [x, y, sc] = Pw(c.x, c.y, 0), d = Math.hypot(x - sx, (y - sy) / Math.max(0.35, Math.cos(view.pitch)));
+    if (d < c.r * sc && d < bd) { bd = d; best = c; }
+  });
+  return best;
+}
+function zoomCluster(c) {
+  const railW = W > 900 ? 280 : 0;
+  cam.tz = Math.min(1.6, Math.max(0.3, Math.min((W - railW - 80) / (c.r * 2 + 260), (H - 200) / (c.r * 2 + 360)) * 1.3));
+  cam.tx = c.x; cam.ty = c.y; cam.tsx = railW / 2; cam.tsy = 0;
+  view.idle = performance.now();
+}
 
 // ---------------------------------------------------------------- stars
 const stars = Array.from({length: 260}, () => ({x: Math.random(), y: Math.random(), z: Math.random() * 0.8 + 0.2,
@@ -151,7 +235,7 @@ function focus(id, push = true) {
   // background nodes drift outward and fade
   nodes.forEach(n => { n.gap = 0; n.small = false; if (n.ext || n.domain) { n.ta = 0; } else { n.ta = 0.05; n.tx = n.ox * 2.4; n.ty = n.oy * 2.4; n.tz = n.oz - 900; n.tr = n.r; } });
   center.tx = 0; center.ty = 0; center.tz = 40; center.ta = 1; center.tr = 22;
-  if (state.motion && push !== 'resize') { view.swing += (hash01(id) < 0.5 ? -1 : 1) * 0.55; view.uyaw = 0; view.upitch = 0; }
+  if (push !== 'resize') { view.fyaw = 0; view.fpitch = 0; }
   const atk = F.attackers.slice(0, SIDE_MAX).map(extNode);
   arc(atk, -1);
   atk.forEach(n => { n.ta = 1; n.tr = n.small ? 3.5 : 5 + Math.min(7, Math.log2(1 + n.info.sessions + n.info.out_sessions + 3 * n.info.alerts)); keep.add(n.id); });
@@ -225,8 +309,8 @@ function overview() {
   document.body.classList.remove('focused');
   history.replaceState(null, '', '#');
   nodes.forEach(n => { if (n.ext || n.domain) n.ta = 0; else { n.ta = 1; n.tx = n.ox; n.ty = n.oy; n.tz = n.oz; n.tr = n.r; } });
+  showInet(!!R3);
   edges = [];
-  if (state.motion) { view.swing -= 0.45; view.uyaw = 0; view.upitch = 0; }
   fitOverview();
   $('panel').hidden = true;
   renderList();
@@ -239,10 +323,17 @@ function fitOverview() {
   const rightInset = drawerW ? drawerW + Math.min(100, W * 0.06) : 0;
   cam.tz = Math.min(1.5, Math.max(drawerW ? 0.12 : 0.2,
     Math.min((W - railW - rightInset - 80) / (maxX - minX + 200), (H - 200) / (maxY - minY + 200))));
-  if (R3) cam.tz *= 1.08;
+  if (R3) {
+    minX = ring.cx - ring.R * 1.1; maxX = ring.cx + ring.R * 1.1; minY = ring.cy - ring.R; maxY = ring.cy + ring.R;
+    cam.tz = Math.min(1.5, Math.max(drawerW ? 0.1 : 0.15,
+      Math.min((W - railW - rightInset - 60) / (maxX - minX + 120), (H - 170) / ((maxY - minY) * 0.75 + 120)))) * 0.85;
+    // orbit pivot = the network's centre; the screen shift keeps it clear of the host list and drawer
+    cam.tx = ring.cx; cam.ty = ring.cy; cam.tsx = (railW - rightInset) / 2; cam.tsy = ring.R * 0.3 * cam.tz;
+    return;
+  }
   cam.tx = (minX + maxX) / 2 - (railW - rightInset) / 2 / cam.tz; cam.ty = (minY + maxY) / 2;
 }
-function snap() { nodes.forEach(n => { n.x = n.tx; n.y = n.ty; n.z = n.tz; n.a = n.ta; n.r = n.tr; }); cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; view.dist = 1; view.swing = 0; }
+function snap() { nodes.forEach(n => { n.x = n.tx; n.y = n.ty; n.z = n.tz; n.a = n.ta; n.r = n.tr; }); cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; cam.sx = cam.tsx; cam.sy = cam.tsy; view.dist = 1; }
 
 // ---------------------------------------------------------------- drawing
 const toS = (x, y) => [(x - cam.x) * cam.z + W / 2, (y - cam.y) * cam.z + H / 2];
@@ -266,6 +357,8 @@ function frame(now) {
   const dt = Math.min(0.05, (now - t0) / 1000); t0 = now;
   const k = state.motion ? 1 - Math.pow(0.0015, dt) : 1;
   cam.x += (cam.tx - cam.x) * k; cam.y += (cam.ty - cam.y) * k; cam.z += (cam.tz - cam.z) * k;
+  if (state.mode === 'focus' || !R3) { cam.tsx = 0; cam.tsy = 0; }
+  cam.sx += (cam.tsx - cam.sx) * k; cam.sy += (cam.tsy - cam.sy) * k;
   nodes.forEach(n => {
     const ready = now > n.born;
     n.x += (n.tx - n.x) * k; n.y += (n.ty - n.y) * k; n.r += (n.tr - n.r) * k;
@@ -429,7 +522,7 @@ function drawNode(n, T) {
   ctx.shadowBlur = 0;
   if (hov && !sel) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r + 4, 0, 7); ctx.stroke(); }
   // labels
-  const show = state.labels && (sel || hov || (state.mode === 'focus' ? n.a > 0.5 && !n.small : (n.d.observed && (sc > 0.55 || n.d.pri === 'P1'))));
+  const show = state.labels && (sel || hov || (n.inet ? n.labelled && n.a > 0.5 : state.mode === 'focus' ? n.a > 0.5 && !n.small : (n.d.observed && (sc > 0.55 || (n.d.pri === 'P1' && (!R3 || fewP1 || n.d.ev))))));
   if (show) {
     const name = nodeLabel(n);
     ctx.font = (sel ? '600 14px' : '12px') + ' system-ui,-apple-system,Segoe UI,sans-serif';
@@ -478,6 +571,17 @@ function sideTitles() {
 }
 
 // ---------------------------------------------------------------- 3D (Three.js) drawing
+function rotateView(dir) { view.oyaw += dir * Math.PI / 4; placeInet(view.oyaw); markView(); }
+function setView(name, reset) {
+  view.opitch = VIEWS[name];
+  if (reset) { view.oyaw = 0; placeInet(0); fitOverview(); }
+  markView();
+}
+function markView() {
+  for (const name of Object.keys(VIEWS)) {
+    const b = $('vc-' + name); if (b) b.setAttribute('aria-pressed', String(Math.abs(view.opitch - VIEWS[name]) < 0.02));
+  }
+}
 function set3d(on, remember) {
   on = !!on && can3d;
   if (on && !R3inst) {
@@ -489,8 +593,8 @@ function set3d(on, remember) {
   document.body.classList.toggle('gl3d', on);
   $('btn-3d').setAttribute('aria-pressed', String(on));
   if (remember) { try { localStorage.setItem(KEY3D, on ? '1' : '0'); } catch (_) {} }
-  if (on && remember && state.motion) { view.dist = 1.8; view.swing += 0.5; }
-  if (state.mode === 'focus') focus(state.focus, 'resize'); else fitOverview();
+  if (on && remember && state.motion) view.dist = 1.6;
+  if (state.mode === 'focus') focus(state.focus, 'resize'); else { showInet(on); fitOverview(); }
   if (!state.motion) snap();
 }
 const RGB = hex => window.VF3D.rgb(hex);
@@ -501,33 +605,88 @@ function edgeCurve(e) {
 }
 const qb = (c, t) => { const u = 1 - t, A = u * u, B = 2 * u * t, C = t * t;
   return [A * c[0] + B * c[3] + C * c[6], A * c[1] + B * c[4] + C * c[7], A * c[2] + B * c[5] + C * c[8]]; };
-const HALO = RGB('#78aaff'), LINK = RGB('#6ea8ff'), FLOW = RGB('#bfe0ff'), SAT = RGB('#ffc857'), SAT_ALERT = RGB('#ff3b5c');
+const HALO = RGB('#78aaff');
+const RISK2 = RGB('#ff2e88'), RISK1 = RGB('#ffb020'), BUNDLE = RGB('#6ea8ff'), BUNDLE_LAT = RGB('#ff8a3d'),
+  RING = RGB('#2ee6d6'), P_CRIT = RGB('#ff3b5c'), P_HIGH = RGB('#ff8a3d');
+const BEAM_ALPHA = {alert: 0.85, vuln: 0.13, reached: 0.08, outbound: 0.08, attempt: 0.04, blocked: 0.035};
+// Overview: subnet platforms on one plane, hosts as pillars whose height is risk, traffic between
+// subnets bundled beneath the plane, only risky host paths drawn bright, and the internet as a ring
+// overhead with beams down to the hosts each outside address reached.
+function overviewScene(L, T, cm, cs, cdz) {
+  const flows = [];
+  if (cm < 0.01) return flows;
+  const hc = state.hoverCluster, hn = state.hover;
+  clusters.forEach(c => {
+    const si = subnetInfo.get(c.subnet), col = si && si.likely ? P_CRIT : si && si.p1 ? P_HIGH : HALO;
+    const on = !hc || hc === c;
+    L.circle(c.x * cs, c.y * cs, cdz, c.r, 80, hc === c ? 2.2 : 1.4, col, cm * (on ? 0.5 : 0.18), false);
+    L.circle(c.x * cs, c.y * cs, cdz, c.r * 0.97, 80, 0.8, HALO, cm * 0.12, true);
+  });
+  // bundled subnet-to-subnet traffic, sagging under the plane; orange share = admin/lateral protocols
+  const maxW = subLinks.reduce((m, l) => Math.max(m, l.w), 1);
+  subLinks.forEach(l => {
+    const a = l.a, b = l.b, ax = a.x * cs, ay = a.y * cs, bx = b.x * cs, by = b.y * cs, len = Math.hypot(bx - ax, by - ay);
+    const lat = l.lw / Math.max(1, l.w), on = !hc || hc === a || hc === b;
+    const al = cm * (on ? 0.22 + 0.4 * Math.sqrt(l.w / maxW) : 0.06);
+    const col = lat > 0.25 ? BUNDLE_LAT : BUNDLE, c = [ax, ay, cdz, (ax + bx) / 2, (ay + by) / 2, cdz - 60 - len * 0.32, bx, by, cdz];
+    L.quad(c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], 24, 1 + Math.min(7, Math.log2(1 + l.w) * 0.6), col, al, false);
+    if (on) flows.push({c, col, al: al * 1.3, size: 3 + Math.min(3, Math.log10(1 + l.w)), speed: 0.05 + (l.w / maxW) * 0.08});
+  });
+  // risk pillars
+  nodes.forEach(n => {
+    if (n.ext || n.domain || n.a < 0.02) return;
+    const base = n.z - n.oz, w = n.d.pri === 'P1' ? 3.2 : n.d.observed ? 2 : 1;
+    L.strip(2, i => [n.x, n.y, i ? n.z : base], w, RGB(n.color), n.a * cm * (hn === n ? 0.95 : 0.5), false);
+  });
+  // risky host-to-host paths, from pillar base to pillar base beneath the plane
+  riskyLinks.forEach((l, i) => {
+    if (i >= 60 && !(hn && (hn === l.a || hn === l.b))) return;
+    const a = l.a, b = l.b, al0 = Math.min(a.a, b.a) * cm; if (al0 < 0.02) return;
+    const za = a.z - a.oz, zb = b.z - b.oz, len = Math.hypot(b.x - a.x, b.y - a.y);
+    const on = !hn || hn === a || hn === b, col = l.lvl > 1 ? RISK2 : RISK1;
+    const c = [a.x, a.y, za, (a.x + b.x) / 2, (a.y + b.y) / 2, (za + zb) / 2 - 25 - len * 0.3, b.x, b.y, zb];
+    const al = al0 * (on ? (l.lvl > 1 ? 0.42 : 0.22) * (hn ? 2 : 1) : 0.04);
+    L.quad(c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], 16, 0.9 + Math.min(1.8, Math.log10(1 + l.w) * 0.7), col, al, false);
+    if (on && al > 0.1) flows.push({c, col, al, size: 3.4, speed: 0.12 + (hash01(a.id + b.id) * 0.1)});
+  });
+  // the internet ring and its beams
+  if (inetNodes.length) {
+    const arcAt = (f, dz) => { const ang = arcCenter(view.yaw) - (f - 0.5) * ARC;
+      return [ring.cx + ring.R * 1.08 * Math.cos(ang), ring.cy + ring.R * 1.08 * Math.sin(ang), ring.z + dz]; };
+    L.strip(61, i => arcAt(i / 60, -14), 1.1, RING, cm * 0.25, true);
+    L.strip(61, i => arcAt(i / 60, 66), 0.7, RING, cm * 0.1, false);
+    inetNodes.forEach(n => {
+      if (n.a < 0.02) return;
+      n.info.targets.forEach(t => {
+        const h = nodes.get(t[0]); if (!h || h.a < 0.02) return;
+        const on = !hn || hn === n || hn === h;
+        const al = Math.min(n.a, h.a) * cm * BEAM_ALPHA[t[1]] * (on ? (hn ? 1.4 : 1) : 0.12);
+        const c = [n.x, n.y, n.z, (n.x + h.x) / 2, (n.y + h.y) / 2, (n.z + h.z) / 2 + 60, h.x, h.y, h.z];
+        const col = RGB(KIND[t[1]]), dashed = t[1] === 'blocked' || t[1] === 'attempt';
+        L.quad(c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], 14, 0.9 + Math.min(2.2, Math.log2(1 + t[2]) * 0.3), col, al, dashed);
+        if (!dashed && on && (t[1] === 'alert' || t[1] === 'vuln' || hn)) flows.push({c, col, al: Math.min(1, al * 1.4), size: 3.2, speed: 0.18});
+      });
+    });
+  }
+  return flows;
+}
 function draw3d(now, dt, k) {
   const T = now / 1000, focusing = state.mode === 'focus', motion = state.motion;
   // camera: cinematic tilt over the overview, near front-on (readable labels) when focused
-  if (motion && now - view.idle > 6000) view.drift += dt;
-  const dr = view.drift;
-  const baseYaw = focusing ? 0.06 * Math.sin(dr * 0.13) : 0.3 * Math.sin(dr * 0.045);
-  const basePitch = focusing ? 0.13 + 0.03 * Math.sin(dr * 0.11) : 0.62 + 0.07 * Math.sin(dr * 0.06);
-  const kv = motion ? 1 - Math.pow(0.1, dt) : 1;
-  view.swing *= motion ? Math.pow(0.22, dt) : 0;
-  view.yaw += (baseYaw + view.uyaw + view.swing - view.yaw) * kv;
-  view.pitch += (Math.max(-0.35, Math.min(1.3, basePitch + view.upitch)) - view.pitch) * kv;
-  view.dist += (1 - view.dist) * (motion ? 1 - Math.pow(0.18, dt) : 1);
+  const kv = motion ? 1 - Math.pow(0.02, dt) : 1;
+  const tyaw = focusing ? view.fyaw : view.oyaw, tpitch = focusing ? 0.13 + view.fpitch : view.opitch;
+  view.yaw += (tyaw - view.yaw) * kv;
+  view.pitch += (tpitch - view.pitch) * kv;
+  view.dist += (1 - view.dist) * (motion ? 1 - Math.pow(0.05, dt) : 1);
   view.cmix += ((focusing ? 0 : 1) - view.cmix) * k;
-  R3.setCamera(cam.x, cam.y, cam.z, view.yaw, view.pitch, view.dist);
+  // switching between orbit (overview) and front-on (focus) camera models: snap yaw so neither spins
+  if (focusing !== view.wasFocus) { view.wasFocus = focusing; view.yaw = tyaw; }
+  R3.setCamera(cam.x, cam.y, cam.z, view.yaw, view.pitch, view.dist, !focusing, cam.sx, cam.sy);
 
   // ribbons: subnet halos, overview links, focus edges, shockwaves on the selected host
   const L = R3.lines; L.begin();
   const cm = view.cmix, cs = 2.4 - 1.4 * cm, cdz = -900 * (1 - cm);
-  clusters.forEach(c => L.circle(c.x * cs, c.y * cs, c.z + cdz, c.r, 72, 1, HALO, 0.03 + 0.2 * cm, true));
-  const lf = focusing ? 0.12 : 1, many = links.length > 1500, segs = many ? 6 : 10;
-  links.forEach(l => {
-    const al = Math.min(l.a.a, l.b.a) * lf; if (al < 0.02) return;
-    const a = l.a, b = l.b, len = Math.hypot(b.x - a.x, b.y - a.y);
-    L.quad(a.x, a.y, a.z, (a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2 - len * 0.22, b.x, b.y, b.z,
-      segs, 0.5 + Math.min(2, Math.log10(1 + l.w)), LINK, al * (many ? 0.12 : 0.2), false);
-  });
+  const flows = overviewScene(L, T, cm, cs, cdz);
   const hl = state.hoverEdge;
   edges.forEach(e => {
     const al = Math.min(e.a.a, e.b.a); e.c = null; if (al < 0.03) return;
@@ -566,35 +725,43 @@ function draw3d(now, dt, k) {
       S.add(p[0], p[1], p[2], 0, col, e.al / 0.8 * (e.lit ? 0.95 : 0.15), 0, 0, 0, size);
     });
   });
-  if (motion && !focusing) {
-    const nf = Math.min(links.length, 140);
-    for (let i = 0; i < nf; i++) {
-      const l = links[i], al = Math.min(l.a.a, l.b.a); if (al < 0.1) continue;
-      const a = l.a, b = l.b, len = Math.hypot(b.x - a.x, b.y - a.y);
-      const c = [a.x, a.y, a.z, (a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2 - len * 0.22, b.x, b.y, b.z];
-      const t = (T * (0.08 + (i % 7) * 0.012) + i * 0.137) % 1, p = qb(c, t);
-      S.add(p[0], p[1], p[2], 0, FLOW, al * 0.45, 0, 0, 0, 2.6);
-    }
-    nodes.forEach(n => {
-      if (n.ext || n.domain || !n.d.ext || n.a < 0.3) return;
-      const cnt = Math.min(10, Math.ceil(Math.log2(1 + n.d.ext) * 1.6));
-      for (let i = 0; i < cnt; i++) {
-        const ang = T * (0.4 + i * 0.03) + i * (Math.PI * 2 / cnt), rr = n.r + 9 + (i % 3) * 4;
-        S.add(n.x + rr * Math.cos(ang), n.y + rr * Math.sin(ang) * 0.55, n.z + rr * Math.sin(ang) * 0.8, 1.7,
-          n.d.alert && i === 0 ? SAT_ALERT : SAT, n.a * 0.9, 0, 0, 0, 1.6);
-      }
-    });
-  }
+  if (motion && cm > 0.05) flows.forEach((f, i) => {
+    const t = (T * f.speed + i * 0.137) % 1, p = qb(f.c, t);
+    S.add(p[0], p[1], p[2], 0, f.col, f.al, 0, 0, 0, f.size);
+  });
   S.end();
   R3.render(T);
 
   // canvas overlay: subnet labels, arrowheads, rings and labels
-  if (!focusing && state.labels) clusters.forEach(c => {
-    const [x, y, sc] = Pw(c.x, c.y - c.r, c.z);
-    if (!(sc > 0.35) || !(x > -50 && x < W + 50 && y > -50 && y < H + 50)) return;
-    ctx.globalAlpha = 0.5 * cm; ctx.fillStyle = '#8fa6c6'; ctx.font = '11px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center';
-    ctx.fillText(c.subnet, x, y - 6);
+  if (cm > 0.3 && state.labels) clusters.forEach(c => {
+    const [x, y, sc] = Pw(c.x, c.y + c.r, 0);
+    if (!(x > -50 && x < W + 50 && y > -50 && y < H + 50)) return;
+    const si = subnetInfo.get(c.subnet);
+    const hov = state.hoverCluster === c;
+    if (!hov && !c.labelled) return;
+    ctx.globalAlpha = cm * (hov ? 1 : 0.8); ctx.textAlign = 'center';
+    ctx.font = (hov ? '600 ' : '') + '11px ui-monospace,Menlo,monospace'; ctx.fillStyle = hov ? '#e6f1ff' : '#a9bcd6';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(3,6,12,.8)';
+    ctx.strokeText(c.subnet, x, y + 14); ctx.fillText(c.subnet, x, y + 14);
+    if (si && (sc > 0.25 || hov)) {
+      const bits = [`${si.hosts} host${si.hosts === 1 ? '' : 's'}`];
+      if (si.p1) bits.push(`${si.p1} P1`);
+      if (si.likely) bits.push(`${si.likely} likely`);
+      if (si.exposed) bits.push(`${si.exposed} exposed`);
+      if (si.drawn < si.hosts) bits.push(`${si.hosts - si.drawn} not drawn`);
+      ctx.font = '10px ui-monospace,Menlo,monospace'; ctx.fillStyle = si.likely ? '#ff8095' : si.p1 ? '#ffb27a' : '#7f95b3';
+      const t = bits.join(' · ');
+      ctx.strokeText(t, x, y + 27); ctx.fillText(t, x, y + 27);
+    }
   });
+  if (cm > 0.3 && inetNodes.length) {
+    const ac = arcCenter(view.yaw), [x, y] = Pw(ring.cx + ring.R * 1.08 * Math.cos(ac), ring.cy + ring.R * 1.08 * Math.sin(ac), ring.z + 70);
+    if (y > 70) {
+      ctx.globalAlpha = 0.75 * cm; ctx.font = '600 11px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#2ee6d6';
+      const tot = D.internet_total || inetNodes.length;
+      ctx.fillText(`INTERNET · ${tot.toLocaleString()} OUTSIDE ADDRESS${tot === 1 ? '' : 'ES'}` + (tot > inetNodes.length ? ` · TOP ${inetNodes.length} SHOWN` : ''), x, Math.max(84, y - 18));
+    }
+  }
   edges.forEach(e => {
     if (!e.c || e.kind === 'dns' || (e.small && !(hl && e.lit))) return;
     const [x0, y0] = Pw(...qb(e.c, 0.93)), [x1, y1] = Pw(...qb(e.c, 0.985)), [xe, ye, se] = P(e.b);
@@ -635,8 +802,8 @@ function pick(sx, sy) {
 }
 let drag = null;
 cv.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, cx: cam.tx, cy: cam.ty,
-  node: pick(e.clientX, e.clientY), moved: false, orbit: !!R3 && (e.button === 2 || e.shiftKey || e.altKey),
-  yaw: view.uyaw, pitch: view.upitch}; view.idle = performance.now(); cv.setPointerCapture(e.pointerId); });
+  node: pick(e.clientX, e.clientY), moved: false, lx: e.clientX, ly: e.clientY, orbit: !!R3 && (e.button === 2 || e.shiftKey || e.altKey),
+  yaw: state.mode === 'focus' ? view.fyaw : view.oyaw, pitch: state.mode === 'focus' ? view.fpitch : view.opitch}; view.idle = performance.now(); cv.setPointerCapture(e.pointerId); });
 cv.addEventListener('contextmenu', e => { if (R3) e.preventDefault(); });
 cv.addEventListener('pointermove', e => {
   if (drag) {
@@ -644,15 +811,19 @@ cv.addEventListener('pointermove', e => {
     if (Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; cv.classList.add('dragging'); }
     view.idle = performance.now();
     if (drag.moved && drag.orbit) {
-      view.uyaw = drag.yaw - dx * 0.005; view.upitch = Math.max(-0.7, Math.min(0.9, drag.pitch + dy * 0.004));
+      if (state.mode === 'focus') { view.fyaw = Math.max(-0.9, Math.min(0.9, drag.yaw - dx * 0.005)); view.fpitch = Math.max(-0.5, Math.min(0.9, drag.pitch + dy * 0.004)); }
+      else { view.oyaw = drag.yaw - dx * 0.006; view.opitch = Math.max(0, Math.min(1.4, drag.pitch - dy * 0.004)); placeInet(view.oyaw); markView(); }
+      view.yaw = state.mode === 'focus' ? view.fyaw : view.oyaw; view.pitch = state.mode === 'focus' ? 0.13 + view.fpitch : view.opitch;
     } else if (drag.moved) {
-      const sy = R3 ? Math.max(0.45, Math.cos(view.pitch)) : 1;
-      cam.tx = drag.cx - dx / cam.z; cam.ty = drag.cy - dy / cam.z / sy; cam.x = cam.tx; cam.y = cam.ty;
+      panBy(drag.lx, drag.ly, e.clientX, e.clientY);
     }
+    drag.lx = e.clientX; drag.ly = e.clientY;
     return;
   }
   const n = pick(e.clientX, e.clientY);
-  state.hover = n; cv.classList.toggle('hover', !!n);
+  const hc = n ? null : clusterAt(e.clientX, e.clientY);
+  state.hover = n; state.hoverCluster = hc; cv.classList.toggle('hover', !!(n || hc));
+  if (hc) { subnetTip(hc, e.clientX, e.clientY); return; }
   state.hoverEdge = n && n.info && state.mode === 'focus' ? n.info : null;
   tip(n, e.clientX, e.clientY);
 });
@@ -661,9 +832,15 @@ cv.addEventListener('pointerup', e => {
   drag = null; cv.classList.remove('dragging');
   if (wasDrag) return;
   const n = pick(e.clientX, e.clientY) || startNode;
-  if (!n) return;
+  if (!n) { const c = clusterAt(e.clientX, e.clientY); if (c) zoomCluster(c); return; }
   if (n.domain) {
     document.dispatchEvent(new CustomEvent('ioc:open', {detail: {id: n.id}}));
+    return;
+  }
+  if (n.inet) {
+    const key = 'ip:' + n.d.id;
+    if (iocIds.has(key)) document.dispatchEvent(new CustomEvent('ioc:open', {detail: {id: key}}));
+    else if (n.info.targets.length && D.focus[n.info.targets[0][0]]) focus(n.info.targets[0][0]);
     return;
   }
   if (n.ext) {
@@ -673,11 +850,26 @@ cv.addEventListener('pointerup', e => {
   }
   if (!n.ext && D.focus[n.id]) focus(n.id);
 });
-cv.addEventListener('dblclick', e => { if (!pick(e.clientX, e.clientY)) { overview(); } });
-cv.addEventListener('pointerleave', () => { state.hover = null; tip(null); });
+cv.addEventListener('dblclick', e => { if (!pick(e.clientX, e.clientY) && !clusterAt(e.clientX, e.clientY)) { overview(); } });
+cv.addEventListener('pointerleave', () => { state.hover = null; state.hoverCluster = null; tip(null); });
+// move the view so the point under (sx0, sy0) ends up under (sx1, sy1); in 3D this follows the
+// camera's current yaw and tilt, so dragging left always moves the network left on screen
+function panBy(sx0, sy0, sx1, sy1) {
+  if (R3) {
+    const a = R3.unproject(sx0, sy0), b = R3.unproject(sx1, sy1);
+    if (a && b) { cam.tx += a[0] - b[0]; cam.ty += a[1] - b[1]; }
+  } else { cam.tx -= (sx1 - sx0) / cam.z; cam.ty -= (sy1 - sy0) / cam.z; }
+  cam.x = cam.tx; cam.y = cam.ty; view.idle = performance.now();
+}
 cv.addEventListener('wheel', e => {
   e.preventDefault();
   view.idle = performance.now();
+  // trackpad two-finger swipe sideways pans; pinch (ctrl+wheel) and the mouse wheel zoom
+  if (!e.ctrlKey && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 0.5) {
+    const k = e.deltaMode === 1 ? 16 : 1;
+    panBy(e.clientX, e.clientY, e.clientX - e.deltaX * k, e.clientY - e.deltaY * k);
+    return;
+  }
   if (R3) {   // zoom towards the point under the cursor on the network plane
     const z = Math.max(0.12, Math.min(4, cam.tz * Math.exp(-e.deltaY * 0.0015)));
     const w = R3.unproject(e.clientX, e.clientY);
@@ -689,11 +881,35 @@ cv.addEventListener('wheel', e => {
   const z = Math.max(0.12, Math.min(4, cam.tz * Math.exp(-e.deltaY * 0.0015)));
   cam.tz = z; cam.tx = wx - (e.clientX - W / 2) / z; cam.ty = wy - (e.clientY - H / 2) / z;
 }, {passive: false});
+function placeTip(h, x, y) {
+  const el = $('tip');
+  el.innerHTML = h; el.hidden = false;
+  const r = el.getBoundingClientRect();
+  el.style.left = Math.min(W - r.width - 10, x + 16) + 'px'; el.style.top = Math.min(H - r.height - 10, y + 16) + 'px';
+}
+function subnetTip(c, x, y) {
+  const si = subnetInfo.get(c.subnet) || {hosts: 0};
+  const out = subLinks.filter(l => l.a === c || l.b === c).sort((a, b) => b.w - a.w).slice(0, 3)
+    .map(l => `${esc((l.a === c ? l.b : l.a).subnet)} · ${l.w.toLocaleString()} sessions` + (l.lw ? ` (${l.lw.toLocaleString()} admin/lateral)` : ''));
+  placeTip(`<b>${esc(c.subnet)}</b> <span class="m">subnet</span><br>${si.hosts} host(s)` +
+    (si.drawn < si.hosts ? `, ${si.hosts - si.drawn} not drawn` : '') +
+    (telemetryOnly ? '' : `<br>${si.p1 || 0} P1 · ${si.likely || 0} likely exploitation · ${si.lead || 0} lead`) +
+    `<br>${si.exposed || 0} exposed to outside addresses` + (si.alert_hosts ? `, ${si.alert_hosts} with IPS alerts` : '') +
+    (out.length ? `<br><span class="m">Busiest links to other subnets:<br>${out.join('<br>')}</span>` : '') +
+    '<br><span class="m">Click to zoom in</span>', x, y);
+}
 function tip(n, x, y) {
   const el = $('tip');
   if (!n) { el.hidden = true; return; }
   let h;
-  if (n.domain) {
+  if (n.inet) {
+    const e = n.info, more = e.hosts_total - e.targets.length;
+    h = `<b>${esc(e.ip)}</b> <span class="m">outside address</span><br>${esc(KIND_TXT[e.kind])}` +
+      `<br><span class="m">${e.hosts_total} internal host(s) · ${e.sessions.toLocaleString()} session(s)` + (e.alerts ? ` · ${e.alerts} IPS alert(s) not blocked` : '') + '</span>' +
+      '<br>' + e.targets.slice(0, 5).map(t => `${esc(t[0])} <span style="color:${KIND[t[1]]}">${esc(KIND_TXT[t[1]])}</span>`).join('<br>') +
+      (more > 0 ? `<br><span class="m">+${more} more host(s)</span>` : '') +
+      (iocIds.has('ip:' + e.ip) ? '<br><span style="color:#2ee6d6">Click for IOC details</span>' : '<br><span class="m">Click to focus its top target</span>');
+  } else if (n.domain) {
     const observed = n.info.observed && n.info.observed['dns event'];
     h = `<b>${esc(n.d.id)}</b> <span class="m">domain IOC · ${observed ? 'observed DNS query' : 'observed domain match'}</span>` +
       '<br>Exact IOC match. A DNS query alone does not prove a connection or compromise.' +
@@ -731,6 +947,15 @@ addEventListener('keydown', e => {
   else if (e.key === 'l' || e.key === 'L') toggleLabels();
   else if (e.key === 'm' || e.key === 'M') toggleMotion();
   else if (e.key === '3' && can3d) set3d(!R3, true);
+  else if (R3 && state.mode === 'overview' && 'qQeEtTyYuUrR'.includes(e.key)) {
+    const k = e.key.toLowerCase();
+    if (k === 'q') rotateView(1); else if (k === 'e') rotateView(-1);
+    else if (k === 't') setView('top'); else if (k === 'y') setView('tilted'); else if (k === 'u') setView('low'); else setView('tilted', true);
+  }
+  else if (e.shiftKey && e.key.startsWith('Arrow')) {   // Shift+arrows pan
+    const d = 80, cx = W / 2, cy = H / 2;
+    panBy(cx, cy, cx + (e.key === 'ArrowLeft' ? d : e.key === 'ArrowRight' ? -d : 0), cy + (e.key === 'ArrowUp' ? d : e.key === 'ArrowDown' ? -d : 0));
+  }
   else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
     const ids = hostOrder(); const i = ids.indexOf(state.focus);
     focus(ids[(i + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length]);
@@ -956,9 +1181,21 @@ $('btn-labels').onclick = toggleLabels;
 $('btn-motion').onclick = toggleMotion;
 $('btn-3d').hidden = !can3d;
 $('btn-3d').onclick = () => set3d(!R3, true);
+$('vc-left').onclick = () => rotateView(1);
+$('vc-right').onclick = () => rotateView(-1);
+$('vc-top').onclick = () => setView('top');
+$('vc-tilted').onclick = () => setView('tilted');
+$('vc-low').onclick = () => setView('low');
+$('vc-reset').onclick = () => setView('tilted', true);
+markView();
 if (!state.motion) $('btn-motion').setAttribute('aria-pressed', 'false');
 
 $('legend').innerHTML =
+  `<span class="only3d m">Drag: pan · right-drag or Shift-drag: rotate and tilt · Q / E: rotate · T top · Y tilted · U low · R reset</span>` +
+  `<span class="only3d">${telemetryOnly ? 'Pillar height: outside exposure' : 'Pillar height: risk score'}</span>` +
+  `<span class="only3d"><i style="background:#2ee6d6"></i>Arc above: top outside addresses, beams to hosts they reached</span>` +
+  `<span class="only3d"><i style="background:#6ea8ff"></i><i style="background:#ff8a3d;width:12px"></i>Traffic between subnets (orange: mostly admin protocols)</span>` +
+  `<span class="only3d"><i style="background:#ff2e88"></i><i style="background:#ffb020;width:12px"></i>Risky host paths: admin protocol into P1 or flagged host / either one</span>` +
   `<span><i style="background:${KIND.alert}"></i>IPS alert, not blocked</span>` +
   (telemetryOnly ? '' : `<span><i style="background:${KIND.vuln}"></i>Reached a vulnerable service</span>`) +
   `<span><i style="background:${KIND.reached}"></i>Reached the host</span>` +

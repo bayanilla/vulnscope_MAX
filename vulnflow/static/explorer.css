@@ -134,3 +134,8 @@ body.ai-chat-open #controls{visibility:hidden}}
 #panel h2{font-size:17px}#controls,body.focused #controls{top:auto;bottom:calc(52vh + 18px);right:8px}
 #hint{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}#intro{transition:none}}
+body:not(.gl3d) #legend .only3d,body.focused #legend .only3d{display:none}
+#viewctl{position:fixed;top:56px;right:18px;display:flex;gap:6px;z-index:3}
+#viewctl button{padding:4px 10px;font-size:12px}#viewctl button[aria-pressed="false"]{opacity:.7}
+#viewctl button[aria-pressed="true"]{border-color:var(--cyan);color:#fff}
+body:not(.gl3d) #viewctl,body.focused #viewctl{display:none}
