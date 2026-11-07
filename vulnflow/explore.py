@@ -407,7 +407,7 @@ def html(data: dict) -> str:
     blob = json.dumps(data, separators=(",", ":"), default=str).replace("<", "\\u003c")
     return ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-            f"<title>{EXPLORER_NAME} · {PRODUCT_NAME}</title><link rel=\"icon\" href=\"{icon_data_uri()}\"><style>" + _read("analyst_chat.css") + _read("explorer.css") + explorer_background_css() + ioc_archive.CSS + "</style></head><body>"
+            f"<title>{EXPLORER_NAME} · {PRODUCT_NAME}</title><link rel=\"icon\" href=\"{icon_data_uri()}\"><style>" + _read("analyst_chat.css") + _read("explorer.css") + _read("attackpaths.css") + explorer_background_css() + ioc_archive.CSS + "</style></head><body>"
             + _read("explorer.html")
             + f'<script id="vf-data" type="application/json">{blob}</script>'
             # Three.js (MIT, vendored so the page works offline) and the 3D renderer; the Explorer
@@ -415,5 +415,6 @@ def html(data: dict) -> str:
             + "<script>" + _read("vendor/three.min.js") + "</script>"
             + "<script>" + _read("explorer3d.js") + "</script>"
             + "<script>" + _read("explorer.js") + "</script>"
+            + "<script>" + _read("attackpaths.js") + "</script>"
             + "<script>" + _read("analyst_chat.js") + "</script>"
             + ioc_archive.drawer_html(data["ioc_matches"], data.get("article_briefs")) + "</body></html>\n")

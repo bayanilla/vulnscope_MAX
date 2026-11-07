@@ -7,7 +7,8 @@ if (telemetryOnly) document.getElementById('hint').textContent =
 const cv = document.getElementById('stage'), ctx = cv.getContext('2d');
 // cinematic 3D view (explorer3d.js, Three.js); the 2D canvas stays as the fallback and draws labels on top
 const cv3 = document.getElementById('stage3d');
-const KEY3D = 'vulnscope-explorer-3d';
+// 3D is opt-in: the flat view is the default, a 3D choice is remembered, ?3d / ?2d force one
+const KEY3D = 'vulnscope-explorer-3d-v2';
 const can3d = !!(cv3 && window.VF3D && window.VF3D.supported());
 let R3 = null, R3inst = null;
 const $ = id => document.getElementById(id);
@@ -592,7 +593,7 @@ function set3d(on, remember) {
   R3 = on ? R3inst : null;
   if (cv3) cv3.hidden = !on;
   document.body.classList.toggle('gl3d', on);
-  $('btn-3d').setAttribute('aria-pressed', String(on));
+  markSeg();
   if (remember) { try { localStorage.setItem(KEY3D, on ? '1' : '0'); } catch (_) {} }
   if (on && remember && state.motion) view.dist = 1.6;
   if (state.mode === 'focus') focus(state.focus, 'resize'); else { showInet(on); fitOverview(); }
@@ -948,6 +949,7 @@ addEventListener('keydown', e => {
   else if (e.key === 'l' || e.key === 'L') toggleLabels();
   else if (e.key === 'm' || e.key === 'M') toggleMotion();
   else if (e.key === '3' && can3d) set3d(!R3, true);
+  else if (e.key === '2') set3d(false, true);
   else if (R3 && state.mode === 'overview' && 'qQeEtTyYuUrR'.includes(e.key)) {
     const k = e.key.toLowerCase();
     if (k === 'q') rotateView(1); else if (k === 'e') rotateView(-1);
@@ -962,7 +964,7 @@ addEventListener('keydown', e => {
     focus(ids[(i + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length]);
   }
 });
-addEventListener('resize', () => { resize(); state.mode === 'focus' ? focus(state.focus, 'resize') : fitOverview(); });
+addEventListener('resize', () => { resize(); placeViewctl(); state.mode === 'focus' ? focus(state.focus, 'resize') : fitOverview(); });
 
 // ---------------------------------------------------------------- panels
 function hostOrder() {
@@ -1181,7 +1183,19 @@ $('btn-overview').onclick = () => { overview(); };
 $('btn-labels').onclick = toggleLabels;
 $('btn-motion').onclick = toggleMotion;
 $('btn-3d').hidden = !can3d;
-$('btn-3d').onclick = () => set3d(!R3, true);
+// one switcher for the three views: flat network, 3D network, attack paths (attackpaths.js)
+function markSeg() {
+  const ap = document.getElementById('attack-paths'), paths = !!ap && !ap.hidden;
+  $('vw-flat').classList.toggle('on', !paths && !R3); $('btn-3d').classList.toggle('on', !paths && !!R3);
+  $('btn-paths').classList.toggle('on', paths);
+  for (const id of ['vw-flat', 'btn-3d', 'btn-paths']) $(id).setAttribute('aria-current', $(id).classList.contains('on') ? 'true' : 'false');
+  placeViewctl();
+}
+const closePaths = () => { if (window.VFPaths) window.VFPaths.close(); };
+$('vw-flat').onclick = () => { closePaths(); set3d(false, true); };
+$('btn-3d').onclick = () => { closePaths(); set3d(true, true); };
+// the 3D camera controls sit in the lower right, just above the legend
+function placeViewctl() { document.documentElement.style.setProperty('--legend-h', ($('legend').offsetHeight + 24) + 'px'); }
 $('vc-left').onclick = () => rotateView(1);
 $('vc-right').onclick = () => rotateView(-1);
 $('vc-top').onclick = () => setView('top');
@@ -1215,9 +1229,10 @@ $('subtitle').textContent = (telemetryOnly ? `${c.hosts} observed hosts · no vu
 resize();
 {
   let pref = null; try { pref = localStorage.getItem(KEY3D); } catch (_) {}
-  set3d(can3d && !/[?&#]2d\b/.test(location.search + location.hash) && pref !== '0', false);
+  const q = location.search + location.hash;
+  set3d(can3d && !/[?&#]2d\b/.test(q) && (/[?&#]3d\b/.test(q) || pref === '1'), false);
 }
-renderList(); fitOverview();
+renderList(); fitOverview(); placeViewctl();
 const introText = telemetryOnly ? `Exploring ${c.hosts} observed hosts and ${c.flows.toLocaleString()} sessions` : `Correlating ${c.hosts} hosts against ${c.flows.toLocaleString()} sessions`;
 if (state.motion) {
   let i = 0; const it = setInterval(() => { $('intro-text').textContent = introText.slice(0, ++i) + (i < introText.length ? '▌' : ''); if (i >= introText.length) clearInterval(it); }, 22);
@@ -1227,5 +1242,7 @@ const m = location.hash.match(/host=([^&]+)/);
 if (m && D.focus[decodeURIComponent(m[1])]) {
   if (state.motion) setTimeout(() => focus(decodeURIComponent(m[1])), 900); else { focus(decodeURIComponent(m[1])); snap(); }
 }
+// lets the Attack paths view (attackpaths.js) hand a host back to this view
+window.VFExplorer = {focus: id => focus(id), overview: () => overview(), set3d: on => set3d(on, true), is3d: () => !!R3, can3d, markSeg};
 requestAnimationFrame(frame);
 })();

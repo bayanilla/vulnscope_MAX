@@ -135,7 +135,13 @@ body.ai-chat-open #controls{visibility:hidden}}
 #hint{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}#intro{transition:none}}
 body:not(.gl3d) #legend .only3d,body.focused #legend .only3d{display:none}
-#viewctl{position:fixed;top:56px;right:18px;display:flex;gap:6px;z-index:3}
+#viewctl{position:fixed;bottom:var(--legend-h,64px);right:18px;display:flex;gap:6px;z-index:3;padding:6px;background:var(--glass);border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(8px)}
+#btn-overview{display:none}body.focused #btn-overview{display:inline-block}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:rgba(20,34,58,.75)}
+.seg button{border:0;border-radius:0;background:transparent;opacity:.75}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[hidden]{display:none}
+.seg button.on{opacity:1;color:#fff;background:rgba(46,230,214,.16);box-shadow:inset 0 -2px 0 var(--cyan)}
 #viewctl button{padding:4px 10px;font-size:12px}#viewctl button[aria-pressed="false"]{opacity:.7}
 #viewctl button[aria-pressed="true"]{border-color:var(--cyan);color:#fff}
 body:not(.gl3d) #viewctl,body.focused #viewctl{display:none}
