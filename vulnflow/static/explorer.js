@@ -61,9 +61,10 @@ function overviewLayout() {
   const golden = Math.PI * (3 - Math.sqrt(5));
   const clusters = [];
   // pack subnets by their real size: largest first, each at the first spot on an outward spiral that
-  // clears every placed subnet by GAP, so small subnets no longer pile up in the middle
+  // clears every placed subnet by GAP plus a share of both radii, so small subnets no longer pile up
+  // in the middle and big neighbours get proportionally more room
   // big subnets pack their hosts a little tighter so one large subnet cannot crowd out the rest
-  const SP = 48, GAP = 110, spacing = n => SP / Math.pow(Math.max(1, n / 30), 0.25);
+  const SP = 48, GAP = 180, GAP_K = 0.3, spacing = n => SP / Math.pow(Math.max(1, n / 30), 0.25);
   const sized = subnets.map(s => {
     const members = groups.get(s).sort((a, b) => (b.observed - a.observed) || (b.score - a.score) || a.id.localeCompare(b.id));
     return {s, members, cr: 40 + spacing(members.length) * Math.sqrt(members.length)};
@@ -74,7 +75,7 @@ function overviewLayout() {
     if (i) for (let t = 0; t < 20000; t++) {
       const a = t * 0.12, r = 6 * a;
       const x = r * Math.cos(a), y = r * Math.sin(a) * 0.8;
-      if (placed.every(p => Math.hypot(p.x - x, p.y - y) >= p.r + cr + GAP)) { cx = x; cy = y; break; }
+      if (placed.every(p => Math.hypot(p.x - x, p.y - y) >= (p.r + cr) * (1 + GAP_K) + GAP)) { cx = x; cy = y; break; }
     }
     placed.push({x: cx, y: cy, r: cr});
     clusters.push({subnet: s, x: cx, y: cy, z: 0, r: cr + 18});
