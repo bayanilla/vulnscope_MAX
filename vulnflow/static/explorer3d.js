@@ -399,13 +399,23 @@ function create(canvas, opts) {
   }
   // Point the camera: target (x, y) in Explorer coordinates, zoom as on the 2D canvas
   // (CSS px per world unit at the target), then yaw / pitch around the target.
-  function setCamera(x, y, zoom, yaw, pitch, distMul) {
+  // orbit: yaw turns the camera around the network plane's normal and pitch is the angle from
+  // straight above (0 = top-down); otherwise yaw / pitch tilt a mostly front-on view (host focus)
+  // (sx, sy): shift the picture on screen in CSS px, so the camera can orbit the network's centre
+  // while the network sits in the space beside the side panels
+  function setCamera(x, y, zoom, yaw, pitch, distMul, orbit, shiftX, shiftY) {
     const d0 = (H / 2) / Math.tan(camera.fov * Math.PI / 360);
     const dist = d0 / zoom * (distMul || 1);
-    const cp = Math.cos(pitch);
-    camera.position.set(x + dist * Math.sin(yaw) * cp, -y - dist * Math.sin(pitch), dist * Math.cos(yaw) * cp);
-    camera.up.set(0, 1, 0);
+    const cp = Math.cos(pitch), sp = Math.sin(pitch), cy = Math.cos(yaw), sy = Math.sin(yaw);
+    if (orbit) {
+      camera.position.set(x + dist * sp * sy, -y - dist * sp * cy, dist * cp);
+      camera.up.set(-cp * sy, cp * cy, sp);
+    } else {
+      camera.position.set(x + dist * sy * cp, -y - dist * sp, dist * cy * cp);
+      camera.up.set(0, 1, 0);
+    }
     camera.lookAt(x, -y, 0);
+    if (shiftX || shiftY) camera.setViewOffset(W, H, -(shiftX || 0), -(shiftY || 0), W, H); else camera.clearViewOffset();
     camera.near = Math.max(1, dist * 0.02); camera.far = dist * 40 + 20000;
     camera.updateProjectionMatrix(); camera.updateMatrixWorld();
     M.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);

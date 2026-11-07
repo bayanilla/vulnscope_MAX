@@ -21,6 +21,7 @@ from .store import utc
 
 STATIC = os.path.join(os.path.dirname(__file__), "static")
 MAX_HOP2, MAX_NODES = 30, 2000
+MAX_SUBNET_LINKS, MAX_RISKY_LINKS, MAX_INTERNET, MAX_INTERNET_TARGETS = 600, 200, 80, 12
 MAX_CONNECTION_EXAMPLES, MAX_OT_EVENTS_PER_HOST = 6, 40
 SEV = {0: "Info", 1: "Low", 2: "Medium", 3: "High", 4: "Critical"}
 
@@ -306,6 +307,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     for n in keep:
         nodes[n]["ext"] = ext_count.get(n, 0)
         nodes[n]["alert"] = ext_alert.get(n, False)
+    overview = _overview_summary(pairs, nodes, focus, kept, ext)
     ioc_by_host = defaultdict(set)
     for match in res.get("ioc_matches", []):
         for host in match.get("hosts", []):
@@ -319,10 +321,77 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                    "alerts": s.get("threat_alerts", 0)},
         "nodes": [nodes[n] for n in keep],
         "links": [[a, b, w] for (a, b), w in sorted(links.items(), key=lambda kv: -kv[1])[:3000]],
-        "focus": focus, "ioc_matches": res.get("ioc_matches", []),
+        "focus": focus, "ioc_matches": res.get("ioc_matches", []), **overview,
         "ioc_counts": {host: len(ids) for host, ids in ioc_by_host.items()},
         "article_briefs": res.get("article_briefs", {}),
         "start": res["hosts"][0]["host"] if res["hosts"] else None,
+    }
+
+
+KIND_RANK = {"alert": 0, "vuln": 1, "reached": 2, "outbound": 3, "attempt": 4, "blocked": 5}
+
+
+def _overview_summary(pairs, nodes, focus, kept, ext) -> dict:
+    """Overview aggregates. Subnet totals and subnet-to-subnet traffic cover every host and pair,
+    so they stay complete when the host graph is capped at MAX_NODES. Host-level links are kept
+    only for risky paths (admin/lateral protocols, or completed sessions into a P1 or a host with
+    exploitation evidence), and outside addresses are ranked by how they touched the network."""
+    subnets = {}
+    for ip, n in nodes.items():
+        if ext(ip):
+            continue
+        sn = subnets.setdefault(n["subnet"], {"id": n["subnet"], "hosts": 0, "drawn": 0, "p1": 0, "likely": 0,
+                                               "lead": 0, "max_score": 0, "exposed": 0, "alert_hosts": 0})
+        sn["hosts"] += 1
+        sn["drawn"] += ip in kept
+        sn["p1"] += n["pri"] == "P1"
+        sn["likely"] += n["ev"] == "likely"
+        sn["lead"] += n["ev"] == "lead"
+        sn["max_score"] = max(sn["max_score"], n["score"] or 0)
+        f = focus.get(ip)
+        if f and f["attackers_total"]:
+            sn["exposed"] += 1
+            sn["alert_hosts"] += any(a["kind"] == "alert" for a in f["attackers"])
+    sublinks: dict[tuple, list] = defaultdict(lambda: [0, 0])
+    risky = {}
+    for (s, d), p in pairs.items():
+        if not p.established or s not in nodes or d not in nodes or ext(s) or ext(d):
+            continue
+        a, b = nodes[s]["subnet"], nodes[d]["subnet"]
+        lateral = sorted({LATERAL_PORTS[x] for x in p.ports if x in LATERAL_PORTS})
+        if a != b:
+            k = tuple(sorted((a, b)))
+            sublinks[k][0] += p.established
+            sublinks[k][1] += p.established if lateral else 0
+        hot = nodes[d]["pri"] == "P1" or nodes[d]["ev"] in ("likely", "lead")
+        if (lateral or hot) and s in kept and d in kept:
+            parts = ([", ".join(lateral)] if lateral else []) + (["into " + (nodes[d]["pri"] or "flagged") + " host"] if hot else [])
+            # level 2: admin protocol into a P1/flagged host; 1: either one
+            risky[(s, d)] = [s, d, p.established, " · ".join(parts), 2 if lateral and hot else 1]
+    inet = {}
+    for host, f in focus.items():
+        for a in f["attackers"]:
+            e = inet.get(a["ip"])
+            if e is None:
+                e = inet[a["ip"]] = {"ip": a["ip"], "kind": a["kind"], "sessions": 0, "alerts": 0, "targets": []}
+            if KIND_RANK[a["kind"]] < KIND_RANK[e["kind"]]:
+                e["kind"] = a["kind"]
+            e["sessions"] += a["sessions"] + a["out_sessions"]
+            e["alerts"] += a["alerts"]
+            e["targets"].append([host, a["kind"], a["sessions"] + a["out_sessions"]])
+    top = sorted(inet.values(), key=lambda e: (KIND_RANK[e["kind"]], -len(e["targets"]), -e["sessions"], e["ip"]))
+    internet = []
+    for e in top[:MAX_INTERNET]:
+        e["hosts_total"] = len(e["targets"])
+        e["targets"] = sorted((t for t in e["targets"] if t[0] in kept),
+                              key=lambda t: (KIND_RANK[t[1]], -t[2], t[0]))[:MAX_INTERNET_TARGETS]
+        internet.append(e)
+    return {
+        "subnets": sorted(subnets.values(), key=lambda x: x["id"]),
+        "subnet_links": [[a, b, w, lw] for (a, b), (w, lw) in
+                         sorted(sublinks.items(), key=lambda kv: (-kv[1][1], -kv[1][0]))[:MAX_SUBNET_LINKS]],
+        "risky_links": sorted(risky.values(), key=lambda r: (-r[4], -r[2], r[0], r[1]))[:MAX_RISKY_LINKS],
+        "internet": internet, "internet_total": len(inet),
     }
 
 
