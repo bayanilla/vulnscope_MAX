@@ -341,6 +341,10 @@ def html(data: dict) -> str:
             f"<title>{EXPLORER_NAME} · {PRODUCT_NAME}</title><link rel=\"icon\" href=\"{icon_data_uri()}\"><style>" + _read("analyst_chat.css") + _read("explorer.css") + explorer_background_css() + ioc_archive.CSS + "</style></head><body>"
             + _read("explorer.html")
             + f'<script id="vf-data" type="application/json">{blob}</script>'
+            # Three.js (MIT, vendored so the page works offline) and the 3D renderer; the Explorer
+            # falls back to its 2D canvas when WebGL is unavailable
+            + "<script>" + _read("vendor/three.min.js") + "</script>"
+            + "<script>" + _read("explorer3d.js") + "</script>"
             + "<script>" + _read("explorer.js") + "</script>"
             + "<script>" + _read("analyst_chat.js") + "</script>"
             + ioc_archive.drawer_html(data["ioc_matches"], data.get("article_briefs")) + "</body></html>\n")

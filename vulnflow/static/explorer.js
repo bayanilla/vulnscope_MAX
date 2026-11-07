@@ -5,6 +5,11 @@ const telemetryOnly = D.vulnerability_data_available === false;
 if (telemetryOnly) document.getElementById('hint').textContent =
   'Click a host to inspect recorded endpoints, ports, protocols, and direction.';
 const cv = document.getElementById('stage'), ctx = cv.getContext('2d');
+// cinematic 3D view (explorer3d.js, Three.js); the 2D canvas stays as the fallback and draws labels on top
+const cv3 = document.getElementById('stage3d');
+const KEY3D = 'vulnscope-explorer-3d';
+const can3d = !!(cv3 && window.VF3D && window.VF3D.supported());
+let R3 = null, R3inst = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const iocIds = new Set((D.ioc_matches || []).map(item => item.id));
@@ -40,6 +45,10 @@ const state = {mode: 'overview', focus: null, hover: null, labels: true, motion:
 const nodes = new Map();          // id -> render node
 let edges = [];                   // focus-mode edges
 let t0 = performance.now();
+// 3D camera choreography: eased yaw / pitch around the 2D camera target, user orbit, a swing on
+// every transition and a slow idle drift
+const view = {yaw: -0.9, pitch: 1.15, dist: 3, uyaw: 0, upitch: 0, swing: 0, drift: 0, idle: 0, cmix: 1};
+const hash01 = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return ((h >>> 0) % 10007) / 10007; };
 
 // ---------------------------------------------------------------- layout: overview
 function overviewLayout() {
@@ -53,12 +62,15 @@ function overviewLayout() {
     const cr = 40 + 40 * Math.sqrt(members.length);
     const r = i === 0 ? 0 : 230 * Math.sqrt(i) + cr;
     const cx = r * Math.cos(i * golden), cy = r * Math.sin(i * golden);
-    clusters.push({subnet: s, x: cx, y: cy, r: cr + 18});
+    // depth: subnets sit on staggered layers; within one, riskier hosts float towards the camera
+    const cz = i === 0 ? 0 : ((i * 0.6180339) % 1 - 0.5) * 420;
+    clusters.push({subnet: s, x: cx, y: cy, z: cz, r: cr + 18});
     members.forEach((n, k) => {
       const rr = k === 0 && members.length === 1 ? 0 : 40 * Math.sqrt(k + 0.5);
       const a = k * golden;
       const rn = node(n);
       rn.ox = cx + rr * Math.cos(a); rn.oy = cy + rr * Math.sin(a);
+      rn.oz = cz + (n.observed ? Math.min(100, n.score || 0) * 1.1 : -40) + (hash01(n.id) - 0.5) * 30;
     });
   });
   return clusters;
@@ -66,14 +78,15 @@ function overviewLayout() {
 function node(d) {
   if (nodes.has(d.id)) return nodes.get(d.id);
   const r = d.observed ? 7 + Math.min(9, (d.score || 0) / 12) : 4.5;
-  const n = {d, id: d.id, x: 0, y: 0, tx: 0, ty: 0, ox: 0, oy: 0, a: 0, ta: 1, r, tr: r, color: SEV[d.sev] || SEV[''],
+  const n = {d, id: d.id, x: 0, y: 0, z: 0, tx: 0, ty: 0, tz: 0, ox: 0, oy: 0, oz: 0, a: 0, ta: 1, r, tr: r, color: SEV[d.sev] || SEV[''],
     ext: false, born: performance.now() + Math.random() * 900};
   nodes.set(d.id, n);
   return n;
 }
 const clusters = overviewLayout();
 const links = D.links.map(([a, b, w]) => ({a: nodes.get(a), b: nodes.get(b), w})).filter(l => l.a && l.b);
-nodes.forEach(n => { n.x = n.ox * 1.8; n.y = n.oy * 1.8; n.tx = n.ox; n.ty = n.oy; });
+nodes.forEach(n => { n.x = n.ox * 1.8; n.y = n.oy * 1.8; n.tx = n.ox; n.ty = n.oy;
+  n.z = n.oz - 1200 - hash01(n.id + '~') * 900; n.tz = n.oz; });
 
 // ---------------------------------------------------------------- stars
 const stars = Array.from({length: 260}, () => ({x: Math.random(), y: Math.random(), z: Math.random() * 0.8 + 0.2,
@@ -84,7 +97,7 @@ function extNode(a) {
   const id = 'ext:' + a.ip;
   let n = nodes.get(id);
   if (!n) {
-    n = {d: {id: a.ip, name: '', scanned: false, sev: ''}, id, x: 0, y: 0, tx: 0, ty: 0, ox: 0, oy: 0, a: 0, ta: 0,
+    n = {d: {id: a.ip, name: '', scanned: false, sev: ''}, id, x: 0, y: 0, z: 0, tx: 0, ty: 0, tz: 0, ox: 0, oy: 0, oz: 0, a: 0, ta: 0,
       r: 6, tr: 6, color: KIND[a.kind], ext: true, born: 0, info: a};
     nodes.set(id, n);
   }
@@ -95,7 +108,7 @@ function domainNode(match) {
   const id = match.id;
   let n = nodes.get(id);
   if (!n) {
-    n = {d: {id: match.value, name: '', scanned: false, sev: ''}, id, x: 0, y: 0, tx: 0, ty: 0, ox: 0, oy: 0, a: 0, ta: 0,
+    n = {d: {id: match.value, name: '', scanned: false, sev: ''}, id, x: 0, y: 0, z: 0, tx: 0, ty: 0, tz: 0, ox: 0, oy: 0, oz: 0, a: 0, ta: 0,
       r: 7, tr: 7, color: '#2ee6d6', ext: false, domain: true, born: 0, info: match};
     nodes.set(id, n);
   }
@@ -114,9 +127,11 @@ function arc(list, dir) {
       const gap = Math.max(36, Math.min(95, 420 / cnt));
       const y = (k - (cnt - 1) / 2) * gap;
       item.tx = dir * (400 + col * 270 - (y * y) / 1600); item.ty = y; item.gap = gap; item.small = false;
+      item.tz = 40 - (y * y) / 2600 - col * 25;
     } else {
       const j = i - LABELED, col = Math.floor(j / rows), k = j % rows, cnt = Math.min(rows, list.length - LABELED - col * rows);
       item.tx = dir * (900 + col * 24); item.ty = (k - (cnt - 1) / 2) * 17; item.gap = 17; item.small = true;
+      item.tz = -50 - col * 3;
     }
   });
 }
@@ -134,8 +149,9 @@ function focus(id, push = true) {
   const center = nodes.get(id);
   const keep = new Set([id]);
   // background nodes drift outward and fade
-  nodes.forEach(n => { n.gap = 0; n.small = false; if (n.ext || n.domain) { n.ta = 0; } else { n.ta = 0.05; n.tx = n.ox * 2.4; n.ty = n.oy * 2.4; n.tr = n.r; } });
-  center.tx = 0; center.ty = 0; center.ta = 1; center.tr = 22;
+  nodes.forEach(n => { n.gap = 0; n.small = false; if (n.ext || n.domain) { n.ta = 0; } else { n.ta = 0.05; n.tx = n.ox * 2.4; n.ty = n.oy * 2.4; n.tz = n.oz - 900; n.tr = n.r; } });
+  center.tx = 0; center.ty = 0; center.tz = 40; center.ta = 1; center.tr = 22;
+  if (state.motion && push !== 'resize') { view.swing += (hash01(id) < 0.5 ? -1 : 1) * 0.55; view.uyaw = 0; view.upitch = 0; }
   const atk = F.attackers.slice(0, SIDE_MAX).map(extNode);
   arc(atk, -1);
   atk.forEach(n => { n.ta = 1; n.tr = n.small ? 3.5 : 5 + Math.min(7, Math.log2(1 + n.info.sessions + n.info.out_sessions + 3 * n.info.alerts)); keep.add(n.id); });
@@ -148,7 +164,7 @@ function focus(id, push = true) {
     const row = Math.floor(i / domainCols), inRow = Math.min(domainCols, domains.length - row * domainCols), col = i % domainCols;
     n.tx = (col - (inRow - 1) / 2) * 300;
     n.ty = -190 - (domainRows - 1) * 45 + row * 90;
-    n.ta = 1; n.tr = 7; n.gap = 90; keep.add(n.id);
+    n.tz = 50; n.ta = 1; n.tr = 7; n.gap = 90; keep.add(n.id);
   });
   const peers = F.peers.slice(0, SIDE_MAX).map(p => { const n = peerNode(p.ip); n.info = p; return n; });
   arc(peers, 1);
@@ -160,7 +176,7 @@ function focus(id, push = true) {
     const via = nodes.get(n.info.via);
     const sib = h2.slice(0, i).filter(m => m.info.via === n.info.via).length;
     n.tx = via.tx + 260 + Math.floor(sib / 4) * 190; n.ty = via.ty + ((sib % 4) - 1.5) * 52;
-    n.ta = 0.85; n.tr = 5; keep.add(n.id);
+    n.tz = via.tz - 25; n.ta = 0.85; n.tr = 5; keep.add(n.id);
   });
   edges = [];
   F.attackers.slice(0, SIDE_MAX).forEach(a => {
@@ -192,6 +208,7 @@ function focus(id, push = true) {
   const availW = Math.max(80, W - panelW - railW - 40), availH = H - 170 - phonePanelH;
   cam.tz = Math.min(1.6, Math.max(drawerW ? 0.12 : W > 900 ? 0.25 : 0.08,
     Math.min(availW / (maxX - minX + 160), availH / (maxY - minY + 120))));
+  if (R3) cam.tz *= 1.12;
   cam.tx = (minX + maxX) / 2 - (railW - panelW) / 2 / cam.tz;
   cam.ty = (minY + maxY) / 2 + phonePanelH / 2 / cam.tz;
   if (!state.motion) snap();
@@ -207,8 +224,9 @@ function overview() {
   state.mode = 'overview'; state.focus = null; state.history = [];
   document.body.classList.remove('focused');
   history.replaceState(null, '', '#');
-  nodes.forEach(n => { if (n.ext || n.domain) n.ta = 0; else { n.ta = 1; n.tx = n.ox; n.ty = n.oy; n.tr = n.r; } });
+  nodes.forEach(n => { if (n.ext || n.domain) n.ta = 0; else { n.ta = 1; n.tx = n.ox; n.ty = n.oy; n.tz = n.oz; n.tr = n.r; } });
   edges = [];
+  if (state.motion) { view.swing -= 0.45; view.uyaw = 0; view.upitch = 0; }
   fitOverview();
   $('panel').hidden = true;
   renderList();
@@ -221,16 +239,21 @@ function fitOverview() {
   const rightInset = drawerW ? drawerW + Math.min(100, W * 0.06) : 0;
   cam.tz = Math.min(1.5, Math.max(drawerW ? 0.12 : 0.2,
     Math.min((W - railW - rightInset - 80) / (maxX - minX + 200), (H - 200) / (maxY - minY + 200))));
+  if (R3) cam.tz *= 1.08;
   cam.tx = (minX + maxX) / 2 - (railW - rightInset) / 2 / cam.tz; cam.ty = (minY + maxY) / 2;
 }
-function snap() { nodes.forEach(n => { n.x = n.tx; n.y = n.ty; n.a = n.ta; n.r = n.tr; }); cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; }
+function snap() { nodes.forEach(n => { n.x = n.tx; n.y = n.ty; n.z = n.tz; n.a = n.ta; n.r = n.tr; }); cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; view.dist = 1; view.swing = 0; }
 
 // ---------------------------------------------------------------- drawing
 const toS = (x, y) => [(x - cam.x) * cam.z + W / 2, (y - cam.y) * cam.z + H / 2];
 const toW = (sx, sy) => [(sx - W / 2) / cam.z + cam.x, (sy - H / 2) / cam.z + cam.y];
+// screen position and CSS px per world unit, through the 3D camera when it is on
+const Pw = (x, y, z) => R3 ? R3.project(x, y, z || 0) : [(x - cam.x) * cam.z + W / 2, (y - cam.y) * cam.z + H / 2, cam.z];
+const P = n => Pw(n.x, n.y, n.z);
 function resize() {
   DPR = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight;
   cv.width = W * DPR; cv.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (R3inst) R3inst.setSize(W, H, DPR);
 }
 function bezier(a, b, bend) {
   const [x1, y1] = toS(a.x, a.y), [x2, y2] = toS(b.x, b.y);
@@ -246,9 +269,11 @@ function frame(now) {
   nodes.forEach(n => {
     const ready = now > n.born;
     n.x += (n.tx - n.x) * k; n.y += (n.ty - n.y) * k; n.r += (n.tr - n.r) * k;
+    n.z += (n.tz - n.z) * (ready ? k * 0.8 : 0);
     n.a += ((ready ? n.ta : 0) - n.a) * Math.min(1, k * 1.4);
   });
   ctx.clearRect(0, 0, W, H);
+  if (R3) { draw3d(now, dt, k); requestAnimationFrame(frame); return; }
   // backdrop: deep gradient + parallax stars
   const g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.75);
   g.addColorStop(0, BG_IN); g.addColorStop(1, BG_OUT);
@@ -350,25 +375,32 @@ function nodeLabel(n) {
   return n.ext ? n.d.id : (n.d.name ? n.d.name.split('.')[0] : n.d.id);
 }
 function drawNode(n, T) {
-  const [x, y] = toS(n.x, n.y), r = Math.max(2, n.r * cam.z);
-  if (x < -80 || y < -80 || x > W + 80 || y > H + 80) return;
-  const sel = state.focus === n.id, hov = state.hover === n;
+  const [x, y, sc] = P(n), r = Math.max(2, n.r * sc);
+  if (!(x > -80 && y > -80 && x < W + 80 && y < H + 80)) return;
+  const sel = state.focus === n.id, hov = state.hover === n, gl = !!R3;
   ctx.globalAlpha = n.a;
-  if (sel) {   // radar rings and sweep on the selected host
-    for (let i = 0; i < 3; i++) {
+  if (sel) {   // radar rings and sweep on the selected host (3D draws its rings in the scene)
+    for (let i = 0; i < 3 && !gl; i++) {
       const ph = ((T * 0.6 + i / 3) % 1);
       ctx.globalAlpha = n.a * (1 - ph) * 0.6; ctx.strokeStyle = n.color; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(x, y, r + ph * 90 * cam.z, 0, 7); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, r + ph * 90 * sc, 0, 7); ctx.stroke();
     }
     if (state.motion) {
       const sw = ctx.createConicGradient ? ctx.createConicGradient(T * 1.4, x, y) : null;
       if (sw) { sw.addColorStop(0, 'rgba(46,230,214,.22)'); sw.addColorStop(0.12, 'rgba(46,230,214,0)'); sw.addColorStop(1, 'rgba(46,230,214,0)');
-        ctx.globalAlpha = n.a; ctx.fillStyle = sw; ctx.beginPath(); ctx.arc(x, y, 160 * cam.z, 0, 7); ctx.fill(); }
+        ctx.globalAlpha = n.a * (gl ? 0.7 : 1); ctx.fillStyle = sw; ctx.beginPath(); ctx.arc(x, y, 160 * sc, 0, 7); ctx.fill(); }
     }
     ctx.globalAlpha = n.a;
   }
   ctx.shadowColor = n.color; ctx.shadowBlur = (sel ? 30 : hov ? 22 : 12);
-  if (n.domain) { // source-linked DNS observations are separate from network traffic nodes
+  if (gl) {
+    ctx.shadowBlur = 0;
+    if (n.domain) { ctx.strokeStyle = '#2ee6d6'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#2ee6d6'; ctx.font = '700 10px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center'; ctx.fillText('D', x, y + 3); }
+    else if (n.ext) { if (iocIds.has('ip:' + n.d.id)) { ctx.strokeStyle = '#2ee6d6'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke(); } }
+    else if (n.d.observed && n.d.ev) { ctx.strokeStyle = n.d.ev === 'likely' ? '#ff3b5c' : '#ffd23f'; ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.arc(x, y, r + 5, T % 7, T % 7 + 6.28); ctx.stroke(); ctx.setLineDash([]); }
+  } else if (n.domain) { // source-linked DNS observations are separate from network traffic nodes
     ctx.fillStyle = 'rgba(8,40,48,.95)'; ctx.strokeStyle = '#2ee6d6'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.shadowBlur = 0;
@@ -397,7 +429,7 @@ function drawNode(n, T) {
   ctx.shadowBlur = 0;
   if (hov && !sel) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r + 4, 0, 7); ctx.stroke(); }
   // labels
-  const show = state.labels && (sel || hov || (state.mode === 'focus' ? n.a > 0.5 && !n.small : (n.d.observed && (cam.z > 0.55 || n.d.pri === 'P1'))));
+  const show = state.labels && (sel || hov || (state.mode === 'focus' ? n.a > 0.5 && !n.small : (n.d.observed && (sc > 0.55 || n.d.pri === 'P1'))));
   if (show) {
     const name = nodeLabel(n);
     ctx.font = (sel ? '600 14px' : '12px') + ' system-ui,-apple-system,Segoe UI,sans-serif';
@@ -407,7 +439,7 @@ function drawNode(n, T) {
     ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(3,6,12,.85)'; ctx.strokeText(name, lx, ly);
     ctx.fillStyle = sel ? '#ffffff' : '#d6e4f5'; ctx.fillText(name, lx, ly);
     // tight columns: keep everything on one line so neighbouring rows don't collide
-    const tight = state.mode === 'focus' && !sel && (n.gap || 99) * cam.z < 42;
+    const tight = state.mode === 'focus' && !sel && (n.gap || 99) * sc < 42;
     if (tight && n.info && n.info.band && side === 'left') {
       const nw = ctx.measureText(name).width;
       ctx.font = '600 10.5px ui-monospace,Menlo,monospace'; ctx.fillStyle = BAND[n.info.band];
@@ -431,7 +463,7 @@ function sideTitles() {
   ctx.font = '600 11px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#7f95b3';
   let top = 0;
   nodes.forEach(n => { if (n.ta > 0.5 && n.id !== state.focus) top = Math.min(top, n.ty); });
-  const [cx, ly0] = toS(0, top - 46), ly = Math.max(96, ly0);
+  const [cx, ly0] = Pw(0, top - 46, 0), ly = Math.max(96, ly0);
   const lx = cx - 30, rx = cx + 30;
   ctx.globalAlpha = 0.9;
   const more = (n, shown) => n > shown ? `  (+${n - shown} in panel)` : '';
@@ -445,12 +477,148 @@ function sideTitles() {
   ctx.globalAlpha = 1;
 }
 
+// ---------------------------------------------------------------- 3D (Three.js) drawing
+function set3d(on, remember) {
+  on = !!on && can3d;
+  if (on && !R3inst) {
+    try { R3inst = window.VF3D.create(cv3, {bgIn: BG_IN, bgOut: BG_OUT, onLost: () => set3d(false, false)}); R3inst.setSize(W, H, DPR); }
+    catch (err) { console.warn('3D view unavailable, using 2D', err); R3inst = null; on = false; }
+  }
+  R3 = on ? R3inst : null;
+  if (cv3) cv3.hidden = !on;
+  document.body.classList.toggle('gl3d', on);
+  $('btn-3d').setAttribute('aria-pressed', String(on));
+  if (remember) { try { localStorage.setItem(KEY3D, on ? '1' : '0'); } catch (_) {} }
+  if (on && remember && state.motion) { view.dist = 1.8; view.swing += 0.5; }
+  if (state.mode === 'focus') focus(state.focus, 'resize'); else fitOverview();
+  if (!state.motion) snap();
+}
+const RGB = hex => window.VF3D.rgb(hex);
+// the 2D view's curve between two nodes, lifted towards the camera in proportion to its length
+function edgeCurve(e) {
+  const a = e.a, b = e.b, dx = b.x - a.x, dy = b.y - a.y, k = e.bend ? 0.28 : 0.1;
+  return [a.x, a.y, a.z, (a.x + b.x) / 2 - dy * k, (a.y + b.y) / 2 + dx * k, (a.z + b.z) / 2 + Math.hypot(dx, dy) * 0.12, b.x, b.y, b.z];
+}
+const qb = (c, t) => { const u = 1 - t, A = u * u, B = 2 * u * t, C = t * t;
+  return [A * c[0] + B * c[3] + C * c[6], A * c[1] + B * c[4] + C * c[7], A * c[2] + B * c[5] + C * c[8]]; };
+const HALO = RGB('#78aaff'), LINK = RGB('#6ea8ff'), FLOW = RGB('#bfe0ff'), SAT = RGB('#ffc857'), SAT_ALERT = RGB('#ff3b5c');
+function draw3d(now, dt, k) {
+  const T = now / 1000, focusing = state.mode === 'focus', motion = state.motion;
+  // camera: cinematic tilt over the overview, near front-on (readable labels) when focused
+  if (motion && now - view.idle > 6000) view.drift += dt;
+  const dr = view.drift;
+  const baseYaw = focusing ? 0.06 * Math.sin(dr * 0.13) : 0.3 * Math.sin(dr * 0.045);
+  const basePitch = focusing ? 0.13 + 0.03 * Math.sin(dr * 0.11) : 0.62 + 0.07 * Math.sin(dr * 0.06);
+  const kv = motion ? 1 - Math.pow(0.1, dt) : 1;
+  view.swing *= motion ? Math.pow(0.22, dt) : 0;
+  view.yaw += (baseYaw + view.uyaw + view.swing - view.yaw) * kv;
+  view.pitch += (Math.max(-0.35, Math.min(1.3, basePitch + view.upitch)) - view.pitch) * kv;
+  view.dist += (1 - view.dist) * (motion ? 1 - Math.pow(0.18, dt) : 1);
+  view.cmix += ((focusing ? 0 : 1) - view.cmix) * k;
+  R3.setCamera(cam.x, cam.y, cam.z, view.yaw, view.pitch, view.dist);
+
+  // ribbons: subnet halos, overview links, focus edges, shockwaves on the selected host
+  const L = R3.lines; L.begin();
+  const cm = view.cmix, cs = 2.4 - 1.4 * cm, cdz = -900 * (1 - cm);
+  clusters.forEach(c => L.circle(c.x * cs, c.y * cs, c.z + cdz, c.r, 72, 1, HALO, 0.03 + 0.2 * cm, true));
+  const lf = focusing ? 0.12 : 1, many = links.length > 1500, segs = many ? 6 : 10;
+  links.forEach(l => {
+    const al = Math.min(l.a.a, l.b.a) * lf; if (al < 0.02) return;
+    const a = l.a, b = l.b, len = Math.hypot(b.x - a.x, b.y - a.y);
+    L.quad(a.x, a.y, a.z, (a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2 - len * 0.22, b.x, b.y, b.z,
+      segs, 0.5 + Math.min(2, Math.log10(1 + l.w)), LINK, al * (many ? 0.12 : 0.2), false);
+  });
+  const hl = state.hoverEdge;
+  edges.forEach(e => {
+    const al = Math.min(e.a.a, e.b.a); e.c = null; if (al < 0.03) return;
+    const c = e.c = edgeCurve(e), lit = !hl || hl === e.info;
+    e.al = al * (lit ? (e.kind === 'hop2' ? 0.55 : e.small ? 0.35 : 0.8) : 0.12) * (e.small && hl && lit ? 2.5 : 1);
+    e.lit = lit;
+    L.quad(c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], e.small ? 6 : 20, e.w * (lit && hl ? 1.6 : 1), RGB(e.color), e.al, e.dashed);
+  });
+  const sel = state.focus && nodes.get(state.focus);
+  if (sel && focusing) for (let i = 0; i < 3; i++) {
+    const ph = (T * 0.45 + i / 3) % 1;
+    L.circle(sel.x, sel.y, sel.z, sel.r + 6 + ph * 140, 64, 1.6, RGB(sel.color), sel.a * (1 - ph) * 0.7, false);
+  }
+  L.end();
+
+  // node bodies and halos
+  const N = R3.nodes; N.begin();
+  nodes.forEach(n => {
+    if (n.a < 0.01) return;
+    const isSel = state.focus === n.id, hov = state.hover === n;
+    let shape = 0, hollow = 0;
+    if (n.domain) shape = 3; else if (n.ext) { shape = 1; hollow = n.info.kind === 'blocked' ? 1 : 0; } else if (!n.d.observed) shape = 2;
+    const glow = isSel ? 1.6 : hov ? 1.2 : n.ext ? 0.45 : n.d.observed ? 0.75 : 0.2;
+    N.add(n.x, n.y, n.z, n.r, RGB(n.color), n.a, shape, hollow, glow, 2);
+  });
+  N.end();
+
+  // sparks: traffic along focus edges, flow on the busiest overview links, satellites round exposed hosts
+  const S = R3.sparks; S.begin();
+  edges.forEach(e => {
+    if (!e.parts.length || !e.c) return;
+    const col = RGB(e.color), size = (1.6 + e.w * 0.5) * 2.6;
+    e.parts.forEach((t, i) => {
+      t = (t + dt * e.speed * (e.kind === 'in' ? 0.6 : 1)) % 1; e.parts[i] = t;
+      const p = qb(e.c, t);
+      S.add(p[0], p[1], p[2], 0, col, e.al / 0.8 * (e.lit ? 0.95 : 0.15), 0, 0, 0, size);
+    });
+  });
+  if (motion && !focusing) {
+    const nf = Math.min(links.length, 140);
+    for (let i = 0; i < nf; i++) {
+      const l = links[i], al = Math.min(l.a.a, l.b.a); if (al < 0.1) continue;
+      const a = l.a, b = l.b, len = Math.hypot(b.x - a.x, b.y - a.y);
+      const c = [a.x, a.y, a.z, (a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2 - len * 0.22, b.x, b.y, b.z];
+      const t = (T * (0.08 + (i % 7) * 0.012) + i * 0.137) % 1, p = qb(c, t);
+      S.add(p[0], p[1], p[2], 0, FLOW, al * 0.45, 0, 0, 0, 2.6);
+    }
+    nodes.forEach(n => {
+      if (n.ext || n.domain || !n.d.ext || n.a < 0.3) return;
+      const cnt = Math.min(10, Math.ceil(Math.log2(1 + n.d.ext) * 1.6));
+      for (let i = 0; i < cnt; i++) {
+        const ang = T * (0.4 + i * 0.03) + i * (Math.PI * 2 / cnt), rr = n.r + 9 + (i % 3) * 4;
+        S.add(n.x + rr * Math.cos(ang), n.y + rr * Math.sin(ang) * 0.55, n.z + rr * Math.sin(ang) * 0.8, 1.7,
+          n.d.alert && i === 0 ? SAT_ALERT : SAT, n.a * 0.9, 0, 0, 0, 1.6);
+      }
+    });
+  }
+  S.end();
+  R3.render(T);
+
+  // canvas overlay: subnet labels, arrowheads, rings and labels
+  if (!focusing && state.labels) clusters.forEach(c => {
+    const [x, y, sc] = Pw(c.x, c.y - c.r, c.z);
+    if (!(sc > 0.35) || !(x > -50 && x < W + 50 && y > -50 && y < H + 50)) return;
+    ctx.globalAlpha = 0.5 * cm; ctx.fillStyle = '#8fa6c6'; ctx.font = '11px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center';
+    ctx.fillText(c.subnet, x, y - 6);
+  });
+  edges.forEach(e => {
+    if (!e.c || e.kind === 'dns' || (e.small && !(hl && e.lit))) return;
+    const [x0, y0] = Pw(...qb(e.c, 0.93)), [x1, y1] = Pw(...qb(e.c, 0.985)), [xe, ye, se] = P(e.b);
+    if (!(xe > -50 && xe < W + 50 && ye > -50 && ye < H + 50)) return;
+    const ang = Math.atan2(y1 - y0, x1 - x0), back = Math.min(e.b.r * se + 3, 40);
+    const ax = xe - Math.cos(ang) * back, ay = ye - Math.sin(ang) * back;
+    ctx.globalAlpha = Math.min(e.a.a, e.b.a) * (e.lit ? 1 : 0.2); ctx.fillStyle = e.color;
+    ctx.beginPath(); ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - 9 * Math.cos(ang - 0.4), ay - 9 * Math.sin(ang - 0.4));
+    ctx.lineTo(ax - 9 * Math.cos(ang + 0.4), ay - 9 * Math.sin(ang + 0.4)); ctx.closePath(); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+  const order = [...nodes.values()].filter(n => n.a > 0.02).sort((a, b) => a.a - b.a);
+  order.forEach(n => drawNode(n, T));
+  if (focusing) sideTitles();
+}
+
 // ---------------------------------------------------------------- interaction
 function pick(sx, sy) {
   let best = null, bd = 1e9;
   nodes.forEach(n => {
     if (n.a < 0.3) return;
-    const [x, y] = toS(n.x, n.y), d = Math.hypot(x - sx, y - sy), r = Math.max(8, n.r * cam.z + 6);
+    const [x, y, sc] = P(n), d = Math.hypot(x - sx, y - sy), r = Math.max(8, n.r * sc + 6);
+    if (!(d < 1e9)) return;
     const labelRight = x - r - 8;
     const extLabelHit = n.ext && state.mode === 'focus' && state.labels && !n.small && n.a > 0.5
       && sx >= labelRight - n.d.id.length * 7.5 && sx <= labelRight
@@ -458,7 +626,7 @@ function pick(sx, sy) {
     const domainWidth = nodeLabel(n).length * 7.5;
     const domainLabelHit = n.domain && state.mode === 'focus' && state.labels && n.a > 0.5
       && sx >= x - domainWidth / 2 && sx <= x + domainWidth / 2
-      && Math.abs(sy - (y + Math.max(2, n.r * cam.z) + 15)) < 12;
+      && Math.abs(sy - (y + Math.max(2, n.r * sc) + 15)) < 12;
     const labelHit = extLabelHit || domainLabelHit;
     const score = labelHit ? 0 : d;
     if ((d < r || labelHit) && score < bd) { bd = score; best = n; }
@@ -467,12 +635,20 @@ function pick(sx, sy) {
 }
 let drag = null;
 cv.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, cx: cam.tx, cy: cam.ty,
-  node: pick(e.clientX, e.clientY), moved: false}; cv.setPointerCapture(e.pointerId); });
+  node: pick(e.clientX, e.clientY), moved: false, orbit: !!R3 && (e.button === 2 || e.shiftKey || e.altKey),
+  yaw: view.uyaw, pitch: view.upitch}; view.idle = performance.now(); cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('contextmenu', e => { if (R3) e.preventDefault(); });
 cv.addEventListener('pointermove', e => {
   if (drag) {
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; cv.classList.add('dragging'); }
-    if (drag.moved) { cam.tx = drag.cx - dx / cam.z; cam.ty = drag.cy - dy / cam.z; cam.x = cam.tx; cam.y = cam.ty; }
+    view.idle = performance.now();
+    if (drag.moved && drag.orbit) {
+      view.uyaw = drag.yaw - dx * 0.005; view.upitch = Math.max(-0.7, Math.min(0.9, drag.pitch + dy * 0.004));
+    } else if (drag.moved) {
+      const sy = R3 ? Math.max(0.45, Math.cos(view.pitch)) : 1;
+      cam.tx = drag.cx - dx / cam.z; cam.ty = drag.cy - dy / cam.z / sy; cam.x = cam.tx; cam.y = cam.ty;
+    }
     return;
   }
   const n = pick(e.clientX, e.clientY);
@@ -501,6 +677,14 @@ cv.addEventListener('dblclick', e => { if (!pick(e.clientX, e.clientY)) { overvi
 cv.addEventListener('pointerleave', () => { state.hover = null; tip(null); });
 cv.addEventListener('wheel', e => {
   e.preventDefault();
+  view.idle = performance.now();
+  if (R3) {   // zoom towards the point under the cursor on the network plane
+    const z = Math.max(0.12, Math.min(4, cam.tz * Math.exp(-e.deltaY * 0.0015)));
+    const w = R3.unproject(e.clientX, e.clientY);
+    if (w) { const f = cam.tz / z; cam.tx = w[0] + (cam.tx - w[0]) * f; cam.ty = w[1] + (cam.ty - w[1]) * f; }
+    cam.tz = z;
+    return;
+  }
   const [wx, wy] = toW(e.clientX, e.clientY);
   const z = Math.max(0.12, Math.min(4, cam.tz * Math.exp(-e.deltaY * 0.0015)));
   cam.tz = z; cam.tx = wx - (e.clientX - W / 2) / z; cam.ty = wy - (e.clientY - H / 2) / z;
@@ -546,12 +730,13 @@ addEventListener('keydown', e => {
   else if (e.key === '/') { e.preventDefault(); $('search').focus(); }
   else if (e.key === 'l' || e.key === 'L') toggleLabels();
   else if (e.key === 'm' || e.key === 'M') toggleMotion();
+  else if (e.key === '3' && can3d) set3d(!R3, true);
   else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
     const ids = hostOrder(); const i = ids.indexOf(state.focus);
     focus(ids[(i + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length]);
   }
 });
-addEventListener('resize', () => { resize(); state.mode === 'focus' ? focus(state.focus, false) : fitOverview(); });
+addEventListener('resize', () => { resize(); state.mode === 'focus' ? focus(state.focus, 'resize') : fitOverview(); });
 
 // ---------------------------------------------------------------- panels
 function hostOrder() {
@@ -769,6 +954,8 @@ function toggleMotion() {
 $('btn-overview').onclick = () => { overview(); };
 $('btn-labels').onclick = toggleLabels;
 $('btn-motion').onclick = toggleMotion;
+$('btn-3d').hidden = !can3d;
+$('btn-3d').onclick = () => set3d(!R3, true);
 if (!state.motion) $('btn-motion').setAttribute('aria-pressed', 'false');
 
 $('legend').innerHTML =
@@ -787,7 +974,12 @@ $('subtitle').textContent = (telemetryOnly ? `${c.hosts} observed hosts · no vu
   (w[0] ? ` · ${w[0].slice(0, 10)} → ${(w[1] || '').slice(0, 10)}` : '');
 
 // ---------------------------------------------------------------- start
-resize(); renderList(); fitOverview();
+resize();
+{
+  let pref = null; try { pref = localStorage.getItem(KEY3D); } catch (_) {}
+  set3d(can3d && !/[?&#]2d\b/.test(location.search + location.hash) && pref !== '0', false);
+}
+renderList(); fitOverview();
 const introText = telemetryOnly ? `Exploring ${c.hosts} observed hosts and ${c.flows.toLocaleString()} sessions` : `Correlating ${c.hosts} hosts against ${c.flows.toLocaleString()} sessions`;
 if (state.motion) {
   let i = 0; const it = setInterval(() => { $('intro-text').textContent = introText.slice(0, ++i) + (i < introText.length ? '▌' : ''); if (i >= introText.length) clearInterval(it); }, 22);

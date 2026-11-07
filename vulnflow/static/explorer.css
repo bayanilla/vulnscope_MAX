@@ -6,6 +6,7 @@
 html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;overflow:hidden}
 #stage{position:fixed;inset:0;width:100vw;height:100vh;display:block;cursor:grab}
 #stage.dragging{cursor:grabbing}#stage.hover{cursor:pointer}
+#stage3d{position:fixed;inset:0;width:100vw;height:100vh;display:block;pointer-events:none}#stage3d[hidden]{display:none}
 #vignette{position:fixed;inset:0;pointer-events:none;
 background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.65) 100%),
 repeating-linear-gradient(0deg,rgba(255,255,255,.012) 0 1px,transparent 1px 3px)}

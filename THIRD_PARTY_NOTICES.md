@@ -30,3 +30,9 @@ which is distributed under the MIT License:
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+The Explorer's 3D view bundles [three.js](https://github.com/mrdoob/three.js) r149 at
+`vulnflow/static/vendor/three.min.js`, inlined into `explorer.html` so the page works offline.
+three.js is distributed under the MIT License; its full text is in `vulnflow/static/vendor/three.LICENSE`:
+
+> Copyright © 2010-2023 three.js authors

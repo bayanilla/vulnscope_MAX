@@ -225,7 +225,7 @@ Force a format with `--format file.csv=paloalto` if detection guesses wrong.
 ## Host explorer
 
 `explorer.html` is written with every run (and opened for you by `vulnflow explore`). It is a single
-offline file: no network, no libraries. With a scan, the overview groups scored hosts by /24 and colours
+offline file: no network access; its one library, three.js, is bundled inside it. With a scan, the overview groups scored hosts by /24 and colours
 them by worst severity. Without a scan, it groups observed internal hosts and marks vulnerability status
 unknown. Click a host, or pick it from the list on the left, and the camera flies to it:
 
@@ -251,6 +251,14 @@ The selected-host panel stays to the right of the chart on desktop and intermedi
 phone-sized screens (520px or narrower), it moves below the chart to keep the details readable.
 
 Use the host list or `/` to find a host. L toggles labels and M toggles motion.
+
+**3D view.** Where the browser supports WebGL, the Explorer opens in a cinematic 3D view built with
+three.js: subnets float on staggered layers over a tilted plane, riskier hosts rise towards the camera,
+links arc between them, and the camera sweeps in when you pick a host. Drag to pan, right-drag or
+Shift-drag to orbit, scroll to zoom. **3D** (or the 3 key) switches back to the flat view, and the
+choice is remembered; `explorer.html?2d` always opens flat. The 3D view draws the same capped node and
+link set as the flat view (2,000 hosts, 3,000 links, 400 addresses per side), so very large log sets
+stay smooth; turning off **Motion** stops the camera drift and animated traffic.
 Deep links work: `explorer.html#host=10.0.1.10`.
 See the [Explorer Security Assistant screenshot](screenshots/security_assistant.jpg).
 
