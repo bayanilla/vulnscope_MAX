@@ -17,15 +17,18 @@ def _cfg(a) -> Config:
 
 
 def _llm_cfg(a, required=True):
-    """Resolve the AI provider from flags/env. No vendor is assumed: one must be chosen.
+    """Resolve the AI provider from flags/env. No AI vendor is assumed: without a choice the
+    built-in offline assistant is used (``required`` False leaves the config unset instead).
     When the chosen provider needs a key and none is set, ask for it without echoing."""
     from .llm import KEY_ENV, PROVIDER_NAMES, LLMConfig, LLMError
     cfg = LLMConfig.from_env(provider=a.llm_provider, model=a.llm_model, base_url=a.llm_base_url,
                              redact=True if a.redact else None)
     if not cfg.ready:
         if required:
-            raise LLMError("Choose an AI provider with --llm-provider "
-                           f"({', '.join(p for p in PROVIDER_NAMES if p != 'mock')}) or VULNFLOW_LLM_PROVIDER.")
+            print("Using the built-in offline assistant (no AI). For an AI model, pass --llm-provider "
+                  f"({', '.join(p for p in PROVIDER_NAMES if p != 'offline')}) or set VULNFLOW_LLM_PROVIDER.",
+                  file=sys.stderr)
+            return LLMConfig.offline()
         return cfg
     if cfg.needs_key() and sys.stdin.isatty():
         import getpass
@@ -35,8 +38,9 @@ def _llm_cfg(a, required=True):
 
 
 def _llm_flags(p):
-    p.add_argument("--llm-provider", choices=["anthropic", "openai", "local", "mock"],
-                   help="AI provider; no default, nothing is sent until you choose (env: VULNFLOW_LLM_PROVIDER)")
+    p.add_argument("--llm-provider", choices=["offline", "anthropic", "openai", "local", "mock"],
+                   help="assistant provider; default 'offline' (built-in, no AI, nothing sent). "
+                        "Nothing goes to an AI model until you choose one (env: VULNFLOW_LLM_PROVIDER)")
     p.add_argument("--llm-model", help="model name (required for openai; suggested defaults: "
                                        "anthropic claude-opus-5-5, local llama3.1)")
     p.add_argument("--llm-base-url", help="endpoint for openai/local, e.g. http://localhost:11434/v1")
@@ -192,8 +196,9 @@ def main(argv=None) -> int:
             try:
                 llm_cfg = _llm_cfg(args, required=False)
             except LLMError as exc:
-                print(f"warning: {exc} Choose a provider on the AI settings page instead.", file=sys.stderr)
-                llm_cfg = LLMConfig()
+                print(f"warning: {exc} Using the built-in offline assistant; choose a provider on the "
+                      "AI settings page instead.", file=sys.stderr)
+                llm_cfg = LLMConfig.offline()
         serve(args.host, args.port, args.data_dir, _cfg(args), llm_cfg=llm_cfg,
               max_upload=args.max_upload_mb * 1024 * 1024, allow_remote=args.allow_remote)
         return 0

@@ -298,9 +298,8 @@ class EndToEndTests(Base):
         with open(paths["technical_report.html"], encoding="utf-8") as fh:
             self.assertIn("Vulnerability status: unknown", fh.read())
         from vulnflow.llm import Analyst, LLMConfig
-        analyst = Analyst(res, LLMConfig.from_env(provider="mock"))
-        self.assertIn("without vulnerability scan data", analyst.system)
-        self.assertIn("vulnerability status unknown", analyst.brief())
+        self.assertIn("without vulnerability scan data", Analyst(res, LLMConfig.from_env(provider="local")).system)
+        self.assertIn("vulnerability status is unknown", Analyst(res, LLMConfig.offline()).brief())
 
     def test_empty_scan_and_missing_telemetry(self):
         empty_scan = self.write("empty.nessus", "")

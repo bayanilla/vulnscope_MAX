@@ -52,6 +52,7 @@
     if (submit.disabled) return;
     const question = input.value.trim();
     if (!question) { input.focus(); return; }
+    clearSuggestions();
     addMessage('you', 'You', question, false);
     input.value = '';
     submit.disabled = true;
@@ -75,6 +76,41 @@
       input.focus();
     }
   });
+
+  // Built-in offline assistant: offer a few starting questions while the conversation is empty.
+  const SUGGESTIONS = ['What should we fix first?', 'Show outbound callbacks', 'Any lateral movement?',
+    'What is exposed to the internet?', 'Which IOCs matched?', 'What could this analysis be missing?'];
+  function focusedHost() {
+    const m = location.hash.match(/host=([^&]+)/);
+    try { return m ? decodeURIComponent(m[1]) : ''; } catch (e) { return ''; }
+  }
+  function showSuggestions() {
+    if (log.querySelector('.ai-chat-msg')) return;
+    let box = log.querySelector('.ai-chat-suggest');
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'ai-chat-suggest';
+      log.appendChild(box);
+    }
+    box.replaceChildren();
+    const intro = document.createElement('p');
+    intro.textContent = 'Ask about a host, IP, CVE, plugin ID or IOC, or start with one of these:';
+    box.appendChild(intro);
+    const host = focusedHost();
+    (host ? ['Explain ' + host].concat(SUGGESTIONS) : SUGGESTIONS).forEach(text => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.textContent = text;
+      chip.addEventListener('click', () => {
+        if (submit.disabled) return;
+        input.value = text;
+        form.requestSubmit(submit);
+      });
+      box.appendChild(chip);
+    });
+  }
+  function clearSuggestions() { const box = log.querySelector('.ai-chat-suggest'); if (box) box.remove(); }
+  window.addEventListener('hashchange', () => { if (root.dataset.offline) showSuggestions(); });
 
   const toggle = document.getElementById('btn-ai');
   if (!toggle) return;
@@ -110,10 +146,11 @@
       if (config.csrf) csrfToken = config.csrf;
       if (!config.enabled) return;
       toggle.hidden = false;
-      status.textContent = config.description + (config.ready && !config.mock ? ' Answers are AI-generated; verify before acting.' : '');
+      status.textContent = config.description + (config.ready && !config.offline ? ' Answers are AI-generated; verify before acting.' : '');
       form.hidden = !config.ready;
       log.hidden = !config.ready;
-      settings.textContent = config.ready ? 'Change provider' : 'Choose a provider';
+      settings.textContent = config.offline ? 'Use an AI model instead' : (config.ready ? 'Change provider' : 'Choose a provider');
+      if (config.offline) { root.dataset.offline = '1'; showSuggestions(); }
     })
     .catch(() => {});
 })();

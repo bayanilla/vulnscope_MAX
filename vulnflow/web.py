@@ -37,7 +37,7 @@ from .correlate import Config
 from dataclasses import replace
 from urllib.parse import parse_qs
 
-from .llm import DEFAULT_BASE_URLS, PROVIDER_NAMES, Analyst, LLMConfig, LLMError, load_results, log_qa, write_brief
+from .llm import DEFAULT_BASE_URLS, PROVIDER_ALIASES, PROVIDER_NAMES, Analyst, LLMConfig, LLMError, load_results, log_qa, write_brief
 from .article_brief import generate_article_briefs
 from .parsers import FORMATS
 from . import resources
@@ -224,22 +224,25 @@ def _where(cfg: LLMConfig) -> str:
 
 
 def _where_text(cfg: LLMConfig) -> str:
-    if cfg.provider == "mock":
-        return "Offline mock: fixed summaries from this run's results; no model is used and nothing leaves this machine."
+    if cfg.is_offline:
+        return ("Built-in offline assistant: answers are put together from this run's results by fixed rules. "
+                "No AI model is used and nothing leaves this machine.")
     dest = f"correlated results (not raw logs) are sent to {cfg.destination()}"
     red = "; IPs and hostnames are replaced with tokens first" if cfg.redact else ""
     return f"Model: {cfg.label()}: {dest + red}."
 
 
 SETTINGS = """<style>{css}</style><h1>Security Assistant settings</h1>
-<p>Pick any provider. Nothing is sent to a model until you save a choice here. The API key is held in this
-server's memory only: it is not written to disk, shown again, or logged, and it is forgotten when the server stops.</p>
+<p>The Security Assistant works out of the box with the built-in offline assistant. Pick an AI provider here if you
+want a model to interpret the results instead. Nothing is sent to a model until you save that choice. The API key is
+held in this server's memory only: it is not written to disk, shown again, or logged, and it is forgotten when the
+server stops.</p>
 {status}{error}
 <form method="post" action="/settings">
 <input type="hidden" name="csrf" value="{csrf}"><input type="hidden" name="next" value="{next}">
 <label for="provider">Provider</label>
 <select id="provider" name="provider">{options}</select>
-<div class="hint">Offline mock uses this run's results to demonstrate the assistant without a model, API key, or network request. Its answers are fixed summaries, not AI analysis.</div>
+<div class="hint">Built-in (offline, no AI) explains each run from its own results: host risk, CVEs, exposure, inbound and outbound traffic, attack paths and IOC matches. It needs no model, API key or network, and it can only answer about what is in the results.</div>
 <label for="model">Model</label>
 <input id="model" name="model" type="text" value="{model}" placeholder="e.g. claude-opus-5-5, an OpenAI model name, llama3.1">
 <div class="hint">Required for OpenAI. Anthropic and self-hosted fall back to claude-opus-5-5 and llama3.1.</div>
@@ -251,7 +254,7 @@ server's memory only: it is not written to disk, shown again, or logged, and it 
 <div class="hint">Anthropic and OpenAI need one; self-hosted usually does not. Leave blank to keep the current key.</div>
 <label><input type="checkbox" name="redact" value="1"{redact}> Replace IPs and hostnames with tokens before sending</label>
 <button type="submit" name="action" value="save">Save</button>
-<button type="submit" name="action" value="clear" class="secondary">Turn off AI and forget key</button>
+<button type="submit" name="action" value="clear" class="secondary">Use the built-in assistant and forget key</button>
 </form><p><a href="{next}">Back</a></p>"""
 SETTINGS_CSS = """form label{display:block;font-weight:600;margin:14px 0 4px} .hint{color:var(--muted);font-size:.9rem}
 form input[type=text],form input[type=password],form select{width:100%;max-width:520px;padding:6px;font:inherit;box-sizing:border-box}
@@ -393,14 +396,15 @@ def native_pick(start: str) -> dict:
 def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = None,
                  max_upload: int = MAX_UPLOAD, access_token: str | None = None,
                  allowed_hosts: tuple[str, ...] = ()):
-    """llm_cfg None hides the Security Assistant entirely; an unready LLMConfig shows it unconfigured.
+    """llm_cfg None hides the Security Assistant entirely; an unready LLMConfig falls back to the
+    built-in offline assistant, so the assistant always works without a provider.
 
     Without ``access_token`` the server only answers requests whose Host header names this
     machine's loopback address (or one of ``allowed_hosts``), which defeats DNS rebinding.
     With ``access_token`` (remote access) every request must carry the token, as a cookie
     set from the one-time ``?token=`` link printed at start-up.
     """
-    state = {"llm": llm_cfg}
+    state = {"llm": llm_cfg if llm_cfg is None or llm_cfg.ready else LLMConfig.offline()}
     csrf = secrets.token_urlsafe(24)   # guards form posts from other sites in the same browser
     extra_hosts = {h.lower() for h in allowed_hosts}
     brand_lock = threading.Lock()
@@ -587,7 +591,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 cfg = self._llm()
                 return self._send(200, json.dumps({
                     "enabled": cfg is not None, "ready": bool(cfg and cfg.ready),
-                    "mock": bool(cfg and cfg.provider == "mock"),
+                    "offline": bool(cfg and cfg.is_offline),
                     "description": _where_text(cfg) if cfg and cfg.ready else "No AI provider selected yet.",
                     "csrf": csrf,
                 }), "application/json", {"Cache-Control": "no-store"})
@@ -642,7 +646,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 brief = (f'<div class="ai-chat-brief"><form method="post" action="brief">'
                          f'<input type="hidden" name="csrf" value="{csrf}">'
                          '<button type="submit">Generate Security Assistant brief</button>'
-                         ' <span class="hint">Takes a minute or two.</span></form></div>'
+                         f' <span class="hint">{"Instant; built from the results without AI." if cfg.is_offline else "Takes a minute or two."}</span></form></div>'
                          if cfg.ready and not os.path.exists(os.path.join(run_dir, "ai_analyst_brief.html")) else "")
                 ai = CHAT.format(status=html.escape(_where_text(cfg) if cfg.ready else "No AI provider selected yet."),
                                  settings=f"/settings?next={here}", brief=brief,
@@ -913,10 +917,10 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             if state["llm"] is None:
                 return self._send(404, "Not found", "text/plain")
             if form.get("action") == "clear":
-                state["llm"] = LLMConfig()
+                state["llm"] = LLMConfig.offline()
                 return self._send(303, "", headers={"Location": nxt if re.fullmatch(r"/(runs/[a-f0-9]{16}/)?", nxt) else "/"})
             cur = state["llm"]
-            provider = form.get("provider", "")
+            provider = PROVIDER_ALIASES.get(form.get("provider", ""), form.get("provider", ""))
             base_url = form.get("base_url", "").strip()
             typed_key = form.get("api_key", "").strip()
             # A stored key is only reused for the same provider AND the same endpoint, so a changed
@@ -926,9 +930,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             new = LLMConfig(provider=provider, model=form.get("model", "").strip(), base_url=base_url,
                             api_key=typed_key or (cur.api_key if same_endpoint else ""),
                             redact=form.get("redact") == "1")
-            if provider == "mock":
-                new.model, new.base_url, new.api_key, new.redact = "mock", "", "", False
-            if provider in ("anthropic", "local", "mock"):
+            if provider in ("anthropic", "local"):
                 if new.model == "" and provider == cur.provider:
                     new.model = cur.model
             try:
@@ -1036,7 +1038,8 @@ def serve(host: str, port: int, data_dir: str, cfg: Config, llm_cfg: LLMConfig |
     print(f"  (results stored in {os.path.abspath(data_dir)})")
     print(f"Analyses: {resources.max_jobs()} at a time; " + resources.plan(workdir=data_dir).describe())
     if llm_cfg is not None:
-        print(f"Security Assistant: {llm_cfg.label() if llm_cfg.ready else 'no provider yet; choose one at /settings'}")
+        print(f"Security Assistant: {llm_cfg.label() if llm_cfg.ready else 'built-in offline assistant (no AI)'}"
+              "; choose an AI model at /settings")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
