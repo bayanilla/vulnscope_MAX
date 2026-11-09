@@ -234,6 +234,7 @@ function focus(id, push = true) {
   state.mode = 'focus'; state.focus = id;
   document.body.classList.add('focused');
   $('hint').classList.add('gone');
+  updateAbout();
   history.replaceState(null, '', '#host=' + encodeURIComponent(id));
   const center = nodes.get(id);
   const keep = new Set([id]);
@@ -318,7 +319,7 @@ function overview() {
   edges = [];
   fitOverview();
   $('panel').hidden = true;
-  renderList();
+  renderList(); updateAbout();
 }
 function fitOverview() {
   let minX = 0, maxX = 0, minY = 0, maxY = 0;
@@ -977,6 +978,7 @@ addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') { if (e.key === 'Escape') e.target.blur(); return; }
   if (e.key === 'Escape') { state.history.length ? focus(state.history.pop(), false) : overview(); }
   else if (e.key === '/') { e.preventDefault(); $('search').focus(); }
+  else if (e.key === '?') toggleAbout();
   else if (e.key === 'l' || e.key === 'L') toggleLabels();
   else if (e.key === 'm' || e.key === 'M') toggleMotion();
   else if (e.key === '3' && can3d) set3d(!R3, true);
@@ -1220,8 +1222,48 @@ function markSeg() {
   $('vw-flat').classList.toggle('on', !paths && !R3); $('btn-3d').classList.toggle('on', !paths && !!R3);
   $('btn-paths').classList.toggle('on', paths);
   for (const id of ['vw-flat', 'btn-3d', 'btn-paths']) $(id).setAttribute('aria-current', $(id).classList.contains('on') ? 'true' : 'false');
-  placeViewctl();
+  placeViewctl(); updateAbout();
 }
+// "what am I looking at": the ? at the right end of the top buttons opens a short note worded for the current view.
+// It opens by itself for 10 s when the page loads or the view changes, then folds back into the ?
+// (hovering keeps it open); the ? or the ? key opens and closes it by hand.
+const ABOUT_MS = 10000;
+let aboutTimer = 0, aboutShown = '';
+const ABOUT = telemetryOnly ? {
+  flat: 'Each dot is an internal host seen in the logs, grouped by subnet; <b>bigger dots</b> had more contact with outside addresses and <b>blue lines</b> are traffic between hosts. No scan was loaded, so vulnerability status is unknown. Click a host to see who it talked to.',
+  '3d': 'Each platform is a subnet and each pillar a host; <b>taller</b> means more contact with outside addresses. Outside addresses sit on the arc above: <b>beams down</b> reach a host, <b>violet beams up</b> are hosts calling out. Click a host to see who it talked to.',
+  focus: h => `<b>${esc(h)}</b> in the middle. <b>Left:</b> outside addresses it exchanged traffic with (north/south). <b>Right:</b> internal hosts it talked to (east/west). Esc or ← All hosts goes back.`,
+} : {
+  flat: 'Each dot is a scanned host, grouped by subnet and colored by its worst finding; <b>bigger dots</b> carry a higher risk score and <b>blue lines</b> are traffic between hosts. Click a host to see who reached it and how far a compromise could spread.',
+  '3d': 'Each platform is a subnet and each pillar a host; <b>taller</b> means a higher risk score. Outside addresses sit on the arc above: <b>beams down</b> reach a host, <b>violet beams up</b> are hosts calling out. Click a host for detail.',
+  focus: h => `<b>${esc(h)}</b> in the middle. <b>Left:</b> outside addresses that touched it (north/south). <b>Right:</b> internal hosts it can reach, colored by how likely a compromise could spread there (east/west). Esc or ← All hosts goes back.`,
+};
+function aboutKey() { return state.mode === 'focus' ? 'focus:' + state.focus : R3 ? '3d' : 'flat'; }
+function aboutHtml() {
+  if (state.mode !== 'focus') return ABOUT[R3 ? '3d' : 'flat'];
+  const d = D.nodes.find(n => n.id === state.focus) || {};
+  return ABOUT.focus(d.name ? d.name.split('.')[0] + ' (' + state.focus + ')' : state.focus);
+}
+function placeAbout() {
+  const b = $('about-toggle').getBoundingClientRect(), root = document.documentElement.style;
+  root.setProperty('--about-top', Math.round(b.bottom + 8) + 'px');
+  root.setProperty('--about-right', Math.max(10, Math.round(innerWidth - b.right)) + 'px');
+}
+function closeAbout() { clearTimeout(aboutTimer); $('about').hidden = true; $('about-toggle').setAttribute('aria-expanded', 'false'); }
+function openAbout(ms = ABOUT_MS) {
+  $('about').innerHTML = aboutHtml(); aboutShown = aboutKey(); placeAbout();
+  $('about').hidden = false; $('about-toggle').setAttribute('aria-expanded', 'true');
+  clearTimeout(aboutTimer); aboutTimer = setTimeout(closeAbout, ms);
+}
+// called whenever the view may have changed: a new view opens the note again, the same view only refreshes it
+function updateAbout() {
+  if (aboutKey() !== aboutShown) openAbout(); else if (!$('about').hidden) { $('about').innerHTML = aboutHtml(); placeAbout(); }
+}
+function toggleAbout() { if ($('about').hidden) openAbout(); else closeAbout(); }
+$('about-toggle').onclick = toggleAbout;
+$('about').addEventListener('mouseenter', () => clearTimeout(aboutTimer));
+$('about').addEventListener('mouseleave', () => { clearTimeout(aboutTimer); aboutTimer = setTimeout(closeAbout, 3000); });
+addEventListener('resize', () => { if (!$('about').hidden) placeAbout(); });
 const closePaths = () => { if (window.VFPaths) window.VFPaths.close(); };
 $('vw-flat').onclick = () => { closePaths(); set3d(false, true); };
 $('btn-3d').onclick = () => { closePaths(); set3d(true, true); };

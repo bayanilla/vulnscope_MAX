@@ -5,6 +5,7 @@
   <div class="brand"><!--BRAND--><span class="view">EXPLORER</span></div>
   <div id="subtitle" class="mono"></div>
 </header>
+<div id="about" role="note" hidden></div>
 <div id="controls">
   <button id="btn-overview" type="button" title="Back to all hosts (Esc)">← All hosts</button>
   <div id="viewseg" class="seg" role="group" aria-label="View">
@@ -15,6 +16,7 @@
   <button id="btn-labels" aria-pressed="true" title="Show or hide labels (L)">Labels</button>
   <button id="btn-motion" aria-pressed="true" title="Animated traffic (M)">Motion</button>
   <button id="btn-ai" type="button" aria-controls="analyst-chat" aria-expanded="false" hidden>Security Assistant</button>
+  <button id="about-toggle" type="button" aria-expanded="false" aria-controls="about" title="What am I looking at? (?)" aria-label="What am I looking at?">?</button>
 </div>
 <div id="viewctl" role="group" aria-label="3D view">
   <button id="vc-left" type="button" title="Rotate left (Q)" aria-label="Rotate left">⟲</button>
@@ -26,8 +28,8 @@
   <button id="vc-reset" type="button" title="Reset to the low, turning view (R)">Reset</button>
 </div>
 <aside id="rail">
-  <input id="search" type="search" placeholder="Find host, IP, CVE  ( / )" aria-label="Find a host" autocomplete="off">
-  <button id="ioc-filter" type="button" aria-pressed="false" hidden>IOC hosts <span id="ioc-host-count"></span></button>
+  <div class="railtop"><input id="search" type="search" placeholder="Find host, IP, CVE" title="Find a host, IP, or CVE ( / )" aria-label="Find a host" autocomplete="off">
+  <button id="ioc-filter" type="button" aria-pressed="false" hidden>IOC hosts <span id="ioc-host-count"></span></button></div>
   <div id="hostlist" role="list"></div>
 </aside>
 <aside id="panel" aria-live="polite" hidden></aside>

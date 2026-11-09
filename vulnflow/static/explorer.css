@@ -21,12 +21,20 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .brand .brand-logo{height:24px;width:auto;max-width:96px;object-fit:contain;margin-right:3px}
 .brand .view{color:var(--cyan);font-size:11px;letter-spacing:.16em;border-left:1px solid var(--line);padding-left:9px;margin-left:3px}
 #subtitle{color:var(--muted);font-size:12px;margin-top:4px}
+#about{position:fixed;top:var(--about-top,62px);right:var(--about-right,18px);z-index:6;width:max-content;max-width:min(440px,calc(100vw - 36px));
+font-size:12.5px;line-height:1.45;color:#c4d2e4;background:rgba(10,18,32,.9);border:1px solid var(--line);border-top:2px solid var(--cyan);
+border-radius:8px;padding:7px 11px;backdrop-filter:blur(8px);box-shadow:0 8px 30px rgba(0,0,0,.45);animation:aboutIn .25s ease-out}
+#about[hidden]{display:none}#about b{color:var(--fg);font-weight:600}
+@keyframes aboutIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+#about-toggle{width:34px;padding:6px 0;font-weight:700;color:var(--cyan)}
+#about-toggle[aria-expanded="true"]{border-color:var(--cyan);background:rgba(46,230,214,.16)}
 #controls{position:fixed;top:14px;right:18px;display:flex;gap:8px;z-index:3}
 #rail{position:fixed;top:78px;left:18px;bottom:96px;width:260px;display:flex;flex-direction:column;gap:8px;z-index:2}
-#search{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--glass);color:var(--fg);
-font:inherit;backdrop-filter:blur(8px)}
+.railtop{display:flex;align-items:center;gap:8px}
+#search{flex:1;min-width:0;width:100%;padding:8px 8px;border-radius:8px;border:1px solid var(--line);background:var(--glass);color:var(--fg);
+font:inherit;font-size:13px;backdrop-filter:blur(8px)}
 #hostlist{overflow:auto;flex:1;background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:6px;backdrop-filter:blur(8px)}
-#ioc-filter:not([hidden]){align-self:flex-start;padding:4px 10px;border:1px solid var(--cyan);border-radius:999px;background:var(--glass);color:var(--cyan);font:700 11px var(--mono);cursor:pointer}
+#ioc-filter:not([hidden]){flex:none;white-space:nowrap;padding:4px 10px;border:1px solid var(--cyan);border-radius:999px;background:var(--glass);color:var(--cyan);font:700 11px var(--mono);cursor:pointer}
 #ioc-filter:hover,#ioc-filter[aria-pressed="true"]{background:rgba(46,230,214,.16)}
 .ioc-host-badge{display:inline-block;margin-left:3px;padding:1px 5px;border:1px solid var(--cyan);border-radius:999px;color:var(--cyan);font:700 10px var(--mono);vertical-align:1px}
 .hrow{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px}

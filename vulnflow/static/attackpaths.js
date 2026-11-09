@@ -139,7 +139,7 @@ const cutBy = c => c.hops.find(ip => state.cut.has(ip));
 root.innerHTML = `<div class="ap-app">
   <header class="ap-top">${BRAND_LOGO.startsWith('data:image/') ? `<img class="ap-logo" src="${esc(BRAND_LOGO)}" alt="" aria-hidden="true">` : ''}<div class="ap-brand"><b>Attack <em>paths</em></b><span>${esc(BRAND)} · most likely ways in</span></div>
     <div class="ap-kpis" id="ap-kpis"></div>
-    <div class="ap-seg" role="group" aria-label="View"><button type="button" data-view="flat" title="Flat network view (2)">Flat</button><button type="button" data-view="3d" title="3D network view (3)">3D</button><button type="button" class="on" aria-current="true" title="Attack paths (Esc to go back)">Attack paths</button></div></header>
+    <div class="ap-seg" role="group" aria-label="View"><button type="button" data-view="flat" title="Flat network view (2)">Flat</button><button type="button" data-view="3d" title="3D network view (3)">3D</button><button type="button" class="on" aria-current="true" title="Attack paths (Esc to go back)">Attack paths</button></div><span class="ap-qwrap"><button type="button" class="ap-qbtn" id="ap-about-toggle" aria-controls="ap-about" aria-expanded="false" aria-label="What am I looking at?" title="What am I looking at? (?)">?</button><p class="ap-about" id="ap-about" hidden>Each colored line is one likely way in, read left to right: an internet origin (◆), the entry host, then up to two pivots inside. Rows are subnets; line 1 is the most likely. Ranked estimates of where to look first, not confirmed compromise.</p></span></header>
   <div class="ap-brief" id="ap-brief"></div>
   <main class="ap-main">
     <section class="ap-col ap-lines"><h3>Most likely ways in</h3><div id="ap-lines"></div></section>
@@ -154,6 +154,14 @@ root.innerHTML = `<div class="ap-app">
       <div class="ap-chips" id="ap-chips"></div></div>
     <div class="ap-timeline"><div class="ap-hd"><h3>When the internet touched the entry hosts</h3><span class="ap-sub" id="ap-tlsub"></span></div><svg id="ap-tl" height="112"></svg></div>
   </footer></div>`;
+
+// the short explanation under the heading opens for 10 s when this view opens, then folds back into the ?
+let aboutTimer = 0;
+function setAbout(o) { clearTimeout(aboutTimer); q('about').hidden = !o; q('about-toggle').setAttribute('aria-expanded', String(o)); if (o) aboutTimer = setTimeout(() => setAbout(false), 10000); }
+function toggleAbout() { setAbout(q('about').hidden); }
+q('about-toggle').onclick = toggleAbout;
+q('about').addEventListener('mouseenter', () => clearTimeout(aboutTimer));
+q('about').addEventListener('mouseleave', () => { clearTimeout(aboutTimer); aboutTimer = setTimeout(() => setAbout(false), 3000); });
 
 // ---------------------------------------------------------------- header and brief
 function shortFind(ip) { const f = H[ip].find[0]; return f ? f.name.replace(/\s*\(.*?\)\s*/g, ' ').replace(/ Multiple Vulnerabilities.*/, '').split(/ < | Remote| Path| Request/)[0].trim() : ''; }
@@ -448,7 +456,7 @@ function renderTimeline() {
 function render() { header(); renderLines(); renderMap(); renderDetail(); renderContain(); renderTimeline(); }
 function open() {
   state.open = true; root.hidden = false; openBtn.setAttribute('aria-expanded', 'true');
-  render();
+  render(); setAbout(true);
   if (!/[?&#]paths\b/.test(location.hash)) history.replaceState(null, '', '#paths');
   if (window.VFExplorer) window.VFExplorer.markSeg();
 }
@@ -467,6 +475,7 @@ addEventListener('keydown', e => {
   if (e.target.closest && e.target.closest('#analyst-chat')) return;
   e.stopImmediatePropagation();
   if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') close();
+  else if (e.key === '?') toggleAbout();
   else if (e.key === '2') showView('flat');
   else if (e.key === '3' && window.VFExplorer && window.VFExplorer.can3d) showView('3d');
 }, true);

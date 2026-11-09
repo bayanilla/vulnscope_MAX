@@ -263,6 +263,9 @@ The selected-host panel stays to the right of the chart on desktop and intermedi
 phone-sized screens (520px or narrower), it moves below the chart to keep the details readable.
 
 Use the host list or `/` to find a host. L toggles labels and M toggles motion.
+The **?** at the right end of the top buttons opens a short note on what the current view shows (Flat, 3D, a
+selected host, or Attack paths). It opens by itself for 10 seconds when the page loads or the view
+changes, then folds back into the ?; click it or press ? to open or close it again.
 
 **3D view.** Where the browser supports WebGL, the Explorer opens in a 3D view built with three.js.
 In the overview each subnet is a platform on one plane and each host is a pillar whose height is its
