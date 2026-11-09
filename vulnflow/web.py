@@ -8,6 +8,7 @@ POST /runs/<id>/article-briefs  generate article briefs from matched sources
 POST /runs/<id>/ask    JSON {question, history} -> {answer, answer_html}
 GET  /runs/<id>/radar-status  whether on-demand Radar lookup is configured
 POST /runs/<id>/radar  Radar context for an observed IP or domain IOC
+GET/POST /branding     set the name before "VulnScope" and an optional logo (saved per user; password protected)
 GET/POST /settings     choose the AI provider and enter its API key (kept in memory only)
 """
 from __future__ import annotations
@@ -20,6 +21,9 @@ import secrets
 import shutil
 import subprocess
 import sys
+import tempfile
+import threading
+import time
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import unquote
@@ -27,7 +31,8 @@ from urllib.parse import unquote
 import json
 
 from . import multipart
-from .branding import PRODUCT_NAME, icon_data_uri
+from . import branding
+from .branding import icon_data_uri, product_name
 from .correlate import Config
 from dataclasses import replace
 from urllib.parse import parse_qs
@@ -100,7 +105,7 @@ vulnerability status remains unknown.</p>
 <button type="submit">Analyze</button>
 </form>
 <p class="hint">Formats are detected automatically: {formats}. Folder selection is supported by Chrome and other compatible browsers. Files stay on this machine.
-<a href="/settings">Security Assistant settings</a></p>
+<a href="/settings">Security Assistant settings</a> · <a href="/branding">Branding</a></p>
 <script>
 (function () {{
   const csrf = {csrf_js}, native = {native_js};
@@ -148,7 +153,7 @@ vulnerability status remains unknown.</p>
 def _page(title, body):
     return (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-            f"<title>{html.escape(title)} · {PRODUCT_NAME}</title><link rel=\"icon\" href=\"{icon_data_uri()}\">{THEME_INIT}<style>{CSS}</style></head>"
+            f"<title>{html.escape(title)} · {html.escape(product_name())}</title><link rel=\"icon\" href=\"{icon_data_uri()}\">{THEME_INIT}<style>{CSS}</style></head>"
             f"<body>{theme_control()}{body}</body></html>")
 
 
@@ -254,6 +259,67 @@ button{margin-top:18px;padding:8px 16px;cursor:pointer}
 button.secondary{background:transparent;color:var(--fg);border:1px solid var(--line)}"""
 
 
+BRANDING = """<style>{css}
+.brand-preview{{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:8px 0 4px;max-width:520px;
+border:1px solid var(--line);border-radius:var(--radius);background:var(--bar);font-weight:800;font-size:1.1rem;letter-spacing:.02em}}
+.brand-preview img{{height:28px;width:auto;max-width:110px;object-fit:contain}}
+.check{{display:flex;gap:8px;align-items:center;font-weight:400;margin-top:10px}}
+form{{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:16px 0;max-width:640px}}</style>
+<h1>Branding</h1>
+<p>Change the name shown at the top left of the upload page, reports and Explorer, and add a small logo
+to the left of it. The choice is saved on this computer and used for every new analysis; pages that were
+already generated keep the branding they were made with.</p>
+{error}
+<div class="hint">Preview</div>
+<div class="brand-preview" id="bp">{logo}<span id="bp-name">{name}</span></div>
+<form method="post" action="/branding" enctype="multipart/form-data">
+<input type="hidden" name="csrf" value="{csrf}">
+<label for="prefix">Name before “VulnScope”</label>
+<input id="prefix" name="prefix" type="text" value="{prefix}" maxlength="{max_prefix}" placeholder="e.g. Ford" autocomplete="off">
+<div class="hint">Shown as “<i>name</i> VulnScope”. Leave blank to show just “VulnScope”. Up to {max_prefix} characters.</div>
+<label for="logo">Logo (optional)</label>
+<input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/gif,image/webp">
+<div class="hint">PNG, JPEG, GIF or WebP, up to {max_kb} KB. It is shown about 24 pixels tall, so a square or wide image
+with a transparent background works best. SVG isn't accepted. Leave empty to keep the current logo.</div>
+{remove}
+<button type="submit">Save branding</button>
+</form>
+<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+<form method="post" action="/branding" enctype="multipart/form-data" style="border:0;padding:0;margin:0;background:none">
+<input type="hidden" name="csrf" value="{csrf}"><input type="hidden" name="action" value="reset">
+<button type="submit" class="secondary">Reset to Múcaro VulnScope</button></form>
+<form method="post" action="/branding/lock" style="border:0;padding:0;margin:0;background:none">
+<input type="hidden" name="csrf" value="{csrf}">
+<button type="submit" class="secondary">Lock branding</button></form></div>
+<p><a href="/">Back to the upload page</a></p>
+<script>
+(function () {{
+  const input = document.getElementById("prefix"), out = document.getElementById("bp-name");
+  input.addEventListener("input", () => {{
+    const v = input.value.replace(/\\s+/g, " ").trim();
+    out.textContent = v ? v + " VulnScope" : "VulnScope";
+  }});
+}})();
+</script>"""
+MAX_BRANDING_UPLOAD = branding.MAX_LOGO_BYTES + 64 * 1024
+BRANDING_COOKIE = "vulnscope_branding"
+BRANDING_UNLOCK_SECONDS = 30 * 60
+BRANDING_FREE_ATTEMPTS = 5          # then a lockout that doubles with each further wrong password
+BRANDING_LOCKED = """<style>{css}
+form{{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:16px 0;max-width:640px}}</style>
+<h1>Branding</h1>
+<p>Changing the name and logo is password protected. Enter the Branding password to continue.</p>
+{error}
+<form method="post" action="/branding/unlock">
+<input type="hidden" name="csrf" value="{csrf}">
+<label for="password">Branding password</label>
+<input id="password" name="password" type="password" autocomplete="current-password" maxlength="1024" required autofocus>
+<div class="hint">Capital letters and extra spaces don't matter. The page stays unlocked in this browser for 30 minutes.</div>
+<button type="submit">Unlock</button>
+</form>
+<p><a href="/">Back to the upload page</a></p>"""
+
+
 NATIVE_PICKER = sys.platform == "darwin" and shutil.which("osascript") is not None
 LOOPBACK_NAMES = ("127.0.0.1", "localhost", "[::1]")
 SECURITY_HEADERS = {
@@ -337,6 +403,9 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
     state = {"llm": llm_cfg}
     csrf = secrets.token_urlsafe(24)   # guards form posts from other sites in the same browser
     extra_hosts = {h.lower() for h in allowed_hosts}
+    brand_lock = threading.Lock()
+    brand_unlocks: dict[str, float] = {}               # unlock token -> expiry (monotonic seconds)
+    brand_fails = {"count": 0, "until": 0.0}
 
     class Handler(BaseHTTPRequestHandler):
         timeout = 120                  # drop clients that stop sending mid-request
@@ -426,7 +495,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
         def _form(self, error=""):
             err = f'<p style="color:#c0392b"><strong>{html.escape(error)}</strong></p>' if error else ""
             self._send(200, FORM.format(css=CSS, theme_init=THEME_INIT, theme_ui=theme_control(),
-                                        product_name=PRODUCT_NAME, icon=icon_data_uri(),
+                                        product_name=html.escape(product_name()), icon=icon_data_uri(),
                                         error=err, formats=", ".join(FORMATS), csrf=csrf,
                                         csrf_js=json.dumps(csrf), native_js="true" if NATIVE_PICKER else "false",
                                         path=html.escape(state.get("last_path", ""))))
@@ -503,6 +572,8 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             path = unquote(self.path.split("?", 1)[0])
             if path in ("/", "/index.html"):
                 return self._form()
+            if path == "/branding":
+                return self._branding()
             if path == "/settings":
                 nxt = parse_qs(self.path.split("?", 1)[1]).get("next", ["/"])[0] if "?" in self.path else "/"
                 return self._settings(nxt)
@@ -719,6 +790,119 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 redact=" checked" if cfg.redact else "")
             self._send(code, _page("Security Assistant settings", body))
 
+        def _branding_unlocked(self) -> bool:
+            from http.cookies import SimpleCookie
+            try:
+                got = SimpleCookie(self.headers.get("Cookie") or "").get(BRANDING_COOKIE)
+            except Exception:
+                return False
+            if not got:
+                return False
+            now = time.monotonic()
+            with brand_lock:
+                for tok in [t for t, exp in brand_unlocks.items() if exp <= now]:
+                    del brand_unlocks[tok]
+                return any(secrets.compare_digest(got.value, tok) for tok in brand_unlocks)
+
+        def _branding_locked(self, error="", code=200):
+            err = f'<p style="color:#c0392b"><strong>{html.escape(error)}</strong></p>' if error else ""
+            self._send(code, _page("Branding", BRANDING_LOCKED.format(css=SETTINGS_CSS, error=err, csrf=csrf)),
+                       headers={"Cache-Control": "no-store"})
+
+        def _unlock_branding(self):
+            """Check the Branding password: scrypt hash, constant-time compare, lockout after repeated failures."""
+            form = self._read_form(4096)
+            if form is None:
+                return self._send(400, "Bad request", "text/plain")
+            if not secrets.compare_digest(form.get("csrf", ""), csrf):
+                return self._send(403, "Forbidden", "text/plain")
+            with brand_lock:
+                wait = brand_fails["until"] - time.monotonic()
+            if wait > 0:
+                return self._branding_locked(
+                    f"Too many wrong passwords. Try again in {max(1, round(wait / 60))} minute(s).", 429)
+            if not branding.check_password(form.get("password", "")):
+                with brand_lock:
+                    brand_fails["count"] += 1
+                    extra = brand_fails["count"] - BRANDING_FREE_ATTEMPTS
+                    if extra >= 0:
+                        brand_fails["until"] = time.monotonic() + min(3600, 60 * 2 ** extra)
+                return self._branding_locked("That password isn't right.", 403)
+            token = secrets.token_urlsafe(32)
+            with brand_lock:
+                brand_fails["count"], brand_fails["until"] = 0, 0.0
+                brand_unlocks[token] = time.monotonic() + BRANDING_UNLOCK_SECONDS
+            self._send(303, "", headers={
+                "Location": "/branding",
+                "Set-Cookie": f"{BRANDING_COOKIE}={token}; HttpOnly; SameSite=Strict; Path=/branding; "
+                              f"Max-Age={BRANDING_UNLOCK_SECONDS}"})
+
+        def _lock_branding(self):
+            form = self._read_form(4096)
+            if form is None or not secrets.compare_digest(form.get("csrf", ""), csrf):
+                return self._send(403, "Forbidden", "text/plain")
+            from http.cookies import SimpleCookie
+            try:
+                got = SimpleCookie(self.headers.get("Cookie") or "").get(BRANDING_COOKIE)
+            except Exception:
+                got = None
+            if got:
+                with brand_lock:
+                    brand_unlocks.pop(got.value, None)
+            self._send(303, "", headers={
+                "Location": "/branding",
+                "Set-Cookie": f"{BRANDING_COOKIE}=; HttpOnly; SameSite=Strict; Path=/branding; Max-Age=0"})
+
+        def _branding(self, error="", code=200):
+            if not self._branding_unlocked():
+                return self._branding_locked(code=code)
+            cur = branding.load()
+            err = f'<p style="color:#c0392b"><strong>{html.escape(error)}</strong></p>' if error else ""
+            remove = ('<label class="check"><input type="checkbox" name="remove_logo" value="1"> Remove the current logo</label>'
+                      if cur.logo else "")
+            body = BRANDING.format(css=SETTINGS_CSS, error=err, logo=branding.logo_img(""),
+                                   name=html.escape(cur.name), prefix=html.escape(cur.prefix), csrf=csrf,
+                                   max_prefix=branding.MAX_PREFIX, max_kb=branding.MAX_LOGO_BYTES // 1024,
+                                   remove=remove)
+            self._send(code, _page("Branding", body), headers={"Cache-Control": "no-store"})
+
+        def _save_branding(self):
+            """Save the analyst's name prefix and logo. The logo is checked by content, never trusted by name."""
+            if not self._branding_unlocked():
+                self.close_connection = True
+                return self._branding_locked("Enter the Branding password first.", 403)
+            length = self._length()
+            if length <= 0 or length > MAX_BRANDING_UPLOAD:
+                self.close_connection = True
+                return self._branding(f"Logos must be {branding.MAX_LOGO_BYTES // 1024} KB or smaller.", 413)
+            with tempfile.TemporaryDirectory(prefix="vulnscope-brand-") as tmp:
+                try:
+                    fields, parts = multipart.parse(self.rfile, length, self.headers.get("Content-Type", ""),
+                                                    tmp, lambda i, _name: f"logo{i}")
+                except multipart.MultipartError as exc:
+                    self.close_connection = True
+                    return self._branding(str(exc), 400)
+                if not secrets.compare_digest(fields.get("csrf", ""), csrf):
+                    return self._send(403, "Forbidden", "text/plain")
+                logo = None
+                for field, path in parts:
+                    if field == "logo":
+                        if os.path.getsize(path) > branding.MAX_LOGO_BYTES:
+                            return self._branding(f"Logos must be {branding.MAX_LOGO_BYTES // 1024} KB or smaller.", 400)
+                        with open(path, "rb") as fh:
+                            logo = fh.read()
+            try:
+                if fields.get("action") == "reset":
+                    branding.reset()
+                else:
+                    branding.update(fields.get("prefix", ""), logo, remove_logo=fields.get("remove_logo") == "1")
+            except branding.BrandingError as exc:
+                return self._branding(str(exc), 400)
+            except OSError:
+                traceback.print_exc()
+                return self._branding("The branding couldn't be saved; see the server console for details.", 500)
+            self._send(303, "", headers={"Location": "/branding"})
+
         def _save_settings(self):
             form = self._read_form()
             if form is None:
@@ -765,6 +949,12 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return self._send(403, "Cross-origin request refused", "text/plain")
             if self.path == "/settings":
                 return self._save_settings()
+            if self.path == "/branding":
+                return self._save_branding()
+            if self.path == "/branding/unlock":
+                return self._unlock_branding()
+            if self.path == "/branding/lock":
+                return self._lock_branding()
             m = re.fullmatch(r"/runs/([a-f0-9]{16})/radar", self.path)
             if m:
                 return self._radar(m[1])
