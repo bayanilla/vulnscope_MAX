@@ -8,7 +8,7 @@ POST /runs/<id>/article-briefs  generate article briefs from matched sources
 POST /runs/<id>/ask    JSON {question, history} -> {answer, answer_html}
 GET  /runs/<id>/radar-status  whether on-demand Radar lookup is configured
 POST /runs/<id>/radar  Radar context for an observed IP or domain IOC
-GET/POST /branding     set the name before "VulnScope" and an optional logo (saved per user)
+GET/POST /branding     set the name before "VulnScope" and an optional logo (saved per user; password protected)
 GET/POST /settings     choose the AI provider and enter its API key (kept in memory only)
 """
 from __future__ import annotations
@@ -22,6 +22,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import unquote
@@ -282,9 +284,13 @@ with a transparent background works best. SVG isn't accepted. Leave empty to kee
 {remove}
 <button type="submit">Save branding</button>
 </form>
-<form method="post" action="/branding" enctype="multipart/form-data" style="border:0;padding:0;background:none">
+<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+<form method="post" action="/branding" enctype="multipart/form-data" style="border:0;padding:0;margin:0;background:none">
 <input type="hidden" name="csrf" value="{csrf}"><input type="hidden" name="action" value="reset">
 <button type="submit" class="secondary">Reset to Múcaro VulnScope</button></form>
+<form method="post" action="/branding/lock" style="border:0;padding:0;margin:0;background:none">
+<input type="hidden" name="csrf" value="{csrf}">
+<button type="submit" class="secondary">Lock branding</button></form></div>
 <p><a href="/">Back to the upload page</a></p>
 <script>
 (function () {{
@@ -296,6 +302,22 @@ with a transparent background works best. SVG isn't accepted. Leave empty to kee
 }})();
 </script>"""
 MAX_BRANDING_UPLOAD = branding.MAX_LOGO_BYTES + 64 * 1024
+BRANDING_COOKIE = "vulnscope_branding"
+BRANDING_UNLOCK_SECONDS = 30 * 60
+BRANDING_FREE_ATTEMPTS = 5          # then a lockout that doubles with each further wrong password
+BRANDING_LOCKED = """<style>{css}
+form{{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:16px 0;max-width:640px}}</style>
+<h1>Branding</h1>
+<p>Changing the name and logo is password protected. Enter the Branding password to continue.</p>
+{error}
+<form method="post" action="/branding/unlock">
+<input type="hidden" name="csrf" value="{csrf}">
+<label for="password">Branding password</label>
+<input id="password" name="password" type="password" autocomplete="current-password" maxlength="1024" required autofocus>
+<div class="hint">Capital letters and extra spaces don't matter. The page stays unlocked in this browser for 30 minutes.</div>
+<button type="submit">Unlock</button>
+</form>
+<p><a href="/">Back to the upload page</a></p>"""
 
 
 NATIVE_PICKER = sys.platform == "darwin" and shutil.which("osascript") is not None
@@ -381,6 +403,9 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
     state = {"llm": llm_cfg}
     csrf = secrets.token_urlsafe(24)   # guards form posts from other sites in the same browser
     extra_hosts = {h.lower() for h in allowed_hosts}
+    brand_lock = threading.Lock()
+    brand_unlocks: dict[str, float] = {}               # unlock token -> expiry (monotonic seconds)
+    brand_fails = {"count": 0, "until": 0.0}
 
     class Handler(BaseHTTPRequestHandler):
         timeout = 120                  # drop clients that stop sending mid-request
@@ -765,7 +790,72 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 redact=" checked" if cfg.redact else "")
             self._send(code, _page("Security Assistant settings", body))
 
+        def _branding_unlocked(self) -> bool:
+            from http.cookies import SimpleCookie
+            try:
+                got = SimpleCookie(self.headers.get("Cookie") or "").get(BRANDING_COOKIE)
+            except Exception:
+                return False
+            if not got:
+                return False
+            now = time.monotonic()
+            with brand_lock:
+                for tok in [t for t, exp in brand_unlocks.items() if exp <= now]:
+                    del brand_unlocks[tok]
+                return any(secrets.compare_digest(got.value, tok) for tok in brand_unlocks)
+
+        def _branding_locked(self, error="", code=200):
+            err = f'<p style="color:#c0392b"><strong>{html.escape(error)}</strong></p>' if error else ""
+            self._send(code, _page("Branding", BRANDING_LOCKED.format(css=SETTINGS_CSS, error=err, csrf=csrf)),
+                       headers={"Cache-Control": "no-store"})
+
+        def _unlock_branding(self):
+            """Check the Branding password: scrypt hash, constant-time compare, lockout after repeated failures."""
+            form = self._read_form(4096)
+            if form is None:
+                return self._send(400, "Bad request", "text/plain")
+            if not secrets.compare_digest(form.get("csrf", ""), csrf):
+                return self._send(403, "Forbidden", "text/plain")
+            with brand_lock:
+                wait = brand_fails["until"] - time.monotonic()
+            if wait > 0:
+                return self._branding_locked(
+                    f"Too many wrong passwords. Try again in {max(1, round(wait / 60))} minute(s).", 429)
+            if not branding.check_password(form.get("password", "")):
+                with brand_lock:
+                    brand_fails["count"] += 1
+                    extra = brand_fails["count"] - BRANDING_FREE_ATTEMPTS
+                    if extra >= 0:
+                        brand_fails["until"] = time.monotonic() + min(3600, 60 * 2 ** extra)
+                return self._branding_locked("That password isn't right.", 403)
+            token = secrets.token_urlsafe(32)
+            with brand_lock:
+                brand_fails["count"], brand_fails["until"] = 0, 0.0
+                brand_unlocks[token] = time.monotonic() + BRANDING_UNLOCK_SECONDS
+            self._send(303, "", headers={
+                "Location": "/branding",
+                "Set-Cookie": f"{BRANDING_COOKIE}={token}; HttpOnly; SameSite=Strict; Path=/branding; "
+                              f"Max-Age={BRANDING_UNLOCK_SECONDS}"})
+
+        def _lock_branding(self):
+            form = self._read_form(4096)
+            if form is None or not secrets.compare_digest(form.get("csrf", ""), csrf):
+                return self._send(403, "Forbidden", "text/plain")
+            from http.cookies import SimpleCookie
+            try:
+                got = SimpleCookie(self.headers.get("Cookie") or "").get(BRANDING_COOKIE)
+            except Exception:
+                got = None
+            if got:
+                with brand_lock:
+                    brand_unlocks.pop(got.value, None)
+            self._send(303, "", headers={
+                "Location": "/branding",
+                "Set-Cookie": f"{BRANDING_COOKIE}=; HttpOnly; SameSite=Strict; Path=/branding; Max-Age=0"})
+
         def _branding(self, error="", code=200):
+            if not self._branding_unlocked():
+                return self._branding_locked(code=code)
             cur = branding.load()
             err = f'<p style="color:#c0392b"><strong>{html.escape(error)}</strong></p>' if error else ""
             remove = ('<label class="check"><input type="checkbox" name="remove_logo" value="1"> Remove the current logo</label>'
@@ -778,6 +868,9 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
 
         def _save_branding(self):
             """Save the analyst's name prefix and logo. The logo is checked by content, never trusted by name."""
+            if not self._branding_unlocked():
+                self.close_connection = True
+                return self._branding_locked("Enter the Branding password first.", 403)
             length = self._length()
             if length <= 0 or length > MAX_BRANDING_UPLOAD:
                 self.close_connection = True
@@ -858,6 +951,10 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return self._save_settings()
             if self.path == "/branding":
                 return self._save_branding()
+            if self.path == "/branding/unlock":
+                return self._unlock_branding()
+            if self.path == "/branding/lock":
+                return self._lock_branding()
             m = re.fullmatch(r"/runs/([a-f0-9]{16})/radar", self.path)
             if m:
                 return self._radar(m[1])

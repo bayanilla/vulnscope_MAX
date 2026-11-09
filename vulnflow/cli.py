@@ -164,7 +164,19 @@ def main(argv=None) -> int:
     g = sub.add_parser("samples", help="write scan-backed and telemetry-only sample folders")
     g.add_argument("outdir", nargs="?", default="samples")
 
+    sub.add_parser("branding-password",
+                   help="print a hash for a new Branding page password (set it as VULNSCOPE_BRANDING_PASSWORD_HASH)")
+
     args = ap.parse_args(argv)
+    if args.cmd == "branding-password":
+        import getpass
+        from .branding import PASSWORD_ENV, hash_password
+        first = getpass.getpass("New Branding password: ")
+        if len(first.strip()) < 12 or first != getpass.getpass("Repeat it: "):
+            print("Passwords must match and be at least 12 characters.", file=sys.stderr)
+            return 1
+        print(f"{PASSWORD_ENV}='{hash_password(first)}'")
+        return 0
     if args.cmd in ("analyze", "explore", "serve"):
         os.umask(0o077)          # reports, normalized logs and spooled data are private to this account
     if args.cmd == "samples":

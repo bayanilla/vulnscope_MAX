@@ -1,6 +1,7 @@
 """Analyst branding: the name before "VulnScope" and a small logo, set from the upload page."""
 import base64
 import os
+import urllib.parse
 import shutil
 import struct
 import tempfile
@@ -36,11 +37,16 @@ def multipart_body(fields, files=()):
     return out, {"Content-Type": f"multipart/form-data; boundary={boundary}"}
 
 
+TEST_PASSWORD = "Correct Horse Battery Staple"
+TEST_HASH = branding.hash_password(TEST_PASSWORD, n=2 ** 14)
+
+
 class BrandingTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp, True)
-        patch = mock.patch.dict(os.environ, {"VULNSCOPE_HOME": os.path.join(self.tmp, "home")})
+        patch = mock.patch.dict(os.environ, {"VULNSCOPE_HOME": os.path.join(self.tmp, "home"),
+                                             branding.PASSWORD_ENV: TEST_HASH})
         patch.start()
         self.addCleanup(patch.stop)
 
@@ -109,11 +115,75 @@ class BrandingTests(unittest.TestCase):
         self.addCleanup(s.close)
         return s
 
+    def _unlock(self, s, password=TEST_PASSWORD):
+        body = urllib.parse.urlencode({"csrf": s.token(), "password": password})
+        status, data, resp = s.request("POST", "/branding/unlock", body,
+                                       {"Content-Type": "application/x-www-form-urlencoded"})
+        cookie = (resp.headers.get("Set-Cookie") or "").split(";")[0]
+        return status, data, {"Cookie": cookie} if status == 303 else {}
+
+    def _post(self, s, fields, files=(), cookie=None):
+        body, headers = multipart_body(fields, files)
+        headers.update(cookie or {})
+        return s.request("POST", "/branding", body, headers)
+
+    def test_password_hash_checks(self):
+        self.assertTrue(branding.check_password("  correct horse   BATTERY staple "))
+        self.assertFalse(branding.check_password("Correct Horse Battery"))
+        self.assertFalse(branding.check_password(""))
+        self.assertNotIn(TEST_PASSWORD.encode(), TEST_HASH.encode())
+        with mock.patch.dict(os.environ, {branding.PASSWORD_ENV: "scrypt$garbage"}):
+            self.assertFalse(branding.check_password(TEST_PASSWORD))
+
+    def test_default_password_hash_is_well_formed(self):
+        scheme, n, r, p, salt, digest = branding.DEFAULT_PASSWORD_HASH.split("$")
+        self.assertEqual((scheme, int(n), int(r), int(p)), ("scrypt", 2 ** 15, 8, 1))
+        self.assertEqual(len(base64.b64decode(salt)), 16)
+        self.assertEqual(len(base64.b64decode(digest)), 32)
+        with mock.patch.dict(os.environ, {branding.PASSWORD_ENV: ""}):
+            self.assertFalse(branding.check_password("VulnScope"))
+
+    def test_branding_page_is_locked_until_password(self):
+        s = self._server()
+        status, page, _ = s.request("GET", "/branding")
+        self.assertEqual(status, 200)
+        self.assertIn('name="password"', page)
+        self.assertNotIn('name="prefix"', page)
+        status, _, _ = self._post(s, {"csrf": s.token(), "prefix": "Evil"})
+        self.assertEqual(status, 403)
+        self.assertEqual(branding.product_name(), "Múcaro VulnScope")
+        status, _, cookie = self._unlock(s, "wrong password")
+        self.assertEqual(status, 403)
+        self.assertEqual(cookie, {})
+        status, _, cookie = self._unlock(s)
+        self.assertEqual(status, 303)
+        self.assertIn('name="prefix"', s.request("GET", "/branding", headers=cookie)[1])
+        self.assertEqual(s.request("POST", "/branding/lock", urllib.parse.urlencode({"csrf": s.token()}),
+                                   {"Content-Type": "application/x-www-form-urlencoded", **cookie})[0], 303)
+        self.assertEqual(self._post(s, {"csrf": s.token(), "prefix": "Evil"}, cookie=cookie)[0], 403)
+
+    def test_repeated_wrong_passwords_lock_out(self):
+        s = self._server()
+        for _ in range(5):
+            self.assertEqual(self._unlock(s, "nope")[0], 403)
+        status, data, cookie = self._unlock(s)            # even the right password waits out the lockout
+        self.assertEqual(status, 429)
+        self.assertIn("Too many", data)
+        self.assertEqual(cookie, {})
+
+    def test_unlock_requires_csrf(self):
+        s = self._server()
+        body = urllib.parse.urlencode({"csrf": "wrong", "password": TEST_PASSWORD})
+        status, _, resp = s.request("POST", "/branding/unlock", body,
+                                    {"Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(status, 403)
+        self.assertIsNone(resp.headers.get("Set-Cookie"))
+
     def test_branding_page_saves_name_and_logo(self):
         s = self._server()
         self.assertIn('href="/branding"', s.request("GET", "/")[1])
-        body, headers = multipart_body({"csrf": s.token(), "prefix": "Ford"}, [("logo", "ford.png", png())])
-        status, _, resp = s.request("POST", "/branding", body, headers)
+        cookie = self._unlock(s)[2]
+        status, _, _ = self._post(s, {"csrf": s.token(), "prefix": "Ford"}, [("logo", "ford.png", png())], cookie)
         self.assertEqual(status, 303)
         self.assertEqual(branding.product_name(), "Ford VulnScope")
         page = s.request("GET", "/")[1]
@@ -123,20 +193,19 @@ class BrandingTests(unittest.TestCase):
     def test_branding_page_refuses_svg_and_missing_csrf(self):
         s = self._server()
         svg = b'<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>'
-        body, headers = multipart_body({"csrf": s.token(), "prefix": "Ford"}, [("logo", "logo.png", svg)])
-        status, data, _ = s.request("POST", "/branding", body, headers)
+        cookie = self._unlock(s)[2]
+        status, data, _ = self._post(s, {"csrf": s.token(), "prefix": "Ford"}, [("logo", "logo.png", svg)], cookie)
         self.assertEqual(status, 400)
         self.assertIn("SVG", data)
         self.assertEqual(branding.product_name(), "Múcaro VulnScope")
-        body, headers = multipart_body({"csrf": "wrong", "prefix": "Evil"})
-        self.assertEqual(s.request("POST", "/branding", body, headers)[0], 403)
+        self.assertEqual(self._post(s, {"csrf": "wrong", "prefix": "Evil"}, cookie=cookie)[0], 403)
         self.assertEqual(branding.product_name(), "Múcaro VulnScope")
 
     def test_branding_reset(self):
         s = self._server()
         branding.update("Ford", png())
-        body, headers = multipart_body({"csrf": s.token(), "action": "reset"})
-        self.assertEqual(s.request("POST", "/branding", body, headers)[0], 303)
+        cookie = self._unlock(s)[2]
+        self.assertEqual(self._post(s, {"csrf": s.token(), "action": "reset"}, cookie=cookie)[0], 303)
         self.assertEqual(branding.load(), branding.Branding())
 
 
