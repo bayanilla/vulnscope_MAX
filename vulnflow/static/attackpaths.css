@@ -33,6 +33,11 @@ font:13px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smooth
 #attack-paths .ap-brand b{font-size:21px;letter-spacing:-.02em;font-weight:800}
 #attack-paths .ap-brand b em{font-style:normal;color:var(--ap-accent)}
 #attack-paths .ap-brand span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ap-ink2);margin-top:4px}
+#attack-paths .ap-qbtn{width:18px;height:18px;padding:0;margin-left:6px;border:1px solid var(--ap-rule);border-radius:50%;background:var(--ap-card);
+color:var(--ap-accent);font:700 10.5px/16px ui-monospace,Menlo,monospace;letter-spacing:0;cursor:pointer;vertical-align:1px;opacity:1}
+#attack-paths .ap-qbtn:hover{border-color:var(--ap-accent)}
+#attack-paths .ap-about{margin:7px 0 0;max-width:620px;font-size:12.5px;line-height:1.45;color:var(--ap-ink2)}
+#attack-paths .ap-about[hidden]{display:none}
 #attack-paths .ap-kpis{display:flex;gap:24px;margin-right:10px}
 #attack-paths .ap-kpi{display:flex;flex-direction:column;align-items:flex-end}
 #attack-paths .ap-kpi b{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}

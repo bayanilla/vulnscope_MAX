@@ -234,6 +234,7 @@ function focus(id, push = true) {
   state.mode = 'focus'; state.focus = id;
   document.body.classList.add('focused');
   $('hint').classList.add('gone');
+  updateAbout();
   history.replaceState(null, '', '#host=' + encodeURIComponent(id));
   const center = nodes.get(id);
   const keep = new Set([id]);
@@ -318,7 +319,7 @@ function overview() {
   edges = [];
   fitOverview();
   $('panel').hidden = true;
-  renderList();
+  renderList(); updateAbout();
 }
 function fitOverview() {
   let minX = 0, maxX = 0, minY = 0, maxY = 0;
@@ -977,6 +978,7 @@ addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') { if (e.key === 'Escape') e.target.blur(); return; }
   if (e.key === 'Escape') { state.history.length ? focus(state.history.pop(), false) : overview(); }
   else if (e.key === '/') { e.preventDefault(); $('search').focus(); }
+  else if (e.key === '?') toggleAbout();
   else if (e.key === 'l' || e.key === 'L') toggleLabels();
   else if (e.key === 'm' || e.key === 'M') toggleMotion();
   else if (e.key === '3' && can3d) set3d(!R3, true);
@@ -1220,8 +1222,37 @@ function markSeg() {
   $('vw-flat').classList.toggle('on', !paths && !R3); $('btn-3d').classList.toggle('on', !paths && !!R3);
   $('btn-paths').classList.toggle('on', paths);
   for (const id of ['vw-flat', 'btn-3d', 'btn-paths']) $(id).setAttribute('aria-current', $(id).classList.contains('on') ? 'true' : 'false');
-  placeViewctl();
+  placeViewctl(); updateAbout();
 }
+// a one-line "what am I looking at" caption under the heading, worded for the current view; the ? button
+// hides or shows it and that choice is remembered (closed by default on narrow screens)
+const ABOUT_KEY = 'vulnscope-explorer-about';
+const ABOUT = telemetryOnly ? {
+  flat: 'Each dot is an internal host seen in the logs, grouped by subnet; <b>bigger dots</b> had more contact with outside addresses and <b>blue lines</b> are traffic between hosts. No scan was loaded, so vulnerability status is unknown. Click a host to see who it talked to.',
+  '3d': 'Each platform is a subnet and each pillar a host; <b>taller</b> means more contact with outside addresses. Outside addresses sit on the arc above: <b>beams down</b> reach a host, <b>violet beams up</b> are hosts calling out. Click a host to see who it talked to.',
+  focus: h => `<b>${esc(h)}</b> in the middle. <b>Left:</b> outside addresses it exchanged traffic with (north/south). <b>Right:</b> internal hosts it talked to (east/west). Esc or ← All hosts goes back.`,
+} : {
+  flat: 'Each dot is a scanned host, grouped by subnet and colored by its worst finding; <b>bigger dots</b> carry a higher risk score and <b>blue lines</b> are traffic between hosts. Click a host to see who reached it and how far a compromise could spread.',
+  '3d': 'Each platform is a subnet and each pillar a host; <b>taller</b> means a higher risk score. Outside addresses sit on the arc above: <b>beams down</b> reach a host, <b>violet beams up</b> are hosts calling out. Click a host for detail.',
+  focus: h => `<b>${esc(h)}</b> in the middle. <b>Left:</b> outside addresses that touched it (north/south). <b>Right:</b> internal hosts it can reach, colored by how likely a compromise could spread there (east/west). Esc or ← All hosts goes back.`,
+};
+function aboutOpen() {
+  let v = null; try { v = localStorage.getItem(ABOUT_KEY); } catch (_) {}
+  return v === null ? !matchMedia('(max-width: 900px)').matches : v === '1';
+}
+function updateAbout() {
+  const box = $('about'); if (!box) return;
+  const open = aboutOpen(), d = state.mode === 'focus' && D.nodes ? (D.nodes.find(n => n.id === state.focus) || {}) : null;
+  $('about-text').innerHTML = d ? ABOUT.focus(d.name ? d.name.split('.')[0] + ' (' + state.focus + ')' : state.focus) : ABOUT[R3 ? '3d' : 'flat'];
+  box.classList.toggle('closed', !open);
+  $('about-toggle').setAttribute('aria-expanded', String(open));
+  $('about-toggle').textContent = open ? '?' : '? What am I looking at';
+  $('about-toggle').title = open ? 'Hide this explanation (?)' : 'What am I looking at? (?)';
+  // keep the host list clear of the heading as the caption grows or shrinks
+  document.documentElement.style.setProperty('--rail-top', Math.max(78, $('hud').getBoundingClientRect().bottom + 12) + 'px');
+}
+function toggleAbout() { try { localStorage.setItem(ABOUT_KEY, aboutOpen() ? '0' : '1'); } catch (_) {} updateAbout(); }
+$('about-toggle').onclick = toggleAbout;
 const closePaths = () => { if (window.VFPaths) window.VFPaths.close(); };
 $('vw-flat').onclick = () => { closePaths(); set3d(false, true); };
 $('btn-3d').onclick = () => { closePaths(); set3d(true, true); };

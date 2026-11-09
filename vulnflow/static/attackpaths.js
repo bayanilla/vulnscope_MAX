@@ -137,7 +137,7 @@ const cutBy = c => c.hops.find(ip => state.cut.has(ip));
 
 // ---------------------------------------------------------------- page skeleton
 root.innerHTML = `<div class="ap-app">
-  <header class="ap-top">${BRAND_LOGO.startsWith('data:image/') ? `<img class="ap-logo" src="${esc(BRAND_LOGO)}" alt="" aria-hidden="true">` : ''}<div class="ap-brand"><b>Attack <em>paths</em></b><span>${esc(BRAND)} · most likely ways in</span></div>
+  <header class="ap-top">${BRAND_LOGO.startsWith('data:image/') ? `<img class="ap-logo" src="${esc(BRAND_LOGO)}" alt="" aria-hidden="true">` : ''}<div class="ap-brand"><b>Attack <em>paths</em></b><span>${esc(BRAND)} · most likely ways in <button type="button" class="ap-qbtn" id="ap-about-toggle" aria-controls="ap-about" title="What am I looking at? (?)">?</button></span><p class="ap-about" id="ap-about">Each colored line is one likely way in, read left to right: an internet origin (◆), the entry host, then up to two pivots inside. Rows are subnets; line 1 is the most likely. Ranked estimates of where to look first, not confirmed compromise.</p></div>
     <div class="ap-kpis" id="ap-kpis"></div>
     <div class="ap-seg" role="group" aria-label="View"><button type="button" data-view="flat" title="Flat network view (2)">Flat</button><button type="button" data-view="3d" title="3D network view (3)">3D</button><button type="button" class="on" aria-current="true" title="Attack paths (Esc to go back)">Attack paths</button></div></header>
   <div class="ap-brief" id="ap-brief"></div>
@@ -154,6 +154,13 @@ root.innerHTML = `<div class="ap-app">
       <div class="ap-chips" id="ap-chips"></div></div>
     <div class="ap-timeline"><div class="ap-hd"><h3>When the internet touched the entry hosts</h3><span class="ap-sub" id="ap-tlsub"></span></div><svg id="ap-tl" height="112"></svg></div>
   </footer></div>`;
+
+// the short explanation under the heading shares its show/hide choice with the network views
+const ABOUT_KEY = 'vulnscope-explorer-about';
+function aboutOpen() { let v = null; try { v = localStorage.getItem(ABOUT_KEY); } catch (_) {} return v === null ? !matchMedia('(max-width: 900px)').matches : v === '1'; }
+function markAbout() { const o = aboutOpen(); q('about').hidden = !o; q('about-toggle').setAttribute('aria-expanded', String(o)); q('about-toggle').title = o ? 'Hide this explanation (?)' : 'What am I looking at? (?)'; }
+function toggleAbout() { try { localStorage.setItem(ABOUT_KEY, aboutOpen() ? '0' : '1'); } catch (_) {} markAbout(); }
+q('about-toggle').onclick = toggleAbout;
 
 // ---------------------------------------------------------------- header and brief
 function shortFind(ip) { const f = H[ip].find[0]; return f ? f.name.replace(/\s*\(.*?\)\s*/g, ' ').replace(/ Multiple Vulnerabilities.*/, '').split(/ < | Remote| Path| Request/)[0].trim() : ''; }
@@ -445,7 +452,7 @@ function renderTimeline() {
 }
 
 // ---------------------------------------------------------------- open and close (colors follow the Múcaro theme on <html>)
-function render() { header(); renderLines(); renderMap(); renderDetail(); renderContain(); renderTimeline(); }
+function render() { markAbout(); header(); renderLines(); renderMap(); renderDetail(); renderContain(); renderTimeline(); }
 function open() {
   state.open = true; root.hidden = false; openBtn.setAttribute('aria-expanded', 'true');
   render();
@@ -467,6 +474,7 @@ addEventListener('keydown', e => {
   if (e.target.closest && e.target.closest('#analyst-chat')) return;
   e.stopImmediatePropagation();
   if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') close();
+  else if (e.key === '?') toggleAbout();
   else if (e.key === '2') showView('flat');
   else if (e.key === '3' && window.VFExplorer && window.VFExplorer.can3d) showView('3d');
 }, true);
