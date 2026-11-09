@@ -28,6 +28,7 @@ font:13px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smooth
 #attack-paths h3{font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--ap-ink2);margin:14px 0 8px;font-weight:700;border:0;padding:0}
 #attack-paths .ap-app{display:grid;grid-template-rows:auto auto 1fr auto;height:100%}
 #attack-paths .ap-top{display:flex;align-items:center;gap:14px;padding:12px 22px 10px;border-bottom:1px solid var(--ap-rule);background:rgba(0,0,0,.12)}
+#attack-paths .ap-logo{height:34px;width:auto;max-width:110px;object-fit:contain;flex:none}
 #attack-paths .ap-brand{display:flex;flex-direction:column;line-height:1.05;margin-right:auto}
 #attack-paths .ap-brand b{font-size:21px;letter-spacing:-.02em;font-weight:800}
 #attack-paths .ap-brand b em{font-style:normal;color:var(--ap-accent)}
