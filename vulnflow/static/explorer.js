@@ -1224,9 +1224,11 @@ function markSeg() {
   for (const id of ['vw-flat', 'btn-3d', 'btn-paths']) $(id).setAttribute('aria-current', $(id).classList.contains('on') ? 'true' : 'false');
   placeViewctl(); updateAbout();
 }
-// a one-line "what am I looking at" caption under the heading, worded for the current view; the ? button
-// hides or shows it and that choice is remembered (closed by default on narrow screens)
-const ABOUT_KEY = 'vulnscope-explorer-about';
+// "what am I looking at": the ? left of the view buttons opens a short note worded for the current view.
+// It opens by itself for 10 s when the page loads or the view changes, then folds back into the ?
+// (hovering keeps it open); the ? or the ? key opens and closes it by hand.
+const ABOUT_MS = 10000;
+let aboutTimer = 0, aboutShown = '';
 const ABOUT = telemetryOnly ? {
   flat: 'Each dot is an internal host seen in the logs, grouped by subnet; <b>bigger dots</b> had more contact with outside addresses and <b>blue lines</b> are traffic between hosts. No scan was loaded, so vulnerability status is unknown. Click a host to see who it talked to.',
   '3d': 'Each platform is a subnet and each pillar a host; <b>taller</b> means more contact with outside addresses. Outside addresses sit on the arc above: <b>beams down</b> reach a host, <b>violet beams up</b> are hosts calling out. Click a host to see who it talked to.',
@@ -1236,25 +1238,32 @@ const ABOUT = telemetryOnly ? {
   '3d': 'Each platform is a subnet and each pillar a host; <b>taller</b> means a higher risk score. Outside addresses sit on the arc above: <b>beams down</b> reach a host, <b>violet beams up</b> are hosts calling out. Click a host for detail.',
   focus: h => `<b>${esc(h)}</b> in the middle. <b>Left:</b> outside addresses that touched it (north/south). <b>Right:</b> internal hosts it can reach, colored by how likely a compromise could spread there (east/west). Esc or ← All hosts goes back.`,
 };
-function aboutOpen() {
-  let v = null; try { v = localStorage.getItem(ABOUT_KEY); } catch (_) {}
-  return v === null ? !matchMedia('(max-width: 900px)').matches : v === '1';
+function aboutKey() { return state.mode === 'focus' ? 'focus:' + state.focus : R3 ? '3d' : 'flat'; }
+function aboutHtml() {
+  if (state.mode !== 'focus') return ABOUT[R3 ? '3d' : 'flat'];
+  const d = D.nodes.find(n => n.id === state.focus) || {};
+  return ABOUT.focus(d.name ? d.name.split('.')[0] + ' (' + state.focus + ')' : state.focus);
 }
+function placeAbout() {
+  const b = $('about-toggle').getBoundingClientRect(), root = document.documentElement.style;
+  root.setProperty('--about-top', Math.round(b.bottom + 8) + 'px');
+  root.setProperty('--about-right', Math.max(10, Math.round(innerWidth - b.right)) + 'px');
+}
+function closeAbout() { clearTimeout(aboutTimer); $('about').hidden = true; $('about-toggle').setAttribute('aria-expanded', 'false'); }
+function openAbout(ms = ABOUT_MS) {
+  $('about').innerHTML = aboutHtml(); aboutShown = aboutKey(); placeAbout();
+  $('about').hidden = false; $('about-toggle').setAttribute('aria-expanded', 'true');
+  clearTimeout(aboutTimer); aboutTimer = setTimeout(closeAbout, ms);
+}
+// called whenever the view may have changed: a new view opens the note again, the same view only refreshes it
 function updateAbout() {
-  const box = $('about'); if (!box) return;
-  const open = aboutOpen(), d = state.mode === 'focus' && D.nodes ? (D.nodes.find(n => n.id === state.focus) || {}) : null;
-  $('about-text').innerHTML = d ? ABOUT.focus(d.name ? d.name.split('.')[0] + ' (' + state.focus + ')' : state.focus) : ABOUT[R3 ? '3d' : 'flat'];
-  box.classList.toggle('closed', !open);
-  $('about-toggle').setAttribute('aria-expanded', String(open));
-  $('about-toggle').textContent = open ? '?' : '? What am I looking at';
-  $('about-toggle').title = open ? 'Hide this explanation (?)' : 'What am I looking at? (?)';
-  // the host panel starts just under the caption so the two never overlap
-  const r = box.getBoundingClientRect(), wide = r.top < 200;
-  document.documentElement.style.setProperty('--panel-top', (wide ? Math.max(66, Math.round(r.bottom) + 10) : 66) + 'px');
+  if (aboutKey() !== aboutShown) openAbout(); else if (!$('about').hidden) { $('about').innerHTML = aboutHtml(); placeAbout(); }
 }
-function toggleAbout() { try { localStorage.setItem(ABOUT_KEY, aboutOpen() ? '0' : '1'); } catch (_) {} updateAbout(); }
+function toggleAbout() { if ($('about').hidden) openAbout(); else closeAbout(); }
 $('about-toggle').onclick = toggleAbout;
-addEventListener('resize', () => updateAbout());
+$('about').addEventListener('mouseenter', () => clearTimeout(aboutTimer));
+$('about').addEventListener('mouseleave', () => { clearTimeout(aboutTimer); aboutTimer = setTimeout(closeAbout, 3000); });
+addEventListener('resize', () => { if (!$('about').hidden) placeAbout(); });
 const closePaths = () => { if (window.VFPaths) window.VFPaths.close(); };
 $('vw-flat').onclick = () => { closePaths(); set3d(false, true); };
 $('btn-3d').onclick = () => { closePaths(); set3d(true, true); };

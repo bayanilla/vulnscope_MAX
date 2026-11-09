@@ -21,16 +21,13 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .brand .brand-logo{height:24px;width:auto;max-width:96px;object-fit:contain;margin-right:3px}
 .brand .view{color:var(--cyan);font-size:11px;letter-spacing:.16em;border-left:1px solid var(--line);padding-left:9px;margin-left:3px}
 #subtitle{color:var(--muted);font-size:12px;margin-top:4px}
-#about{position:fixed;top:62px;right:18px;z-index:3;display:flex;flex-direction:row-reverse;align-items:flex-start;gap:8px;
-max-width:min(460px,calc(100vw - 340px));font-size:12.5px;line-height:1.45;color:#c4d2e4;pointer-events:none}
-body.ai-chat-open #about{right:calc(var(--ai-drawer-width) + 18px);top:112px}
-#about-toggle{pointer-events:auto;flex:none;width:20px;height:20px;padding:0;border-radius:50%;font:700 11px/18px var(--mono);
-color:var(--cyan);border-color:rgba(46,230,214,.45);opacity:1}
-#about.closed #about-toggle{width:auto;padding:0 9px;border-radius:999px;font-weight:600;letter-spacing:.02em}
-#about-text{background:var(--glass);border:1px solid var(--line);border-right:2px solid var(--cyan);border-radius:8px;padding:6px 10px;
-backdrop-filter:blur(8px)}
-#about.closed #about-text{display:none}
-#about b{color:var(--fg);font-weight:600}
+#about{position:fixed;top:var(--about-top,62px);right:var(--about-right,18px);z-index:6;width:max-content;max-width:min(440px,calc(100vw - 36px));
+font-size:12.5px;line-height:1.45;color:#c4d2e4;background:rgba(10,18,32,.9);border:1px solid var(--line);border-top:2px solid var(--cyan);
+border-radius:8px;padding:7px 11px;backdrop-filter:blur(8px);box-shadow:0 8px 30px rgba(0,0,0,.45);animation:aboutIn .25s ease-out}
+#about[hidden]{display:none}#about b{color:var(--fg);font-weight:600}
+@keyframes aboutIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+#about-toggle{width:34px;padding:6px 0;font-weight:700;color:var(--cyan)}
+#about-toggle[aria-expanded="true"]{border-color:var(--cyan);background:rgba(46,230,214,.16)}
 #controls{position:fixed;top:14px;right:18px;display:flex;gap:8px;z-index:3}
 #rail{position:fixed;top:78px;left:18px;bottom:96px;width:260px;display:flex;flex-direction:column;gap:8px;z-index:2}
 .railtop{display:flex;align-items:center;gap:8px}
@@ -48,7 +45,7 @@ font:inherit;font-size:13px;backdrop-filter:blur(8px)}
 .pill.P1{background:var(--crit)}.pill.P2{background:var(--high)}.pill.P3{background:var(--med)}.pill.P4{background:var(--none)}
 .tag{display:inline-block;padding:0 6px;border:1px solid currentColor;border-radius:4px;font-size:11px;font-weight:700}
 .tag.likely{color:var(--crit)}.tag.lead{color:var(--med)}
-#panel{position:fixed;top:var(--panel-top,66px);right:18px;bottom:96px;width:400px;overflow:auto;background:var(--glass);border:1px solid var(--line);
+#panel{position:fixed;top:66px;right:18px;bottom:96px;width:400px;overflow:auto;background:var(--glass);border:1px solid var(--line);
 border-radius:12px;padding:16px 16px 20px;backdrop-filter:blur(14px);z-index:2;box-shadow:0 20px 60px rgba(0,0,0,.5);
 animation:slidein .45s cubic-bezier(.2,.8,.2,1)}
 #panel h2{margin:0;font-size:20px;letter-spacing:.02em}#panel .ipline{font-family:var(--mono);color:var(--muted);font-size:12px}
@@ -139,7 +136,7 @@ body.ai-chat-open #controls{right:calc(var(--ai-drawer-width) + 18px);top:64px}
 @keyframes slidein{from{transform:translateX(30px);opacity:0}}
 @media (max-width:1100px){.ai-chat-overlay{width:100vw;border-left:0}
 body.ai-chat-open #controls{visibility:hidden}}
-@media (max-width:900px){#rail{display:none}#about{top:auto;bottom:62px;right:10px;max-width:calc(100vw - 20px)}#panel{left:auto;right:10px;top:62px;bottom:10px;height:auto;width:clamp(250px,42vw,360px);padding:12px}
+@media (max-width:900px){#rail{display:none}#panel{left:auto;right:10px;top:62px;bottom:10px;height:auto;width:clamp(250px,42vw,360px);padding:12px}
 #legend{display:none}#controls,body.focused #controls{top:10px;bottom:auto;right:10px}#controls button{padding:5px 9px;font-size:12px}
 #hint{bottom:18px;left:10px;width:calc(100% - 390px);transform:none;text-align:center}}
 @media (max-width:520px){#panel{left:8px;right:8px;top:auto;bottom:8px;width:auto;height:52vh;padding:10px}

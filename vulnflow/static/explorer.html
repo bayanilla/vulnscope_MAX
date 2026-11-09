@@ -5,9 +5,10 @@
   <div class="brand"><!--BRAND--><span class="view">EXPLORER</span></div>
   <div id="subtitle" class="mono"></div>
 </header>
-<div id="about"><button id="about-toggle" type="button" aria-expanded="true" aria-controls="about-text" title="What am I looking at? (?)">?</button><span id="about-text"></span></div>
+<div id="about" role="note" hidden></div>
 <div id="controls">
   <button id="btn-overview" type="button" title="Back to all hosts (Esc)">← All hosts</button>
+  <button id="about-toggle" type="button" aria-expanded="false" aria-controls="about" title="What am I looking at? (?)" aria-label="What am I looking at?">?</button>
   <div id="viewseg" class="seg" role="group" aria-label="View">
     <button id="vw-flat" type="button" title="Flat network view (2)">Flat</button>
     <button id="btn-3d" type="button" title="3D network view (3). Right-drag or Shift-drag to orbit" hidden>3D</button>
