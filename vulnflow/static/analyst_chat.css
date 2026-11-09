@@ -39,3 +39,9 @@
 .analyst-chat button:disabled{opacity:.6}
 .analyst-chat textarea:focus-visible,.analyst-chat button:focus-visible,.analyst-chat .ai-chat-log:focus-visible,
 .analyst-chat a:focus-visible{outline:2px solid var(--cyan,#386bd4);outline-offset:2px}
+.analyst-chat .ai-chat-suggest p{margin:0 0 6px;color:var(--muted);font-size:.9rem}
+.analyst-chat .ai-chat-suggest{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
+.analyst-chat .ai-chat-suggest p{flex-basis:100%}
+.analyst-chat .ai-chat-suggest button{margin:0;padding:4px 10px;font:inherit;font-size:.85rem;border-radius:999px;
+  border:1px solid var(--line);background:transparent;color:var(--fg)}
+.analyst-chat .ai-chat-suggest button:hover{border-color:var(--cyan,var(--accent,#386bd4))}

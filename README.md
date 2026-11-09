@@ -314,16 +314,19 @@ background treatment, so they work offline. High Contrast uses a plain black bac
 Uploads are streamed to disk in 64 KB chunks, so memory use stays flat whatever the file size. The default
 limit is 1 GB per upload; change it with `serve --max-upload-mb N`.
 
-## Security Assistant (optional, vendor-neutral)
+## Security Assistant (built-in offline, or any AI provider)
 
-An LLM can read the correlated results, write an **analyst brief** (what matters, what to do first,
+Out of the box the Security Assistant runs **offline**: the built-in assistant ("Built-in (offline, no AI)")
+answers questions and writes the brief from the run's own results with fixed rules, so it needs no model,
+no key and no network (details below). Optionally, an LLM can read the correlated results, write an **analyst brief** (what matters, what to do first,
 likely attack paths, how to validate each top finding with example Zeek / Palo Alto filters, where the
 scoring may be wrong, questions for system owners), and answer **follow-up questions**. The core
-pipeline never depends on it, and **no vendor is preselected**: nothing is sent to any model until the
+pipeline never depends on it, and **no AI vendor is preselected**: nothing is sent to any model until the
 analyst picks a provider.
 
 | Provider | What it is | Key |
 |---|---|---|
+| `offline` (default) | Built-in assistant: rules and templates over the results, no AI model, nothing sent | none |
 | `anthropic` | Claude via the official Anthropic SDK (`pip install anthropic`) | `ANTHROPIC_API_KEY` |
 | `openai` | OpenAI's API, or an OpenAI-hosted gateway via `--llm-base-url` | `OPENAI_API_KEY` |
 | `local` | Any OpenAI-compatible server you run: Ollama, vLLM, LM Studio, llama.cpp | usually none |
@@ -331,10 +334,10 @@ analyst picks a provider.
 **On the upload page**, open **Security Assistant settings** (linked on the upload page and every results page),
 pick a provider, enter the model and API key, and save. The key is held in the server's memory only:
 it is never written to disk, logged, or shown again (only its last four characters), and it is forgotten
-when the server stops. "Turn off AI and forget key" clears it. Each results page then offers
+when the server stops. "Use the built-in assistant and forget key" clears it and goes back to offline. Each results page then offers
 **Generate Security Assistant brief** and a chat box for questions.
 
-**From the command line**, choose the provider explicitly. If it needs a key and none is set in the
+**From the command line**, the built-in offline assistant is used unless you choose a provider. If it needs a key and none is set in the
 environment, you are prompted for it without echo (keys are not accepted as command-line arguments, so they
 stay out of shell history):
 
@@ -348,7 +351,7 @@ python3 -m vulnflow serve --redact      # choose provider and key in the browser
 
 | Setting | Flag | Environment variable |
 |---|---|---|
-| Provider (no default) | `--llm-provider anthropic\|openai\|local` | `VULNFLOW_LLM_PROVIDER` |
+| Provider (default `offline`) | `--llm-provider offline\|anthropic\|openai\|local` | `VULNFLOW_LLM_PROVIDER` |
 | Model | `--llm-model` (required for `openai`) | `VULNFLOW_LLM_MODEL` |
 | Endpoint | `--llm-base-url` | `VULNFLOW_LLM_BASE_URL` |
 | API key | prompted, or the settings page | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`, or `VULNFLOW_LLM_API_KEY` |
@@ -377,7 +380,13 @@ How it is kept honest and safe:
   `fallbacks: "default"` retries a request a safety classifier declines on Anthropic's recommended fallback
   model. OpenAI: uses `max_completion_tokens` and default temperature so reasoning models work. Refusals or
   content filtering from any provider come back as a clear error.
-- `--llm-provider mock` is an offline stand-in used by the tests and for demos without a model.
+- **Built-in offline assistant (default).** With no provider chosen, the Security Assistant still works:
+  `offline` (shown as "Built-in (offline, no AI)") explains a run from its own results with fixed rules and
+  templates, so nothing is sent anywhere and no key is needed. Ask about a host (IP or name), CVE, plugin ID,
+  outside IP or IOC value, or about priorities, internet exposure, outbound callbacks, lateral movement and
+  attack paths, IOC matches, coverage gaps and scoring; it also writes the brief. Answers include ready-to-paste
+  Zeek and Palo Alto filters. It can't reason beyond the data, so pick a model for open-ended questions.
+  `--llm-provider mock` still works as an older name for it.
 
 ## Tuning
 

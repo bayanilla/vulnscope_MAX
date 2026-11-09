@@ -33,10 +33,24 @@ class VendorNeutralTests(Base):
         with self.assertRaises(LLMError):
             Analyst(self.res, cfg)
 
-    def test_cli_requires_a_choice(self):
+    def test_cli_falls_back_to_the_offline_assistant(self):
+        import contextlib
+        import io
         from vulnflow.cli import main
-        with mock.patch.dict(os.environ, {"VULNFLOW_LLM_PROVIDER": ""}):
-            self.assertEqual(main(["ask", self.out, "--once", "hi"]), 2)
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.dict(os.environ, {"VULNFLOW_LLM_PROVIDER": ""}), \
+                mock.patch("urllib.request.urlopen", side_effect=AssertionError("network used")), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            self.assertEqual(main(["ask", self.out, "--once", "what should we fix first"]), 0)
+        self.assertIn("built-in offline assistant", err.getvalue())
+        self.assertIn("No AI model is used", out.getvalue())
+        self.assertIn("## What to do first", out.getvalue())
+
+    def test_mock_is_an_alias_for_offline(self):
+        cfg = LLMConfig.from_env(provider="mock")
+        self.assertEqual(cfg.provider, "offline")
+        self.assertTrue(cfg.is_offline)
+        self.assertEqual(cfg.api_key, "")
 
 
 class ContextTests(Base):
@@ -68,7 +82,7 @@ class ContextTests(Base):
             self.assertEqual(analyst.ask(f"What about {target['host']}?"), "Demo answer")
         self.assertIn(target["plugin_id"], captured["question"])
         self.assertIn("<focus_details>", captured["question"])
-        self.assertLess(len(captured["system"]), len(Analyst(self.res, LLMConfig.from_env(provider="mock")).system) // 10)
+        self.assertLess(len(captured["system"]), len(build_context(self.res)) // 10)
 
     def test_focus_details_finds_hosts_and_cves(self):
         self.assertIn("97833", llm.focus_details(self.res, "Why is fs01 urgent?"))
@@ -238,7 +252,7 @@ class WebTests(Base):
         except urllib.error.HTTPError as e:
             return e.code, e.read().decode()
 
-    def test_ask_endpoint_with_mock(self):
+    def test_ask_endpoint_with_offline_assistant(self):
         host, run = self._server(LLMConfig.from_env(provider="mock"))
         with urllib.request.urlopen(host + run) as resp:
             page = resp.read().decode()
@@ -251,7 +265,7 @@ class WebTests(Base):
             status = json.load(resp)
             self.assertTrue(status["enabled"])
             self.assertTrue(status["ready"])
-            self.assertTrue(status["mock"])
+            self.assertTrue(status["offline"])
             self.assertIn("nothing leaves this machine", status["description"])
             status_token = status["csrf"]
         status, body = self._post(host + run + "ask", json.dumps({"question": "x", "history": []}),
@@ -260,28 +274,29 @@ class WebTests(Base):
         status, body = self._post(host + run + "ask", json.dumps({"question": "<b>fs01?</b>", "history": []}),
                                   {"Content-Type": "application/json", "X-CSRF-Token": status_token})
         j = json.loads(body)
-        self.assertIn("&lt;b&gt;", j["answer_html"])   # model output is escaped
-        self.assertNotIn("<b>", j["answer_html"])
+        self.assertNotIn("<b>", j["answer_html"])       # answers are rendered with all text escaped
+        self.assertIn("fs01.corp.example (10.10.2.25)", j["answer_html"])
         with open(os.path.join(self.out, "ai_chat_log.md")) as fh:
             self.assertIn("fs01?", fh.read())
 
-    def test_mock_can_be_selected_in_browser_without_model_or_key(self):
+    def test_offline_can_be_selected_in_browser_without_model_or_key(self):
         import re
         from urllib.parse import urlencode
         host, run = self._server(LLMConfig())
         with urllib.request.urlopen(host + "/settings?next=" + run) as resp:
             page = resp.read().decode()
-        self.assertIn('<option value="mock">Offline mock</option>', page)
+        self.assertIn('<option value="offline" selected>Built-in (offline, no AI)</option>', page)
+        self.assertNotIn('value="mock"', page)
         token = re.search(r'name="csrf" value="([^"]+)"', page)[1]
         form = {"csrf": token, "next": run, "provider": "mock", "model": "old-model",
                 "api_key": "unused-key", "action": "save"}
         status, body = self._post(host + "/settings", urlencode(form))
         self.assertEqual(status, 200)
-        self.assertIn("Offline mock: fixed summaries", body)
+        self.assertIn("Built-in offline assistant: answers are put together", body)
         with urllib.request.urlopen(host + run + "ai-status") as resp:
             config = json.load(resp)
         self.assertTrue(config["ready"])
-        self.assertTrue(config["mock"])
+        self.assertTrue(config["offline"])
 
     def test_explorer_uses_same_run_chat_and_hides_it_when_ai_is_off(self):
         host, run = self._server(LLMConfig.from_env(provider="mock"))
@@ -302,7 +317,9 @@ class WebTests(Base):
         with mock.patch.dict(os.environ, {"VULNFLOW_LLM_PROVIDER": "", "OPENAI_API_KEY": ""}):
             host, run = self._server(LLMConfig.from_env())
             with urllib.request.urlopen(host + run) as resp:
-                self.assertIn("No AI provider selected", resp.read().decode())
+                page = resp.read().decode()
+                self.assertIn("Built-in offline assistant", page)       # works before any provider is chosen
+                self.assertIn("Instant; built from the results without AI.", page)
             with urllib.request.urlopen(host + "/settings?next=" + run) as resp:
                 page = resp.read().decode()
             token = re.search(r'name="csrf" value="([^"]+)"', page)[1]

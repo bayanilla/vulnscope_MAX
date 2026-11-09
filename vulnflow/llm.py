@@ -7,7 +7,9 @@ Providers
   openai     OpenAI's API (or Azure/OpenAI-hosted gateways) over HTTPS; key: OPENAI_API_KEY
   local      any OpenAI-compatible server you host: Ollama, vLLM, LM Studio, llama.cpp.
              Keeps all data on your own network.
-  mock       offline, deterministic stand-in for demos and tests (no model involved)
+  offline    built-in assistant: explains the results with fixed rules and templates, no AI model,
+             no key, no network (vulnflow/offline_assistant.py). Used when nothing else is chosen.
+             "mock" is accepted as an older name for it.
 
 The model only ever sees the correlated results (never raw logs), receives no tools,
 and is told that every string in the data is untrusted. Answers are grounded in the
@@ -25,10 +27,14 @@ import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-PROVIDER_NAMES = {"anthropic": "Anthropic (Claude)", "openai": "OpenAI",
-                  "local": "Self-hosted (OpenAI-compatible)", "mock": "Offline mock"}
+from . import offline_assistant
+
+OFFLINE = "offline"
+PROVIDER_NAMES = {OFFLINE: "Built-in (offline, no AI)", "anthropic": "Anthropic (Claude)", "openai": "OpenAI",
+                  "local": "Self-hosted (OpenAI-compatible)"}
+PROVIDER_ALIASES = {"mock": OFFLINE}
 # Only suggested where a vendor has an obvious current default; otherwise the analyst names the model.
-SUGGESTED_MODELS = {"anthropic": "claude-opus-5-5", "local": "llama3.1", "mock": "mock"}
+SUGGESTED_MODELS = {"anthropic": "claude-opus-5-5", "local": "llama3.1", OFFLINE: "built-in"}
 DEFAULT_BASE_URLS = {"openai": "https://api.openai.com/v1", "local": "http://localhost:11434/v1"}
 KEY_ENV = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}
 MAX_FINDINGS_IN_CONTEXT = 150
@@ -75,7 +81,10 @@ class LLMConfig:
 
         ``env_key`` False never fills the key from the environment (used when a browser chose
         a non-default endpoint, so a server-side key cannot be sent somewhere new)."""
-        p = self.provider
+        p = self.provider = PROVIDER_ALIASES.get(self.provider, self.provider)
+        if p == OFFLINE:
+            self.model, self.base_url, self.api_key, self.redact = SUGGESTED_MODELS[OFFLINE], "", "", False
+            return self
         if p not in PROVIDER_NAMES:
             raise LLMError(f"Unknown AI provider '{p}'. Choose one of: {', '.join(PROVIDER_NAMES)}.")
         self.model = (self.model or SUGGESTED_MODELS.get(p, "")).strip()
@@ -93,9 +102,17 @@ class LLMConfig:
                                "except to this machine.")
         return self
 
+    @classmethod
+    def offline(cls) -> "LLMConfig":
+        return cls(provider=OFFLINE).resolved()
+
     @property
     def ready(self) -> bool:
         return bool(self.provider)
+
+    @property
+    def is_offline(self) -> bool:
+        return PROVIDER_ALIASES.get(self.provider, self.provider) == OFFLINE
 
     def needs_key(self) -> bool:
         return self.provider == "openai" and not self.api_key or (
@@ -105,6 +122,8 @@ class LLMConfig:
         return f"…{self.api_key[-4:]}" if len(self.api_key) >= 8 else ("set" if self.api_key else "none")
 
     def label(self) -> str:
+        if self.is_offline:
+            return "Built-in offline assistant (no AI)"
         where = f" at {self.base_url}" if self.provider in ("openai", "local") else ""
         return f"{PROVIDER_NAMES.get(self.provider, self.provider)} / {self.model}{where}" + \
             (" (redacted)" if self.redact else "")
@@ -114,7 +133,7 @@ class LLMConfig:
             return "Anthropic's API"
         if self.provider in ("openai", "local"):
             return self.base_url
-        return "nowhere (offline mock)"
+        return "nowhere (built-in offline assistant)"
 
 
 # ------------------------------------------------------------------ prompts
@@ -468,38 +487,8 @@ def _call_openai_compatible(cfg: LLMConfig, system: str, messages: list[dict], e
     return text
 
 
-def _call_mock(cfg: LLMConfig, system: str, messages: list[dict], effort: str) -> str:
-    data = json.loads(system.rsplit("<correlation_results>\n", 1)[1].split("\n</correlation_results>", 1)[0])
-    top = data["findings"][:3]
-    lines = ["_Offline mock provider: this text is generated from the results without a model._", ""]
-    q = messages[-1]["content"].split("<question>", 1)[-1].split("</question>", 1)[0].strip()
-    if "<question>" in messages[-1]["content"]:
-        lines.append(f"You asked: {q}")
-        lines.append("")
-    lines.append("## Analyst take")
-    s = data["summary"]
-    if not s.get("vulnerability_data_available", True):
-        lines.append("No vulnerability data available; vulnerability status unknown. "
-                     f"{s['flows']} sessions and {s['threat_alerts']} IPS/IDS alerts were parsed.")
-        lines += ["", "## Leads to review"]
-        for lead in data.get("telemetry_leads", [])[:3]:
-            lines.append(f"- {lead['host']}: {lead['unblocked']} unblocked and {lead['blocked']} blocked alerts; review the sensor evidence.")
-        for lead in data.get("network_leads", [])[:3]:
-            lines.append(f"- {lead['host']}: return connection to {lead['peer']}; verify context and host logs.")
-        lines += ["", "## Next steps", "Obtain vulnerability scan data before assigning CVSS scores or remediation priorities."]
-        return "\n".join(lines)
-    lines.append(f"{s['priority_counts']['P1']} P1 findings; corroborated exploitation evidence on "
-                 f"{', '.join(s.get('hosts_corroborated', [])) or 'no hosts'}; leads to investigate on "
-                 f"{', '.join(s.get('hosts_to_investigate', [])) or 'no hosts'}.")
-    lines.append("")
-    lines.append("## What to do first")
-    for i, r in enumerate(top, 1):
-        lines.append(f"{i}. {r['host']} plugin {r['plugin_id']} ({r['plugin_name']}): {r['exposure']['label']}.")
-    return "\n".join(lines)
-
-
 PROVIDERS = {"anthropic": _call_anthropic, "openai": _call_openai_compatible,
-             "local": _call_openai_compatible, "mock": _call_mock}
+             "local": _call_openai_compatible}
 
 
 # ------------------------------------------------------------------ public API
@@ -510,6 +499,9 @@ class Analyst:
         if not cfg.ready:
             raise LLMError("No AI provider selected. Choose Anthropic, OpenAI or a self-hosted model first.")
         self.res, self.cfg = res, cfg
+        if cfg.is_offline:                       # rules over the full results; no prompt, nothing sent
+            self.redactor, self.compact, self.system = None, False, ""
+            return
         self.redactor = Redactor(res) if cfg.redact else None
         self.compact = cfg.provider == "local"
         ctx = build_context(res, compact=self.compact)
@@ -527,6 +519,8 @@ class Analyst:
         return self._in(PROVIDERS[self.cfg.provider](self.cfg, self.system, messages, effort))
 
     def brief(self) -> str:
+        if self.cfg.is_offline:
+            return offline_assistant.brief(self.res)
         task = (BRIEF_TASK if self.res["summary"].get("vulnerability_data_available", True)
                 else TELEMETRY_BRIEF_TASK)
         return self._call([{"role": "user", "content": task}], effort="high")
@@ -536,6 +530,8 @@ class Analyst:
         question = question.strip()[:4000]
         if not question:
             raise LLMError("Ask a question.")
+        if self.cfg.is_offline:
+            return offline_assistant.answer(self.res, question, history)
         msgs = []
         for h in (history or [])[-2 * MAX_HISTORY_TURNS:]:
             if h.get("role") in ("user", "assistant") and isinstance(h.get("content"), str):
@@ -556,8 +552,8 @@ def _stamp(cfg: LLMConfig) -> str:
 def write_brief(res: dict, outdir: str, cfg: LLMConfig) -> str:
     from .report import md_to_html
     text = Analyst(res, cfg).brief()
-    intro = ("Offline mock summary of the correlated results" if cfg.provider == "mock"
-             else "AI-generated interpretation of the correlated results")
+    intro = ("Built-in offline summary of the correlated results, assembled by fixed rules without an AI model"
+             if cfg.is_offline else "AI-generated interpretation of the correlated results")
     md = ("# Security Assistant Brief\n\n"
           f"> {intro} ({_stamp(cfg)}). "
           "Verify against the technical report before acting.\n\n" + text + "\n")
