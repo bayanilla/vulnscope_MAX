@@ -141,6 +141,33 @@ class ExploreTests(unittest.TestCase):
         self.assertEqual({p["ip"] for p in focus["peers"]}, set(peers))
         self.assertIn(outside[-1], explore.html(data))
 
+    def test_overview_keeps_outbound_internet_traffic(self):
+        # Many inbound scanners must not crowd hosts calling out off the overview's internet arc.
+        hosts = [f"10.80.1.{i}" for i in range(1, 11)]
+        scanners = [str(ipaddress.IPv4Address("198.18.0.1") + i) for i in range(200)]
+        called = [str(ipaddress.IPv4Address("203.0.113.1") + i) for i in range(30)]
+        flows = ([Flow(None, src, h, 443, "tcp") for src in scanners for h in hosts[:3]] +
+                 [Flow(None, h, dst, 443, "tcp") for dst in called for h in hosts[3:]])
+        ds = Dataset(flows=flows)
+        data = explore.build(correlate(ds), ds)
+        inet = data["internet"]
+        self.assertEqual(len(inet), explore.MAX_INTERNET)
+        self.assertEqual((data["internet_in_total"], data["internet_out_total"]), (200, 30))
+        out = [e for e in inet if e["dir"] == "out"]
+        self.assertEqual(len(out), 26)                     # every third slot, inbound fills the rest
+        self.assertTrue(all(e["ip"] in called and e["out_sessions"] for e in out))
+        self.assertTrue(all(t[3] == "out" and t[0] in hosts[3:] for e in out for t in e["targets"]))
+        # the 48 drawn first are mixed, not all inbound
+        self.assertGreaterEqual(sum(e["dir"] == "out" for e in inet[:48]), 15)
+        self.assertEqual(len({e["ip"] for e in inet}), len(inet))
+
+    def test_overview_internet_both_directions(self):
+        ds = Dataset(flows=[Flow(None, "198.51.100.7", "10.90.0.5", 22, "tcp"),
+                            Flow(None, "10.90.0.5", "198.51.100.7", 443, "tcp")])
+        e = explore.build(correlate(ds), ds)["internet"][0]
+        self.assertEqual((e["dir"], e["in_sessions"], e["out_sessions"], e["out_hosts"]), ("both", 1, 1, 1))
+        self.assertEqual(e["targets"][0][3], "both")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -617,9 +617,13 @@ const HALO = RGB('#78aaff');
 const RISK2 = RGB('#ff2e88'), RISK1 = RGB('#ffb020'), BUNDLE = RGB('#6ea8ff'), BUNDLE_LAT = RGB('#ff8a3d'),
   RING = RGB('#2ee6d6'), P_CRIT = RGB('#ff3b5c'), P_HIGH = RGB('#ff8a3d');
 const BEAM_ALPHA = {alert: 0.85, vuln: 0.13, reached: 0.08, outbound: 0.08, attempt: 0.04, blocked: 0.035};
+const OUT_BEAM = RGB(RETURN), OUT_ALPHA = 0.15;
+// which way a host's traffic with an outside address went: in, out or both (older data has no 4th field)
+const beamDir = t => t[3] || (t[1] === 'outbound' ? 'out' : 'in');
 // Overview: subnet platforms on one plane, hosts as pillars whose height is risk, traffic between
 // subnets bundled beneath the plane, only risky host paths drawn bright, and the internet as a ring
-// overhead with beams down to the hosts each outside address reached.
+// overhead with beams down to the hosts each outside address reached, and violet beams rising from
+// hosts that connected out to it.
 function overviewScene(L, T, cm, cs, cdz) {
   const flows = [];
   if (cm < 0.01) return flows;
@@ -667,12 +671,20 @@ function overviewScene(L, T, cm, cs, cdz) {
       if (n.a < 0.02) return;
       n.info.targets.forEach(t => {
         const h = nodes.get(t[0]); if (!h || h.a < 0.02) return;
-        const on = !hn || hn === n || hn === h;
-        const al = Math.min(n.a, h.a) * cm * BEAM_ALPHA[t[1]] * (on ? (hn ? 1.4 : 1) : 0.12);
-        const c = [n.x, n.y, n.z, (n.x + h.x) / 2, (n.y + h.y) / 2, (n.z + h.z) / 2 + 60, h.x, h.y, h.z];
-        const col = RGB(KIND[t[1]]), dashed = t[1] === 'blocked' || t[1] === 'attempt';
-        L.quad(c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], 14, 0.9 + Math.min(2.2, Math.log2(1 + t[2]) * 0.3), col, al, dashed);
-        if (!dashed && on && (t[1] === 'alert' || t[1] === 'vuln' || hn)) flows.push({c, col, al: Math.min(1, al * 1.4), size: 3.2, speed: 0.18});
+        const on = !hn || hn === n || hn === h, dir = beamDir(t), w = 0.9 + Math.min(2.2, Math.log2(1 + t[2]) * 0.3);
+        if (dir !== 'out') {   // inbound: from the address down to the host
+          const al = Math.min(n.a, h.a) * cm * BEAM_ALPHA[t[1]] * (on ? (hn ? 1.4 : 1) : 0.12);
+          const c = [n.x, n.y, n.z, (n.x + h.x) / 2, (n.y + h.y) / 2, (n.z + h.z) / 2 + 60, h.x, h.y, h.z];
+          const col = RGB(KIND[t[1]]), dashed = t[1] === 'blocked' || t[1] === 'attempt';
+          L.quad(c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], 14, w, col, al, dashed);
+          if (!dashed && on && (t[1] === 'alert' || t[1] === 'vuln' || hn)) flows.push({c, col, al: Math.min(1, al * 1.4), size: 3.2, speed: 0.18});
+        }
+        if (dir !== 'in') {    // outbound: from the host up to the address, on a slightly higher curve
+          const al = Math.min(n.a, h.a) * cm * (t[1] === 'alert' ? 0.6 : OUT_ALPHA) * (on ? (hn ? 1.6 : 1) : 0.12);
+          const c = [h.x, h.y, h.z, (n.x + h.x) / 2, (n.y + h.y) / 2, (n.z + h.z) / 2 + 130, n.x, n.y, n.z];
+          L.quad(c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], 14, w, OUT_BEAM, al, false);
+          if (on) flows.push({c, col: OUT_BEAM, al: Math.min(1, al * 2.2), size: 3, speed: 0.14});
+        }
       });
     });
   }
@@ -770,6 +782,13 @@ function draw3d(now, dt, k) {
       ctx.globalAlpha = 0.75 * cm; ctx.font = '600 11px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#2ee6d6';
       const tot = D.internet_total || inetNodes.length;
       ctx.fillText(`INTERNET · ${tot.toLocaleString()} OUTSIDE ADDRESS${tot === 1 ? '' : 'ES'}` + (tot > inetNodes.length ? ` · TOP ${inetNodes.length} SHOWN` : ''), x, Math.max(84, y - 18));
+      if (D.internet_out_total != null) {
+        ctx.font = '10px ui-monospace,Menlo,monospace'; ctx.fillStyle = '#7f95b3';
+        const a = `↓ ${D.internet_in_total.toLocaleString()} REACHED IN   `, b = `↑ ${D.internet_out_total.toLocaleString()} CONTACTED BY HOSTS`;
+        const wa = ctx.measureText(a).width, wb = ctx.measureText(b).width, x0 = x - (wa + wb) / 2;
+        ctx.textAlign = 'left'; ctx.fillText(a, x0, Math.max(98, y - 4));
+        ctx.fillStyle = RETURN; ctx.fillText(b, x0 + wa, Math.max(98, y - 4)); ctx.textAlign = 'center';
+      }
     }
   }
   edges.forEach(e => {
@@ -915,9 +934,12 @@ function tip(n, x, y) {
   let h;
   if (n.inet) {
     const e = n.info, more = e.hosts_total - e.targets.length;
+    const arrow = t => ({in: '←', out: '→', both: '⇄'})[beamDir(t)];
     h = `<b>${esc(e.ip)}</b> <span class="m">outside address</span><br>${esc(KIND_TXT[e.kind])}` +
       `<br><span class="m">${e.hosts_total} internal host(s) · ${e.sessions.toLocaleString()} session(s)` + (e.alerts ? ` · ${e.alerts} IPS alert(s) not blocked` : '') + '</span>' +
-      '<br>' + e.targets.slice(0, 5).map(t => `${esc(t[0])} <span style="color:${KIND[t[1]]}">${esc(KIND_TXT[t[1]])}</span>`).join('<br>') +
+      (e.out_sessions != null ? `<br><span class="m">Inbound ${e.in_sessions.toLocaleString()} · </span><span style="color:${RETURN}">outbound ${e.out_sessions.toLocaleString()} from ${e.out_hosts} host(s)</span>` : '') +
+      '<br>' + e.targets.slice(0, 5).map(t => `${esc(t[0])} ${arrow(t)} <span style="color:${KIND[t[1]]}">${esc(KIND_TXT[t[1]])}</span>` +
+        (beamDir(t) === 'both' && t[1] !== 'outbound' ? ` <span style="color:${RETURN}">+ host connected out</span>` : '')).join('<br>') +
       (more > 0 ? `<br><span class="m">+${more} more host(s)</span>` : '') +
       (iocIds.has('ip:' + e.ip) ? '<br><span style="color:#2ee6d6">Click for IOC details</span>' : '<br><span class="m">Click to focus its top target</span>');
   } else if (n.domain) {
@@ -1218,7 +1240,7 @@ if (!state.motion) $('btn-motion').setAttribute('aria-pressed', 'false');
 $('legend').innerHTML =
   `<span class="only3d m">Drag: pan · right-drag or Shift-drag: rotate and tilt · Q / E: rotate · T top · Y tilted · U low · R reset (low, turning)</span>` +
   `<span class="only3d">${telemetryOnly ? 'Pillar height: outside exposure' : 'Pillar height: risk score'}</span>` +
-  `<span class="only3d"><i style="background:#2ee6d6"></i>Arc above: top outside addresses, beams to hosts they reached</span>` +
+  `<span class="only3d"><i style="background:#2ee6d6"></i>Arc above: top outside addresses, beams down to hosts they reached, violet beams up from hosts that called out</span>` +
   `<span class="only3d"><i style="background:#6ea8ff"></i><i style="background:#ff8a3d;width:12px"></i>Traffic between subnets (orange: mostly admin protocols)</span>` +
   `<span class="only3d"><i style="background:#ff2e88"></i><i style="background:#ffb020;width:12px"></i>Risky host paths: admin protocol into P1 or flagged host / either one</span>` +
   `<span><i style="background:${KIND.alert}"></i>IPS alert, not blocked</span>` +
