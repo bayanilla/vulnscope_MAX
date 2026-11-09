@@ -35,6 +35,7 @@ from urllib.parse import parse_qs
 from .llm import DEFAULT_BASE_URLS, PROVIDER_NAMES, Analyst, LLMConfig, LLMError, load_results, log_qa, write_brief
 from .article_brief import generate_article_briefs
 from .parsers import FORMATS
+from . import resources
 from .pipeline import run
 from .radar import RadarError, lookup as radar_lookup
 from .report import CSS, THEME_INIT, md_body, save_article_briefs, theme_control
@@ -440,6 +441,9 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             raw = form.get("path", "").strip().strip('"').strip("'")
             folder = os.path.realpath(os.path.expanduser(raw)) if raw else ""
             state["last_path"] = raw
+            if resources.busy():
+                return self._form("Another analysis is already running on this machine. "
+                                  "Wait for it to finish and try again.")
             if not folder or not os.path.isdir(folder):
                 return self._form(f"Folder not found: {raw or '(empty)'}. Use the full path, for example ~/Documents/case-logs.")
             run_id = secrets.token_hex(8)
@@ -775,6 +779,10 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return self._pick_folder()
             if self.path != "/analyze":
                 return self._send(404, "Not found", "text/plain")
+            if resources.busy():                          # refuse before reading a large upload
+                self.close_connection = True
+                return self._form("Another analysis is already running on this machine. "
+                                  "Wait for it to finish and try again.")
             length = self._length()
             if length <= 0 or length > max_upload:
                 self.close_connection = True              # don't read an oversized body at all
@@ -836,6 +844,7 @@ def serve(host: str, port: int, data_dir: str, cfg: Config, llm_cfg: LLMConfig |
     else:
         print(f"Upload page: http://{host}:{port}/", end="")
     print(f"  (results stored in {os.path.abspath(data_dir)})")
+    print(f"Analyses: {resources.max_jobs()} at a time; " + resources.plan(workdir=data_dir).describe())
     if llm_cfg is not None:
         print(f"Security Assistant: {llm_cfg.label() if llm_cfg.ready else 'no provider yet; choose one at /settings'}")
     try:

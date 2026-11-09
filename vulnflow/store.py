@@ -18,12 +18,12 @@ from itertools import islice
 
 import duckdb
 
+from . import resources
 from .schema import Flow, OTEvent, ZeekEvent
 
 EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 DEFAULT_BATCH = 100_000
 DEFAULT_SKEW_SECONDS = 2.0
-DEFAULT_MEMORY_LIMIT = "1GB"   # DuckDB spills to the working directory beyond this
 # When two different sensors record the same session, keep the record from the sensor that
 # knows the most about it: the firewall knows the policy action and zones, Zeek the byte counts.
 SENSOR_RANK = {"paloalto": 0, "zeek": 1, "suricata": 2, "generic": 3}
@@ -66,17 +66,23 @@ def row_to_flow(r) -> Flow:
 class Store:
     """One working directory + DuckDB database per analysis run."""
 
-    def __init__(self, workdir: str | None = None, memory_limit: str | None = None):
+    def __init__(self, workdir: str | None = None, memory_limit: str | None = None,
+                 budget: resources.Budget | None = None):
+        """DuckDB's memory, threads and spill cap are sized to this machine (see resources.py);
+        ``memory_limit`` or $VULNSCOPE_DUCKDB_MEMORY override the memory, clamped to a safe ceiling."""
         base = workdir or os.environ.get("VULNSCOPE_WORKDIR") or None
         if base:
             os.makedirs(base, exist_ok=True)
         self.dir = tempfile.mkdtemp(prefix="vulnscope-work-", dir=base)
+        self.budget = budget or resources.plan(memory_limit, self.dir)
         self.con = duckdb.connect(os.path.join(self.dir, "work.duckdb"))
         tmp = os.path.join(self.dir, "duckdb_tmp")
         os.makedirs(tmp, exist_ok=True)
         self.con.execute(f"SET temp_directory = '{_q(tmp)}'")
-        limit = memory_limit or os.environ.get("VULNSCOPE_DUCKDB_MEMORY") or DEFAULT_MEMORY_LIMIT
-        self.con.execute(f"SET memory_limit = '{_q(limit)}'")
+        self.con.execute(f"SET memory_limit = '{self.budget.memory // resources.MiB}MiB'")
+        self.con.execute(f"SET threads = {int(self.budget.threads)}")
+        if self.budget.max_temp:
+            self.con.execute(f"SET max_temp_directory_size = '{self.budget.max_temp // resources.MiB}MiB'")
         self.con.execute("SET preserve_insertion_order = false")
         self.parquet_dir = os.path.join(self.dir, "flows_parquet")
         self._batches = 0

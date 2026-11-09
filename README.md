@@ -25,7 +25,19 @@ can be plain or `.gz`. The working directory is deleted when the run ends.
 
 - `--workdir DIR` (or `VULNSCOPE_WORKDIR`) puts the temporary Parquet/DuckDB files on a disk with
   room for them; plan for roughly the size of the uncompressed session logs. The upload page uses
-  its run folder. `VULNSCOPE_DUCKDB_MEMORY` (default `1GB`) caps DuckDB's memory; it spills to the working directory beyond that.
+  its run folder.
+- DuckDB sizes itself to the machine. It gets 60% of the RAM (or of the container's cgroup memory
+  limit, when lower), less if the machine is already busy, and never more than a ceiling that keeps
+  25% (at least 1.5 GiB) for the OS and the rest of the app. Threads follow the CPUs the process may
+  use, one per GiB of DuckDB memory at most. Beyond its memory limit DuckDB spills to the working
+  directory, capped at 80% of that disk's free space. Each run prints the values it chose.
+- Overrides, all clamped to those safe ceilings: `VULNSCOPE_DUCKDB_MEMORY` (`8GB`, `6GiB`, or `50%`
+  of usable RAM), `VULNSCOPE_DUCKDB_THREADS`, `VULNSCOPE_DUCKDB_MAX_TEMP` (`200GB` or `50%` of free
+  disk). Roughly, de-duplication needs about 1 GB of DuckDB memory per GB of Zeek logs.
+- One analysis runs at a time per process; the upload page refuses a second one with a message
+  rather than letting two runs each claim the memory budget. `VULNSCOPE_MAX_JOBS=N` allows N at once
+  and splits the budget between them. A run that needs more memory or disk than it was given stops
+  with a message saying which limit it hit and how far it can be raised.
 - The same session recorded by two sensors (for example Zeek and the firewall) is counted once:
   records with the same 5-tuple whose start times are within `--dedup-skew` seconds (default 2) are
   counted once, keeping the firewall record. Use `--dedup-skew -1` to turn this off.

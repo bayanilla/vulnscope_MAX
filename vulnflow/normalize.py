@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 
+from . import resources
 from .parsers import FORMATS, detect
 from .schema import Finding, Flow, OTEvent, ParseStats, ThreatEvent, ZeekEvent
 from .store import (DEFAULT_BATCH, DEFAULT_SKEW_SECONDS, SENSOR_RANK, EventSpool, FlowView,
@@ -55,7 +56,7 @@ def _sensor(fmt: str) -> str:
 
 def load(paths: list[str], overrides: dict[str, str] | None = None, *,
          workdir: str | None = None, skew_seconds: float | None = DEFAULT_SKEW_SECONDS,
-         batch_size: int = DEFAULT_BATCH) -> Dataset:
+         batch_size: int = DEFAULT_BATCH, budget: resources.Budget | None = None) -> Dataset:
     """overrides maps a file path or basename to a format name.
 
     Records stream from each parser in batches: flows go to Parquet (partitioned by sensor
@@ -64,7 +65,18 @@ def load(paths: list[str], overrides: dict[str, str] | None = None, *,
     session seen by two sensors (None disables cross-sensor matching).
     """
     overrides = overrides or {}
-    store = Store(workdir)
+    store = Store(workdir, budget=budget)
+    try:
+        return _load(store, paths, overrides, skew_seconds, batch_size)
+    except Exception as exc:
+        store.close()
+        friendly = resources.explain(exc, store.budget)
+        if friendly is not None:
+            raise friendly from exc
+        raise
+
+
+def _load(store, paths, overrides, skew_seconds, batch_size) -> Dataset:
     ds = Dataset(store=store)
     writer = FlowWriter(store, batch_size)
     zeek_spool = EventSpool(store, "zeek_events", ot=False)
@@ -75,7 +87,6 @@ def load(paths: list[str], overrides: dict[str, str] | None = None, *,
         name = os.path.basename(path)
         fmt = overrides.get(path) or overrides.get(name) or detect(path)
         if fmt not in FORMATS:
-            store.close()
             raise ValueError(f"{name}: unknown format '{fmt}' (choose from {', '.join(FORMATS)})")
         kind, parser = FORMATS[fmt]
         sensor = _sensor(fmt)
@@ -97,6 +108,8 @@ def load(paths: list[str], overrides: dict[str, str] | None = None, *,
                     if isinstance(r, OTEvent):
                         ot_spool.add(r)
         except Exception as exc:  # a broken file should not sink the whole run
+            if resources.explain(exc, store.budget) is not None:
+                raise                    # out of memory or disk: stop, don't report a "broken file"
             # Records parsed before the error (e.g. a truncated .gz) are kept.
             stats.note(f"file could not be parsed: {exc}"
                        + (f" (kept {kept} record(s) read before the error)" if kept else ""))

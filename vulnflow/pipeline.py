@@ -1,6 +1,9 @@
 """One call that runs the whole workflow: load -> clean -> correlate -> report."""
 from __future__ import annotations
 
+import sys
+
+from . import resources
 from .correlate import Config, correlate
 from .ioc_archive import is_archive, match_archive, read_archives
 from .normalize import load
@@ -16,12 +19,22 @@ def run(paths: list[str], outdir: str, cfg: Config | None = None,
     or $VULNSCOPE_WORKDIR); it is deleted when the run finishes."""
     cfg = cfg or Config()
     archive_paths = [path for path in paths if is_archive(path)]
-    ds = load([path for path in paths if path not in archive_paths], overrides,
-              workdir=workdir, skew_seconds=cfg.dedup_skew_seconds)
-    try:
-        return _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache)
-    finally:
-        ds.close()
+    with resources.job_slot():               # one heavy analysis at a time (VULNSCOPE_MAX_JOBS)
+        budget = resources.plan(workdir=workdir)
+        for warning in budget.warnings:
+            print(f"warning: {warning}", file=sys.stderr)
+        print(budget.describe(), file=sys.stderr)
+        ds = load([path for path in paths if path not in archive_paths], overrides,
+                  workdir=workdir, skew_seconds=cfg.dedup_skew_seconds, budget=budget)
+        try:
+            return _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache)
+        except Exception as exc:
+            friendly = resources.explain(exc, budget)
+            if friendly is not None:
+                raise friendly from exc
+            raise
+        finally:
+            ds.close()
 
 
 def _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache):
