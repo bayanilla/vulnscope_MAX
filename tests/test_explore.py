@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from vulnflow import explore
 from vulnflow.correlate import Config, correlate
 from vulnflow.normalize import Dataset, load
-from vulnflow.schema import Flow, OTEvent, ThreatEvent
+from vulnflow.schema import Flow, OTEvent, ThreatEvent, ZeekEvent
 from vulnflow.report import write_all
 from vulnflow.samples import generate
 
@@ -167,6 +167,66 @@ class ExploreTests(unittest.TestCase):
         e = explore.build(correlate(ds), ds)["internet"][0]
         self.assertEqual((e["dir"], e["in_sessions"], e["out_sessions"], e["out_hosts"]), ("both", 1, 1, 1))
         self.assertEqual(e["targets"][0][3], "both")
+
+    def test_timeline_orders_flows_alerts_and_ioc_lookups(self):
+        t = self.data["timeline"]
+        nodes = [n["id"] for n in self.data["nodes"]]
+        self.assertEqual(len(t["flows"]), sum(1 for f in self.ds.flows if f.ts and f.src_ip != f.dst_ip
+                                              and all(ip in nodes or not ip.startswith("10.") for ip in (f.src_ip, f.dst_ip))))
+        self.assertFalse(t["sampled"])
+        self.assertEqual([f[0] for f in t["flows"]], sorted(f[0] for f in t["flows"]))
+        self.assertTrue(all(0 <= f[0] <= t["hours"] for f in t["flows"]))
+        ext = [e[0] for e in t["ext"]]
+        name = lambda r: nodes[r] if r >= 0 else ext[-r - 1]
+        # the web01 exploit alert has no timestamp of its own, so it sits at the pair's first session
+        web = [a for a in t["alerts"] if a[2] == "203.0.113.45"]
+        self.assertEqual(len(web), 1)
+        self.assertEqual(name(web[0][1]), "10.10.1.10")
+        self.assertFalse(web[0][4])
+        # flows to or from the alerting address are flagged; one of them is the callback on 4444
+        bad = [f for f in t["flows"] if f[4] & 2]
+        self.assertIn(("10.10.1.10", "203.0.113.45", 4444), {(name(f[1]), name(f[2]), f[3]) for f in bad})
+        self.assertTrue(any(f[4] & 4 for f in t["flows"]))          # onto a vulnerable port
+        self.assertEqual(t["ioc_lookups"], [])                       # no IOC archive in this run
+
+    def test_timeline_marks_ioc_domain_lookups(self):
+        ts = datetime(2026, 1, 1, 8, tzinfo=timezone.utc)
+        ds = Dataset(flows=[Flow(ts, "10.20.0.5", "10.20.0.53", 53, "udp"), Flow(ts, "10.20.0.5", "198.51.100.3", 443, "tcp")],
+                     zeek_events=[ZeekEvent(ts, "dns", "C1", "10.20.0.5", "10.20.0.53", {"query": "Bad.Example."}),
+                                  ZeekEvent(ts, "dns", "C2", "10.20.0.5", "10.20.0.53", {"query": "good.example"})])
+        res = correlate(ds)
+        res["ioc_matches"] = [{"id": "domain:bad.example", "type": "domain", "value": "bad.example", "hosts": ["10.20.0.5"]}]
+        data = explore.build(res, ds)
+        nodes = [n["id"] for n in data["nodes"]]
+        self.assertEqual([(nodes[x[1]], x[2]) for x in data["timeline"]["ioc_lookups"]], [("10.20.0.5", "bad.example")])
+
+    def test_timeline_samples_large_runs_but_keeps_flagged_flows(self):
+        base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        from datetime import timedelta
+        flows = [Flow(base + timedelta(minutes=i), "10.60.0.%d" % (i % 50 + 1), "10.60.1.1", 445, "tcp") for i in range(3000)]
+        flows += [Flow(base + timedelta(minutes=i * 7), "198.51.100.9", "10.60.1.1", 443, "tcp") for i in range(40)]
+        ds = Dataset(flows=flows, threats=[ThreatEvent(base, "198.51.100.9", "10.60.1.1", 443, "Exploit attempt")])
+        old = explore.MAX_TIMELINE_FLOWS
+        explore.MAX_TIMELINE_FLOWS = 500
+        try:
+            t = explore.build(correlate(ds), ds)["timeline"]
+        finally:
+            explore.MAX_TIMELINE_FLOWS = old
+        self.assertTrue(t["sampled"])
+        self.assertEqual(t["total"], 3040)
+        self.assertEqual(len(t["flows"]), 500)
+        self.assertEqual(sum(1 for f in t["flows"] if f[4] & 2), 40)   # every flagged flow survives the sample
+        self.assertEqual([f[0] for f in t["flows"]], sorted(f[0] for f in t["flows"]))
+
+    def test_timeline_needs_timestamps(self):
+        ds = Dataset(flows=[Flow(None, "198.51.100.7", "10.90.0.5", 22, "tcp")])
+        self.assertIsNone(explore.build(correlate(ds), ds)["timeline"])
+
+    def test_html_includes_timeline_view(self):
+        page = explore.html(self.data)
+        self.assertIn('id="btn-timeline"', page)
+        self.assertIn('id="timeline-view"', page)
+        self.assertIn("window.VFTimeline", page)
 
 
 if __name__ == "__main__":

@@ -282,6 +282,18 @@ remembered; `explorer.html?2d` always opens flat. Drawing is capped at
 2,000 hosts, 200 risky paths and 48 outside addresses, so very large log sets stay smooth; **Motion**
 turns the animated traffic off.
 Deep links work: `explorer.html#host=10.0.1.10`.
+
+**Timeline view.** **Timeline** in the view switcher (or the I key, or `explorer.html#timeline`) draws the
+same traffic as a tunnel through time: time runs left to right, each subnet is a lane around the wall and
+the internet is the band on top, and every flow is a chord at the moment it happened. That shows the order
+of events: first contact, an IPS alert (a ring around the tunnel), the callback out, IOC domain lookups (pink
+dots) and anything that repeats on a schedule. Pink chords touch an alert or IOC address, cyan come in from
+the internet, violet go out to it, orange go straight between subnets, and grey were blocked. The side panel
+lights up a 6, 12 or 24 hour window (shorter for short captures) and lists its counts and events; click an
+event or ring to open that host. Up to 20,000 flows are drawn. Larger runs keep every blocked flow and every
+flow to or from an alert or IOC address (up to half of that) and fill the rest with a fixed random sample,
+and the view says so. The camera behaves like the 3D view: drag to rotate, right-drag or Shift-drag to pan,
+scroll to zoom, and the slow turn stops as soon as you move it. Esc goes back.
 See the [Explorer Security Assistant screenshot](screenshots/security_assistant.jpg).
 
 **How the blast-radius likelihood is estimated.** It is a heuristic for triage, not a measurement:
