@@ -1224,7 +1224,7 @@ function markSeg() {
   for (const id of ['vw-flat', 'btn-3d', 'btn-paths']) $(id).setAttribute('aria-current', $(id).classList.contains('on') ? 'true' : 'false');
   placeViewctl(); updateAbout();
 }
-// "what am I looking at": the ? left of the view buttons opens a short note worded for the current view.
+// "what am I looking at": the ? at the right end of the top buttons opens a short note worded for the current view.
 // It opens by itself for 10 s when the page loads or the view changes, then folds back into the ?
 // (hovering keeps it open); the ? or the ? key opens and closes it by hand.
 const ABOUT_MS = 10000;
