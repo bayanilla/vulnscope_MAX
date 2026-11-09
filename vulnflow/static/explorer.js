@@ -1248,8 +1248,6 @@ function updateAbout() {
   $('about-toggle').setAttribute('aria-expanded', String(open));
   $('about-toggle').textContent = open ? '?' : '? What am I looking at';
   $('about-toggle').title = open ? 'Hide this explanation (?)' : 'What am I looking at? (?)';
-  // keep the host list clear of the heading as the caption grows or shrinks
-  document.documentElement.style.setProperty('--rail-top', Math.max(78, $('hud').getBoundingClientRect().bottom + 12) + 'px');
 }
 function toggleAbout() { try { localStorage.setItem(ABOUT_KEY, aboutOpen() ? '0' : '1'); } catch (_) {} updateAbout(); }
 $('about-toggle').onclick = toggleAbout;
