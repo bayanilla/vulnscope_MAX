@@ -1225,9 +1225,9 @@ function markSeg() {
   placeViewctl(); updateAbout();
 }
 // "what am I looking at": the ? at the right end of the top buttons opens a short note worded for the current view.
-// It opens by itself for 10 s when the page loads or the view changes, then folds back into the ?
+// It opens by itself for 20 s when the page loads or the view changes, then folds back into the ?
 // (hovering keeps it open); the ? or the ? key opens and closes it by hand.
-const ABOUT_MS = 10000;
+const ABOUT_MS = 20000;
 let aboutTimer = 0, aboutShown = '';
 const ABOUT = telemetryOnly ? {
   flat: 'Each dot is an internal host seen in the logs, grouped by subnet; <b>bigger dots</b> had more contact with outside addresses and <b>blue lines</b> are traffic between hosts. No scan was loaded, so vulnerability status is unknown. Click a host to see who it talked to.',
