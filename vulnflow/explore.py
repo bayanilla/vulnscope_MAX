@@ -331,6 +331,22 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
 KIND_RANK = {"alert": 0, "vuln": 1, "reached": 2, "outbound": 3, "attempt": 4, "blocked": 5}
 
 
+def _interleave(by_in: list, by_out: list, cap: int) -> list:
+    """Two inbound entries, then one outbound, until `cap`; whichever list runs out first leaves its
+    slots to the other. An address in both lists is kept once, where it first comes up."""
+    top, seen, i, o = [], set(), 0, 0
+    while len(top) < cap and (i < len(by_in) or o < len(by_out)):
+        take_out = o < len(by_out) and (len(top) % 3 == 2 or i >= len(by_in))
+        if take_out:
+            e, o = by_out[o], o + 1
+        else:
+            e, i = by_in[i], i + 1
+        if e["ip"] not in seen:
+            seen.add(e["ip"])
+            top.append(e)
+    return top
+
+
 def _overview_summary(pairs, nodes, focus, kept, ext) -> dict:
     """Overview aggregates. Subnet totals and subnet-to-subnet traffic cover every host and pair,
     so they stay complete when the host graph is capped at MAX_NODES. Host-level links are kept
@@ -373,13 +389,29 @@ def _overview_summary(pairs, nodes, focus, kept, ext) -> dict:
         for a in f["attackers"]:
             e = inet.get(a["ip"])
             if e is None:
-                e = inet[a["ip"]] = {"ip": a["ip"], "kind": a["kind"], "sessions": 0, "alerts": 0, "targets": []}
+                e = inet[a["ip"]] = {"ip": a["ip"], "kind": a["kind"], "sessions": 0, "alerts": 0, "targets": [],
+                                     "in_sessions": 0, "out_sessions": 0, "out_hosts": 0}
             if KIND_RANK[a["kind"]] < KIND_RANK[e["kind"]]:
                 e["kind"] = a["kind"]
             e["sessions"] += a["sessions"] + a["out_sessions"]
+            e["in_sessions"] += a["sessions"]
+            e["out_sessions"] += a["out_sessions"]
+            e["out_hosts"] += a["out_sessions"] > 0
             e["alerts"] += a["alerts"]
-            e["targets"].append([host, a["kind"], a["sessions"] + a["out_sessions"]])
-    top = sorted(inet.values(), key=lambda e: (KIND_RANK[e["kind"]], -len(e["targets"]), -e["sessions"], e["ip"]))
+            # direction of this host's traffic with the address: in (it reached the host), out (the host
+            # connected out to it) or both
+            d = "both" if a["sessions"] and a["out_sessions"] else "out" if a["out_sessions"] else "in"
+            e["targets"].append([host, a["kind"], a["sessions"] + a["out_sessions"], d])
+    for e in inet.values():
+        e["dir"] = ("both" if e["out_sessions"] and (e["in_sessions"] or e["alerts"])
+                    else "out" if e["out_sessions"] else "in")
+    # Inbound and outbound are ranked separately and interleaved, so internal hosts calling out are not
+    # crowded off the overview by inbound scanners (which outnumber them and rank first by kind).
+    by_in = sorted((e for e in inet.values() if e["dir"] != "out"),
+                   key=lambda e: (KIND_RANK[e["kind"]], -len(e["targets"]), -e["sessions"], e["ip"]))
+    by_out = sorted((e for e in inet.values() if e["out_sessions"]),
+                    key=lambda e: (e["kind"] != "alert", -e["out_hosts"], -e["out_sessions"], e["ip"]))
+    top = _interleave(by_in, by_out, MAX_INTERNET)
     internet = []
     for e in top[:MAX_INTERNET]:
         e["hosts_total"] = len(e["targets"])
@@ -392,6 +424,8 @@ def _overview_summary(pairs, nodes, focus, kept, ext) -> dict:
                          sorted(sublinks.items(), key=lambda kv: (-kv[1][1], -kv[1][0]))[:MAX_SUBNET_LINKS]],
         "risky_links": sorted(risky.values(), key=lambda r: (-r[4], -r[2], r[0], r[1]))[:MAX_RISKY_LINKS],
         "internet": internet, "internet_total": len(inet),
+        "internet_in_total": sum(e["dir"] != "out" for e in inet.values()),
+        "internet_out_total": sum(e["out_sessions"] > 0 for e in inet.values()),
     }
 
 
