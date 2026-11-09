@@ -264,7 +264,7 @@ phone-sized screens (520px or narrower), it moves below the chart to keep the de
 
 Use the host list or `/` to find a host. L toggles labels and M toggles motion.
 The **?** at the right end of the top buttons opens a short note on what the current view shows (Flat, 3D, a
-selected host, or Attack paths). It opens by itself for 10 seconds when the page loads or the view
+selected host, or Attack paths). It opens by itself for 20 seconds when the page loads or the view
 changes, then folds back into the ?; click it or press ? to open or close it again.
 
 **3D view.** Where the browser supports WebGL, the Explorer opens in a 3D view built with three.js.
