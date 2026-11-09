@@ -1248,9 +1248,13 @@ function updateAbout() {
   $('about-toggle').setAttribute('aria-expanded', String(open));
   $('about-toggle').textContent = open ? '?' : '? What am I looking at';
   $('about-toggle').title = open ? 'Hide this explanation (?)' : 'What am I looking at? (?)';
+  // the host panel starts just under the caption so the two never overlap
+  const r = box.getBoundingClientRect(), wide = r.top < 200;
+  document.documentElement.style.setProperty('--panel-top', (wide ? Math.max(66, Math.round(r.bottom) + 10) : 66) + 'px');
 }
 function toggleAbout() { try { localStorage.setItem(ABOUT_KEY, aboutOpen() ? '0' : '1'); } catch (_) {} updateAbout(); }
 $('about-toggle').onclick = toggleAbout;
+addEventListener('resize', () => updateAbout());
 const closePaths = () => { if (window.VFPaths) window.VFPaths.close(); };
 $('vw-flat').onclick = () => { closePaths(); set3d(false, true); };
 $('btn-3d').onclick = () => { closePaths(); set3d(true, true); };
