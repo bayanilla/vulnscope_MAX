@@ -139,7 +139,7 @@ const cutBy = c => c.hops.find(ip => state.cut.has(ip));
 root.innerHTML = `<div class="ap-app">
   <header class="ap-top">${BRAND_LOGO.startsWith('data:image/') ? `<img class="ap-logo" src="${esc(BRAND_LOGO)}" alt="" aria-hidden="true">` : ''}<div class="ap-brand"><b>Attack <em>paths</em></b><span>${esc(BRAND)} · most likely ways in</span></div>
     <div class="ap-kpis" id="ap-kpis"></div>
-    <div class="ap-seg" role="group" aria-label="View"><button type="button" data-view="flat" title="Flat network view (2)">Flat</button><button type="button" data-view="3d" title="3D network view (3)">3D</button><button type="button" class="on" aria-current="true" title="Attack paths (Esc to go back)">Attack paths</button></div><span class="ap-qwrap"><button type="button" class="ap-qbtn" id="ap-about-toggle" aria-controls="ap-about" aria-expanded="false" aria-label="What am I looking at?" title="What am I looking at? (?)">?</button><p class="ap-about" id="ap-about" hidden>Each colored line is one likely way in, read left to right: an internet origin (◆), the entry host, then up to two pivots inside. Rows are subnets; line 1 is the most likely. Ranked estimates of where to look first, not confirmed compromise.</p></span></header>
+    <div class="ap-seg" role="group" aria-label="View"><button type="button" data-view="flat" title="Flat network view (2)">Flat</button><button type="button" data-view="3d" title="3D network view (3)">3D</button><button type="button" class="on" aria-current="true" title="Attack paths (Esc to go back)">Attack paths</button><button type="button" data-view="timeline" title="Flows over time (I)" hidden>Timeline</button></div><span class="ap-qwrap"><button type="button" class="ap-qbtn" id="ap-about-toggle" aria-controls="ap-about" aria-expanded="false" aria-label="What am I looking at?" title="What am I looking at? (?)">?</button><p class="ap-about" id="ap-about" hidden>Each colored line is one likely way in, read left to right: an internet origin (◆), the entry host, then up to two pivots inside. Rows are subnets; line 1 is the most likely. Ranked estimates of where to look first, not confirmed compromise.</p></span></header>
   <div class="ap-brief" id="ap-brief"></div>
   <main class="ap-main">
     <section class="ap-col ap-lines"><h3>Most likely ways in</h3><div id="ap-lines"></div></section>
@@ -455,6 +455,7 @@ function renderTimeline() {
 // ---------------------------------------------------------------- open and close (colors follow the Múcaro theme on <html>)
 function render() { header(); renderLines(); renderMap(); renderDetail(); renderContain(); renderTimeline(); }
 function open() {
+  if (window.VFTimeline) window.VFTimeline.close();
   state.open = true; root.hidden = false; openBtn.setAttribute('aria-expanded', 'true');
   render(); setAbout(true);
   if (!/[?&#]paths\b/.test(location.hash)) history.replaceState(null, '', '#paths');
@@ -465,7 +466,7 @@ function close() {
   if (/[?&#]paths\b/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
   if (window.VFExplorer) window.VFExplorer.markSeg();
 }
-function showView(v) { close(); if (window.VFExplorer) window.VFExplorer.set3d(v === '3d'); }
+function showView(v) { close(); if (v === 'timeline') { if (window.VFTimeline) window.VFTimeline.open(); } else if (window.VFExplorer) window.VFExplorer.set3d(v === '3d'); }
 function openInExplorer(ip) { close(); if (window.VFExplorer) window.VFExplorer.focus(ip); }
 openBtn.onclick = () => { if (!state.open) open(); };
 root.querySelectorAll('.ap-seg [data-view]').forEach(b => { b.onclick = () => showView(b.dataset.view); if (b.dataset.view === '3d' && !(window.VFExplorer && window.VFExplorer.can3d)) b.hidden = true; });
@@ -478,6 +479,7 @@ addEventListener('keydown', e => {
   else if (e.key === '?') toggleAbout();
   else if (e.key === '2') showView('flat');
   else if (e.key === '3' && window.VFExplorer && window.VFExplorer.can3d) showView('3d');
+  else if ((e.key === 'i' || e.key === 'I') && !document.getElementById('btn-timeline').hidden) showView('timeline');
 }, true);
 addEventListener('resize', () => { if (state.open) { renderMap(); renderTimeline(); } });
 if (/[?&#]paths\b/.test(location.search + location.hash)) open();

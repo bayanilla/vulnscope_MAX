@@ -1216,12 +1216,13 @@ $('btn-overview').onclick = () => { overview(); };
 $('btn-labels').onclick = toggleLabels;
 $('btn-motion').onclick = toggleMotion;
 $('btn-3d').hidden = !can3d;
-// one switcher for the three views: flat network, 3D network, attack paths (attackpaths.js)
+// one switcher for the four views: flat network, 3D network, attack paths (attackpaths.js), timeline (timeline3d.js)
 function markSeg() {
   const ap = document.getElementById('attack-paths'), paths = !!ap && !ap.hidden;
-  $('vw-flat').classList.toggle('on', !paths && !R3); $('btn-3d').classList.toggle('on', !paths && !!R3);
-  $('btn-paths').classList.toggle('on', paths);
-  for (const id of ['vw-flat', 'btn-3d', 'btn-paths']) $(id).setAttribute('aria-current', $(id).classList.contains('on') ? 'true' : 'false');
+  const tv = document.getElementById('timeline-view'), tl = !!tv && !tv.hidden, other = paths || tl;
+  $('vw-flat').classList.toggle('on', !other && !R3); $('btn-3d').classList.toggle('on', !other && !!R3);
+  $('btn-paths').classList.toggle('on', paths); $('btn-timeline').classList.toggle('on', tl);
+  for (const id of ['vw-flat', 'btn-3d', 'btn-paths', 'btn-timeline']) $(id).setAttribute('aria-current', $(id).classList.contains('on') ? 'true' : 'false');
   placeViewctl(); updateAbout();
 }
 // "what am I looking at": the ? at the right end of the top buttons opens a short note worded for the current view.
@@ -1264,7 +1265,7 @@ $('about-toggle').onclick = toggleAbout;
 $('about').addEventListener('mouseenter', () => clearTimeout(aboutTimer));
 $('about').addEventListener('mouseleave', () => { clearTimeout(aboutTimer); aboutTimer = setTimeout(closeAbout, 3000); });
 addEventListener('resize', () => { if (!$('about').hidden) placeAbout(); });
-const closePaths = () => { if (window.VFPaths) window.VFPaths.close(); };
+const closePaths = () => { if (window.VFPaths) window.VFPaths.close(); if (window.VFTimeline) window.VFTimeline.close(); };
 $('vw-flat').onclick = () => { closePaths(); set3d(false, true); };
 $('btn-3d').onclick = () => { closePaths(); set3d(true, true); };
 // the 3D camera controls sit in the lower right, just above the legend

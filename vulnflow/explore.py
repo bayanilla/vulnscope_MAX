@@ -23,6 +23,10 @@ STATIC = os.path.join(os.path.dirname(__file__), "static")
 MAX_HOP2, MAX_NODES = 30, 2000
 MAX_SUBNET_LINKS, MAX_RISKY_LINKS, MAX_INTERNET, MAX_INTERNET_TARGETS = 600, 200, 80, 12
 MAX_CONNECTION_EXAMPLES, MAX_OT_EVENTS_PER_HOST = 6, 40
+# Timeline view: individual flows drawn at their timestamps. Large runs keep every flagged flow (blocked,
+# or to/from an alert or IOC address) up to half the cap and fill the rest with a fixed random sample.
+MAX_TIMELINE_FLOWS, MAX_TIMELINE_ALERTS, MAX_TIMELINE_IOC_LOOKUPS = 20_000, 200, 400
+SEV_RANK = {"Low": 1, "Medium": 2, "High": 3, "Critical": 4}
 SEV = {0: "Info", 1: "Low", 2: "Medium", 3: "High", 4: "Critical"}
 
 
@@ -313,6 +317,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         for host in match.get("hosts", []):
             if host in focus:
                 ioc_by_host[host].add(match["id"])
+    timeline = _timeline(ds, res, keep, ext, findings, pairs)
     s = res["summary"]
     return {
         "vulnerability_data_available": not telemetry_only,
@@ -325,7 +330,89 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         "ioc_counts": {host: len(ids) for host, ids in ioc_by_host.items()},
         "article_briefs": res.get("article_briefs", {}),
         "start": res["hosts"][0]["host"] if res["hosts"] else None,
+        "timeline": timeline,
     }
+
+
+def _hours(ts, t0) -> float:
+    return round((ts - t0).total_seconds() / 3600, 3)
+
+
+def _timeline(ds, res: dict, keep: list, ext, findings: dict, pairs: dict) -> dict | None:
+    """Flows, IPS alerts and IOC lookups in time order for the Timeline view.
+
+    Hosts are referenced by their index in ``nodes`` (>= 0) or as -(index + 1) into ``ext`` for outside
+    addresses. Flow flags: 1 blocked or failed, 2 to/from an IPS-alert or IOC address, 4 onto a port with
+    a known vulnerability on the destination host. Internal hosts beyond the node cap are left out."""
+    con = ds.flow_store().con
+    row = con.execute("SELECT count(*), min(ts), max(ts) FROM flows WHERE ts IS NOT NULL AND src_ip <> dst_ip").fetchone()
+    total, t0, t1 = int(row[0] or 0), utc(row[1]), utc(row[2])
+    if not total or t0 is None:
+        return None
+    idx = {ip: i for i, ip in enumerate(keep)}
+    ext_idx: dict[str, int] = {}
+
+    def ref(ip):
+        if ip in idx:
+            return idx[ip]
+        if not ext(ip):
+            return None
+        if ip not in ext_idx:
+            ext_idx[ip] = len(ext_idx)
+        return -(ext_idx[ip] + 1)
+
+    flagged = {t.src_ip for t in ds.threats if ext(t.src_ip)}
+    flagged |= {m["value"] for m in res.get("ioc_matches", []) if m.get("type") == "ip"}
+    vports = {h: {r["port"] for r in rows if r.get("port")} for h, rows in findings.items()}
+    cols = "ts, src_ip, dst_ip, dst_port, action, established"
+    base = "FROM flows WHERE ts IS NOT NULL AND src_ip <> dst_ip"
+    prio = "(action <> 'allow' OR list_contains(?, src_ip) OR list_contains(?, dst_ip))"
+    fl = sorted(flagged)
+    cur = con.cursor()
+    if total <= MAX_TIMELINE_FLOWS:
+        cur.execute(f"SELECT {cols} {base} ORDER BY seq")
+    else:
+        half = MAX_TIMELINE_FLOWS // 2
+        n_prio = min(half, int(con.execute(f"SELECT count(*) {base} AND {prio}", [fl, fl]).fetchone()[0]))
+        cur.execute(f"""
+            SELECT * FROM (SELECT {cols}, seq {base} AND {prio} ORDER BY seq LIMIT {n_prio})
+            UNION ALL
+            SELECT * FROM (SELECT {cols}, seq {base} AND NOT {prio}) USING SAMPLE reservoir({MAX_TIMELINE_FLOWS - n_prio} ROWS) REPEATABLE (7)
+            ORDER BY seq""", [fl, fl, fl, fl])
+    flows = []
+    while rows := cur.fetchmany(10_000):
+        for r in rows:
+            ts, src, dst, port, action, est = r[:6]
+            s, d = ref(src), ref(dst)
+            if s is None or d is None:
+                continue
+            f = (1 if action != "allow" or est is False else 0) | (2 if src in flagged or dst in flagged else 0) \
+                | (4 if port and port in vports.get(dst, ()) else 0)
+            flows.append([_hours(utc(ts), t0), s, d, port or 0, f])
+    cur.close()
+    # alerts without their own timestamp (Palo Alto rows in some exports) take the first session of the pair
+    timed = []
+    for t in ds.threats:
+        p = pairs.get((t.src_ip, t.dst_ip))
+        ts = utc(t.ts) if t.ts else p.first if p else None
+        if ts:
+            timed.append((ts, t))
+    alerts = []
+    for ts, t in sorted(timed, key=lambda x: x[0])[:MAX_TIMELINE_ALERTS]:
+        d = idx.get(t.dst_ip)
+        alerts.append([_hours(ts, t0), -1 if d is None else d, t.src_ip, t.name, t.blocked])
+    domains = {m["value"].lower() for m in res.get("ioc_matches", []) if m.get("type") == "domain"}
+    lookups = []
+    if domains:
+        for e in ds.zeek_events:
+            if len(lookups) >= MAX_TIMELINE_IOC_LOOKUPS:
+                break
+            q = str((e.fields or {}).get("query") or "").lower().rstrip(".")
+            if e.ts and q in domains and e.src_ip in idx:
+                lookups.append([_hours(utc(e.ts), t0), idx[e.src_ip], q])
+        lookups.sort()
+    return {"t0": _iso(t0), "hours": _hours(t1, t0), "total": total, "sampled": total > MAX_TIMELINE_FLOWS, "flows": flows,
+            "ext": [[ip, ip in flagged] for ip in ext_idx], "alerts": alerts, "ioc_lookups": lookups}
 
 
 KIND_RANK = {"alert": 0, "vuln": 1, "reached": 2, "outbound": 3, "attempt": 4, "blocked": 5}
@@ -446,7 +533,7 @@ def html(data: dict) -> str:
                     + (f'{escape(brand.prefix)} ' if brand.prefix else "") + "<b>VULNSCOPE</b>")
     return ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-            f"<title>{EXPLORER_NAME} · {escape(brand.name)}</title><meta name=\"application-name\" content=\"{escape(brand.name)}\"><link rel=\"icon\" href=\"{icon_data_uri()}\"><style>" + _read("analyst_chat.css") + _read("explorer.css") + _read("attackpaths.css") + explorer_background_css() + ioc_archive.CSS + "</style></head><body>"
+            f"<title>{EXPLORER_NAME} · {escape(brand.name)}</title><meta name=\"application-name\" content=\"{escape(brand.name)}\"><link rel=\"icon\" href=\"{icon_data_uri()}\"><style>" + _read("analyst_chat.css") + _read("explorer.css") + _read("attackpaths.css") + _read("timeline3d.css") + explorer_background_css() + ioc_archive.CSS + "</style></head><body>"
             + _read("explorer.html").replace("<!--BRAND-->", brand_markup, 1)
             + f'<script id="vf-data" type="application/json">{blob}</script>'
             # Three.js (MIT, vendored so the page works offline) and the 3D renderer; the Explorer
@@ -455,5 +542,6 @@ def html(data: dict) -> str:
             + "<script>" + _read("explorer3d.js") + "</script>"
             + "<script>" + _read("explorer.js") + "</script>"
             + "<script>" + _read("attackpaths.js") + "</script>"
+            + "<script>" + _read("timeline3d.js") + "</script>"
             + "<script>" + _read("analyst_chat.js") + "</script>"
             + ioc_archive.drawer_html(data["ioc_matches"], data.get("article_briefs")) + "</body></html>\n")
