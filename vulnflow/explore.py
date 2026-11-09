@@ -436,18 +436,13 @@ def _read(name: str) -> str:
 
 def html(data: dict) -> str:
     from . import ioc_archive
-    from html import escape
-    from .branding import EXPLORER_NAME, icon_data_uri, load as load_branding
+    from .branding import EXPLORER_NAME, PRODUCT_NAME, icon_data_uri
     from .theme_backgrounds import explorer_background_css
     blob = json.dumps(data, separators=(",", ":"), default=str).replace("<", "\\u003c")
-    brand = load_branding()
-    logo = brand.logo_data_uri()
-    brand_markup = ((f'<img class="brand-logo" src="{logo}" alt="" aria-hidden="true">' if logo else "")
-                    + (f'{escape(brand.prefix)} ' if brand.prefix else "") + "<b>VULNSCOPE</b>")
     return ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-            f"<title>{EXPLORER_NAME} · {escape(brand.name)}</title><meta name=\"application-name\" content=\"{escape(brand.name)}\"><link rel=\"icon\" href=\"{icon_data_uri()}\"><style>" + _read("analyst_chat.css") + _read("explorer.css") + _read("attackpaths.css") + explorer_background_css() + ioc_archive.CSS + "</style></head><body>"
-            + _read("explorer.html").replace("<!--BRAND-->", brand_markup, 1)
+            f"<title>{EXPLORER_NAME} · {PRODUCT_NAME}</title><link rel=\"icon\" href=\"{icon_data_uri()}\"><style>" + _read("analyst_chat.css") + _read("explorer.css") + _read("attackpaths.css") + explorer_background_css() + ioc_archive.CSS + "</style></head><body>"
+            + _read("explorer.html")
             + f'<script id="vf-data" type="application/json">{blob}</script>'
             # Three.js (MIT, vendored so the page works offline) and the 3D renderer; the Explorer
             # falls back to its 2D canvas when WebGL is unavailable

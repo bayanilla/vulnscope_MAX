@@ -8,7 +8,6 @@ import json
 from collections import defaultdict
 from urllib.parse import urlsplit
 
-from .branding import brand_html
 from .schema import ParseStats
 
 TYPES = {"ip", "domain", "url", "hash", "cve", "package"}
@@ -198,7 +197,6 @@ overflow:auto;background:#101c2b;color:#eef7ff;border-left:1px solid #42637c;z-i
 box-shadow:-16px 0 45px #0009;font:14px/1.5 system-ui,sans-serif}
 .ioc-drawer h2{margin:0 0 8px;font-size:20px}.ioc-drawer p{margin:8px 0;color:#b9cadb}
 .ioc-drawer-brand{display:flex;align-items:center;gap:8px;margin:0 0 18px;font-weight:800;letter-spacing:.03em}
-.ioc-drawer-brand .brand-logo{height:20px;width:auto;max-width:80px;object-fit:contain}
 .ioc-drawer-brand span{font-size:11px;font-weight:500;color:#b9cadb}
 .ioc-drawer .ioc-close{float:right;background:#253a4d;color:#fff;border:1px solid #54728d;
 border-radius:6px;padding:5px 10px;cursor:pointer}
@@ -392,5 +390,5 @@ def drawer_html(matches: list[dict], article_briefs: dict | None = None) -> str:
             '<aside id="ioc-drawer" class="ioc-drawer" role="dialog" aria-modal="true" '
             'aria-label="Indicator details" hidden>'
             '<button id="ioc-close" class="ioc-close" type="button">Close</button>'
-            '<div class="ioc-drawer-brand">' + brand_html() + ' <span>Source intelligence</span></div>'
+            '<div class="ioc-drawer-brand">Múcaro VulnScope <span>Source intelligence</span></div>'
             '<div id="ioc-drawer-body"></div></aside>' + SCRIPT)

@@ -10,12 +10,13 @@ from urllib.error import URLError
 from urllib.request import urlopen
 import webbrowser
 
+from vulnflow.branding import PRODUCT_NAME
 from vulnflow.cli import main
 
 HOST = "127.0.0.1"
 PORT = 8080
 URL = f"http://{HOST}:{PORT}/"
-PAGE_TITLE = b"VulnScope</title>"   # the name before "VulnScope" is analyst-set branding
+PAGE_TITLE = f"<title>{PRODUCT_NAME}</title>".encode()
 
 
 def _upload_page_is_ready(url: str) -> bool:

@@ -10,7 +10,7 @@ import re
 import tempfile
 
 from .correlate import PRIORITY_LABELS
-from .branding import brand_html, icon_data_uri, product_name
+from .branding import PRODUCT_NAME, icon_data_uri
 from .theme_backgrounds import texture_data
 
 
@@ -44,7 +44,7 @@ def _telemetry_report(res: dict, technical: bool) -> str:
     """Describe observations without turning missing scan data into zero risk."""
     s = res["summary"]
     title = "Technical Analysis" if technical else "Executive Summary"
-    lines = [f"# {product_name()}: {title}", "", "## Vulnerability status: unknown", "",
+    lines = [f"# {PRODUCT_NAME}: {title}", "", "## Vulnerability status: unknown", "",
              "No vulnerability data is available for this run. No CVSS scores, vulnerability priorities, "
              "or conclusions about safety can be drawn from the supplied network telemetry.", "",
              f"{s['flows']:,} network sessions and {s['threat_alerts']} IPS/IDS alerts were parsed. "
@@ -109,7 +109,7 @@ def executive_summary(res: dict) -> str:
     nm = lambda ips: ", ".join(names.get(ip, ip) for ip in ips)
     gaps = cov["active_servers_not_scanned"]
 
-    L = [f"# {product_name()}: Executive Summary", "",
+    L = [f"# {PRODUCT_NAME}: Executive Summary", "",
          f"Prepared {res['generated'][:10]}. Network activity analysed from "
          f"{s['window_start'] or 'n/a'} to {s['window_end'] or 'n/a'}.", "",
          "## Bottom line", ""]
@@ -233,7 +233,7 @@ def technical_report(res: dict) -> str:
     if not res["summary"].get("vulnerability_data_available", True):
         return _telemetry_report(res, True)
     s, cov, F, H, cfg = res["summary"], res["coverage"], res["findings"], res["hosts"], res["config"]
-    L = [f"# {product_name()}: Technical Analysis", "",
+    L = [f"# {PRODUCT_NAME}: Technical Analysis", "",
          f"Generated {res['generated']}. Telemetry window {s['window_start'] or 'n/a'} to {s['window_end'] or 'n/a'}.",
          "", "## 1. Inputs and data quality", "",
          "| File | Format | Records read | Kept | Dropped | Notes |", "|---|---|---|---|---|---|"]
@@ -382,7 +382,7 @@ document.documentElement.dataset.theme = supportedThemes.has(savedTheme) ? saved
 
 def theme_control() -> str:
     options = "".join(f'<option value="{value}">{label}</option>' for value, label in THEMES)
-    return (f'<div class="theme-bar"><span class="theme-brand">{brand_html()}</span>'
+    return (f'<div class="theme-bar"><span class="theme-brand">{PRODUCT_NAME}</span>'
             f'<label for="theme-choice">Theme</label><select id="theme-choice" aria-label="Theme">{options}</select></div>'
             '<script>(function(){const s=document.getElementById("theme-choice");'
             'const root=document.documentElement;'
@@ -405,7 +405,7 @@ h1{font-size:1.65rem;margin-top:.8rem}h2{margin-top:2rem;border-bottom:1px solid
 h3{margin-top:1.8rem;color:var(--accent)}h4{margin-bottom:.3rem}
 a{color:var(--accent)}a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .theme-bar{display:flex;align-items:center;gap:.65rem;padding:.55rem .8rem;margin:-24px -22px 24px;background:var(--bar);border-bottom:1px solid var(--line);color:var(--fg)}
-.theme-brand{display:inline-flex;align-items:center;gap:.45rem;font-weight:800;letter-spacing:.02em;margin-right:auto;min-width:0}.brand-logo{height:24px;width:auto;max-width:96px;object-fit:contain;flex:none}.theme-bar label{font-size:.82rem;margin:0}.theme-bar select{max-width:180px;padding:.25rem .4rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);color:var(--fg);font:inherit}
+.theme-brand{display:inline-flex;align-items:center;gap:.45rem;font-weight:800;letter-spacing:.02em;margin-right:auto}.theme-bar label{font-size:.82rem;margin:0}.theme-bar select{max-width:180px;padding:.25rem .4rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);color:var(--fg);font:inherit}
 form,.msg{background:var(--panel)}button{background:var(--accent);color:var(--accent-text);border:1px solid var(--accent);border-radius:var(--radius);cursor:pointer}button:hover{filter:brightness(1.08)}
 input,textarea,select{accent-color:var(--accent)}input[type=text],input[type=password],textarea,select{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:var(--radius)}
 table{border-collapse:collapse;width:100%;margin:.6rem 0;font-size:.9rem;display:block;overflow-x:auto}
@@ -509,7 +509,7 @@ def md_to_html(md: str, title: str, inserts: dict | None = None,
         body, script = visual.decorate(body), visual.SCRIPT
     return (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-            f"<title>{html.escape(title)} · {html.escape(product_name())}</title><link rel=\"icon\" href=\"{icon_data_uri()}\">{THEME_INIT}<style>{CSS}{visual.VISUAL_CSS}"
+            f"<title>{html.escape(title)} · {PRODUCT_NAME}</title><link rel=\"icon\" href=\"{icon_data_uri()}\">{THEME_INIT}<style>{CSS}{visual.VISUAL_CSS}"
             f"{ioc_archive.CSS if ioc_matches else ''}</style></head><body>"
             + theme_control()
             + body + script + ioc_archive.drawer_html(ioc_matches or [], article_briefs) + "</body></html>\n")
