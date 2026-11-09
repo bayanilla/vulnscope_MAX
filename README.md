@@ -269,11 +269,13 @@ In the overview each subnet is a platform on one plane and each host is a pillar
 risk score (outside exposure without a scan). Traffic between subnets is bundled beneath the plane, only
 risky host paths are drawn (admin protocols, or completed sessions into P1 and flagged hosts), and the
 most significant outside addresses sit on an arc overhead with beams to the hosts they reached. Subnet
-totals count every host, including any beyond the drawing limit. The camera never moves on its own:
-drag (or swipe sideways on a trackpad) to pan, right-drag or Shift-drag to rotate and tilt, scroll or
-pinch to zoom, and use the rotate / Top / Tilted / Low / Reset buttons (Q, E, T, Y, U, R) for set
-views. Hover a subnet for its totals and click it to zoom in. **3D** (or the 3 key) switches to the
-flat view, and the choice is remembered; `explorer.html?2d` always opens flat. Drawing is capped at
+totals count every host, including any beyond the drawing limit. The overview opens on the Low view and
+turns slowly to the left; the turn stops as soon as you move the camera, pick a view or open a host, and
+**Reset** (R) or **Spin** starts it again (it never runs with **Motion** off). Drag (or swipe sideways on
+a trackpad) to pan, right-drag or Shift-drag to rotate and tilt, scroll or pinch to zoom, and use the
+rotate / Top / Tilted / Low / Reset buttons (Q, E, T, Y, U, R) for set views. Hover a subnet for its
+totals and click it to zoom in. **Flat** (or the 2 key) switches to the flat view, and that choice is
+remembered; `explorer.html?2d` always opens flat. Drawing is capped at
 2,000 hosts, 200 risky paths and 48 outside addresses, so very large log sets stay smooth; **Motion**
 turns the animated traffic off.
 Deep links work: `explorer.html#host=10.0.1.10`.

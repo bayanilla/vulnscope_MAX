@@ -7,8 +7,8 @@ if (telemetryOnly) document.getElementById('hint').textContent =
 const cv = document.getElementById('stage'), ctx = cv.getContext('2d');
 // cinematic 3D view (explorer3d.js, Three.js); the 2D canvas stays as the fallback and draws labels on top
 const cv3 = document.getElementById('stage3d');
-// 3D is opt-in: the flat view is the default, a 3D choice is remembered, ?3d / ?2d force one
-const KEY3D = 'vulnscope-explorer-3d-v2';
+// 3D is the default where WebGL works; choosing Flat is remembered, ?3d / ?2d force one
+const KEY3D = 'vulnscope-explorer-3d-v3';
 const can3d = !!(cv3 && window.VF3D && window.VF3D.supported());
 let R3 = null, R3inst = null;
 const $ = id => document.getElementById(id);
@@ -49,9 +49,11 @@ let edges = [];                   // focus-mode edges
 let t0 = performance.now();
 // 3D camera. Overview: the user's own orbit (oyaw around the plane, opitch from straight above);
 // host focus: small offsets (fyaw, fpitch) from a front-on view, reset on each new host.
-// The camera only moves when the user moves it or picks something; it never drifts on its own.
+// The overview opens on the low view, slowly turning to the left (view.spin). The turn stops for good
+// as soon as the user moves the camera, picks a view or opens a host; Reset or the Spin button restart it.
 const VIEWS = {top: 0, tilted: 0.82, low: 1.25};
-const view = {yaw: 0, pitch: VIEWS.tilted, dist: 1.6, oyaw: 0, opitch: VIEWS.tilted, fyaw: 0, fpitch: 0, idle: 0, cmix: 1};
+const DEFAULT_VIEW = 'low', SPIN = Math.PI * 2 / 150;   // one full turn every 150 s
+const view = {yaw: 0, pitch: VIEWS[DEFAULT_VIEW], dist: 1.6, oyaw: 0, opitch: VIEWS[DEFAULT_VIEW], fyaw: 0, fpitch: 0, idle: 0, cmix: 1, spin: true};
 const hash01 = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return ((h >>> 0) % 10007) / 10007; };
 
 // ---------------------------------------------------------------- layout: overview
@@ -228,6 +230,7 @@ function focus(id, push = true) {
   const F = D.focus[id];
   if (!F) return;
   if (push && state.focus && state.focus !== id) state.history.push(state.focus);
+  stopSpin();
   state.mode = 'focus'; state.focus = id;
   document.body.classList.add('focused');
   $('hint').classList.add('gone');
@@ -573,16 +576,19 @@ function sideTitles() {
 }
 
 // ---------------------------------------------------------------- 3D (Three.js) drawing
-function rotateView(dir) { view.oyaw += dir * Math.PI / 4; placeInet(view.oyaw); markView(); }
+function rotateView(dir) { view.spin = false; view.oyaw += dir * Math.PI / 4; placeInet(view.oyaw); markView(); }
 function setView(name, reset) {
   view.opitch = VIEWS[name];
   if (reset) { view.oyaw = 0; placeInet(0); fitOverview(); }
+  view.spin = !!reset;
   markView();
 }
+function stopSpin() { if (view.spin) { view.spin = false; markView(); } }
 function markView() {
   for (const name of Object.keys(VIEWS)) {
     const b = $('vc-' + name); if (b) b.setAttribute('aria-pressed', String(Math.abs(view.opitch - VIEWS[name]) < 0.02));
   }
+  const sp = $('vc-spin'); if (sp) sp.setAttribute('aria-pressed', String(view.spin && state.motion));
 }
 function set3d(on, remember) {
   on = !!on && can3d;
@@ -676,6 +682,8 @@ function draw3d(now, dt, k) {
   const T = now / 1000, focusing = state.mode === 'focus', motion = state.motion;
   // camera: cinematic tilt over the overview, near front-on (readable labels) when focused
   const kv = motion ? 1 - Math.pow(0.02, dt) : 1;
+  // slow turn to the left over the overview, until the user takes the camera
+  if (view.spin && motion && !focusing && view.cmix > 0.99) { view.oyaw += SPIN * Math.min(dt, 0.1); placeInet(view.oyaw); }
   const tyaw = focusing ? view.fyaw : view.oyaw, tpitch = focusing ? 0.13 + view.fpitch : view.opitch;
   view.yaw += (tyaw - view.yaw) * kv;
   view.pitch += (tpitch - view.pitch) * kv;
@@ -810,7 +818,7 @@ cv.addEventListener('contextmenu', e => { if (R3) e.preventDefault(); });
 cv.addEventListener('pointermove', e => {
   if (drag) {
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; cv.classList.add('dragging'); }
+    if (Math.abs(dx) + Math.abs(dy) > 4) { if (!drag.moved) { stopSpin(); drag.yaw = state.mode === 'focus' ? view.fyaw : view.oyaw; } drag.moved = true; cv.classList.add('dragging'); }
     view.idle = performance.now();
     if (drag.moved && drag.orbit) {
       if (state.mode === 'focus') { view.fyaw = Math.max(-0.9, Math.min(0.9, drag.yaw - dx * 0.005)); view.fpitch = Math.max(-0.5, Math.min(0.9, drag.pitch + dy * 0.004)); }
@@ -865,6 +873,7 @@ function panBy(sx0, sy0, sx1, sy1) {
 }
 cv.addEventListener('wheel', e => {
   e.preventDefault();
+  stopSpin();
   view.idle = performance.now();
   // trackpad two-finger swipe sideways pans; pinch (ctrl+wheel) and the mouse wheel zoom
   if (!e.ctrlKey && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 0.5) {
@@ -953,7 +962,7 @@ addEventListener('keydown', e => {
   else if (R3 && state.mode === 'overview' && 'qQeEtTyYuUrR'.includes(e.key)) {
     const k = e.key.toLowerCase();
     if (k === 'q') rotateView(1); else if (k === 'e') rotateView(-1);
-    else if (k === 't') setView('top'); else if (k === 'y') setView('tilted'); else if (k === 'u') setView('low'); else setView('tilted', true);
+    else if (k === 't') setView('top'); else if (k === 'y') setView('tilted'); else if (k === 'u') setView('low'); else setView(DEFAULT_VIEW, true);
   }
   else if (e.shiftKey && e.key.startsWith('Arrow')) {   // Shift+arrows pan
     const d = 80, cx = W / 2, cy = H / 2;
@@ -1176,7 +1185,7 @@ $('panel').addEventListener('mouseleave', () => { state.hoverEdge = null; state.
 // ---------------------------------------------------------------- controls
 function toggleLabels() { state.labels = !state.labels; $('btn-labels').setAttribute('aria-pressed', state.labels); }
 function toggleMotion() {
-  state.motion = !state.motion; $('btn-motion').setAttribute('aria-pressed', state.motion);
+  state.motion = !state.motion; $('btn-motion').setAttribute('aria-pressed', state.motion); markView();
   if (state.mode === 'focus') focus(state.focus, false);
 }
 $('btn-overview').onclick = () => { overview(); };
@@ -1201,12 +1210,13 @@ $('vc-right').onclick = () => rotateView(-1);
 $('vc-top').onclick = () => setView('top');
 $('vc-tilted').onclick = () => setView('tilted');
 $('vc-low').onclick = () => setView('low');
-$('vc-reset').onclick = () => setView('tilted', true);
+$('vc-reset').onclick = () => setView(DEFAULT_VIEW, true);
+$('vc-spin').onclick = () => { view.spin = !(view.spin && state.motion); if (view.spin && !state.motion) toggleMotion(); markView(); };
 markView();
 if (!state.motion) $('btn-motion').setAttribute('aria-pressed', 'false');
 
 $('legend').innerHTML =
-  `<span class="only3d m">Drag: pan · right-drag or Shift-drag: rotate and tilt · Q / E: rotate · T top · Y tilted · U low · R reset</span>` +
+  `<span class="only3d m">Drag: pan · right-drag or Shift-drag: rotate and tilt · Q / E: rotate · T top · Y tilted · U low · R reset (low, turning)</span>` +
   `<span class="only3d">${telemetryOnly ? 'Pillar height: outside exposure' : 'Pillar height: risk score'}</span>` +
   `<span class="only3d"><i style="background:#2ee6d6"></i>Arc above: top outside addresses, beams to hosts they reached</span>` +
   `<span class="only3d"><i style="background:#6ea8ff"></i><i style="background:#ff8a3d;width:12px"></i>Traffic between subnets (orange: mostly admin protocols)</span>` +
@@ -1230,7 +1240,7 @@ resize();
 {
   let pref = null; try { pref = localStorage.getItem(KEY3D); } catch (_) {}
   const q = location.search + location.hash;
-  set3d(can3d && !/[?&#]2d\b/.test(q) && (/[?&#]3d\b/.test(q) || pref === '1'), false);
+  set3d(can3d && !/[?&#]2d\b/.test(q) && (/[?&#]3d\b/.test(q) || pref !== '0'), false);
 }
 renderList(); fitOverview(); placeViewctl();
 const introText = telemetryOnly ? `Exploring ${c.hosts} observed hosts and ${c.flows.toLocaleString()} sessions` : `Correlating ${c.hosts} hosts against ${c.flows.toLocaleString()} sessions`;
