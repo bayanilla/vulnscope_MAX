@@ -44,6 +44,9 @@ class Pool {
       this.geom.setAttribute(name, attr);
     }
     this.cap = cap;
+    // three.js remembers how many instances the buffers held when the geometry was first drawn and never
+    // draws more than that; forget it so a grown pool (e.g. more than 1024 hosts) draws every instance
+    if (this.instanced) this.geom._maxInstanceCount = undefined;
   }
   reserve(extra) { if (this.n + extra > this.cap) { let c = this.cap; while (c < this.n + extra) c *= 2; this.grow(c); } }
   flush() {
@@ -377,7 +380,7 @@ function create(canvas, opts) {
   for (const name of ['iPos', 'iColor', 'iStyle', 'iSize']) halos.geom.setAttribute(name, bodiesSys.geom.getAttribute(name));
   bodiesSys.pool.geom = bodiesSys.geom;
   const origGrow = bodiesSys.pool.grow.bind(bodiesSys.pool);
-  bodiesSys.pool.grow = cap => { origGrow(cap); for (const name of ['iPos', 'iColor', 'iStyle', 'iSize']) halos.geom.setAttribute(name, bodiesSys.geom.getAttribute(name)); };
+  bodiesSys.pool.grow = cap => { origGrow(cap); for (const name of ['iPos', 'iColor', 'iStyle', 'iSize']) halos.geom.setAttribute(name, bodiesSys.geom.getAttribute(name)); halos.geom._maxInstanceCount = undefined; };
   const lines = ribbons(scene, shared, 0);
   const sparksSys = billboards(scene, 2, 1.0, THREE.AdditiveBlending, false, 4, shared);
   const nodesApi = nodeApi(bodiesSys), sparksApi = nodeApi(sparksSys);
