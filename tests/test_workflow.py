@@ -501,11 +501,12 @@ class EndToEndTests(Base):
 
 
 class BundledSamplesTests(unittest.TestCase):
-    def test_generator_writes_two_distinct_input_folders(self):
+    def test_generator_writes_three_distinct_input_folders(self):
         with tempfile.TemporaryDirectory() as root:
             paths = generate_bundles(root)
-            self.assertEqual(sorted(os.listdir(root)), ["scan_and_telemetry", "telemetry_only"])
-            self.assertEqual(len(paths), 9)
+            self.assertEqual(sorted(os.listdir(root)),
+                             ["hosts_onprem_and_aws", "scan_and_telemetry", "telemetry_only"])
+            self.assertEqual(len(paths), 14)
             self.assertTrue(os.path.isfile(os.path.join(root, "scan_and_telemetry", "quarterly_scan.nessus")))
             self.assertFalse(any(name.endswith((".nessus", "scan.csv"))
                                  for name in os.listdir(os.path.join(root, "telemetry_only"))))
@@ -515,7 +516,7 @@ class BundledSamplesTests(unittest.TestCase):
         from vulnflow.cli import _input_files
         root = os.path.join(os.path.dirname(__file__), "..", "samples")
         self.assertEqual(sorted(name for name in os.listdir(root) if os.path.isdir(os.path.join(root, name))),
-                         ["scan_and_telemetry", "telemetry_only"])
+                         ["hosts_onprem_and_aws", "scan_and_telemetry", "telemetry_only"])
         with tempfile.TemporaryDirectory() as output:
             full_files = _input_files([os.path.join(root, "scan_and_telemetry")], output)
             network_files = _input_files([os.path.join(root, "telemetry_only")], output)
@@ -561,6 +562,37 @@ class BundledSamplesTests(unittest.TestCase):
             data = json.loads(re.search(r'<script id="vf-data" type="application/json">(.*?)</script>', page, re.S)[1])
             self.assertEqual(data["focus"]["10.10.6.10"]["ot_events_total"], 4)
             self.assertIn("No vulnerability data", page)
+
+    def test_host_sample_has_4324_hosts_on_prem_and_in_aws(self):
+        from vulnflow import sample_hosts
+        from vulnflow.cli import _input_files
+        root = os.path.join(os.path.dirname(__file__), "..", "samples", sample_hosts.FOLDER)
+        with tempfile.TemporaryDirectory() as tmp:
+            fresh = os.path.join(tmp, "fresh")
+            for path in sample_hosts.generate(fresh):          # checked-in folder matches the generator
+                with open(path, "rb") as a, open(os.path.join(root, os.path.basename(path)), "rb") as b:
+                    self.assertEqual(a.read(), b.read(), os.path.basename(path))
+            files = _input_files([root], tmp)
+            fmts = {os.path.basename(p): detect(p) for p in files}
+            self.assertEqual(fmts["aws_vpcflow_prod_us-east-2.log"], "generic")
+            self.assertEqual(fmts["estate_scan.nessus"], "nessus")
+            res, paths = run(files, os.path.join(tmp, "out"), article_previews=False)
+            with open(paths["explorer.html"], encoding="utf-8") as fh:
+                page = fh.read()
+        data = json.loads(re.search(r'<script id="vf-data" type="application/json">(.*?)</script>', page, re.S)[1])
+        drawn = {n["id"] for n in data["nodes"]}
+        self.assertEqual(len(drawn), 2000)                     # capped, riskiest first
+        self.assertLessEqual(set(data["focus"]), drawn)          # the host list only offers drawn hosts
+        self.assertIn("10.60.1.16", drawn)
+        self.assertEqual(data["counts"]["hosts"], 4324)
+        cov = res["coverage"]
+        self.assertEqual((cov["scanned_hosts"], cov["telemetry_internal_hosts"], cov["scanned_and_seen"]),
+                         (4324, 4324, 4324))
+        self.assertEqual(sum(place.startswith("aws") for *_, place in sample_hosts.HOSTS.values()), 413)
+        self.assertTrue(any(h["host"].startswith(("10.60.", "10.61.")) for h in res["hosts"]))
+        self.assertTrue(all(sum(st["dropped"].values()) == 0 for st in res["inputs"]))
+        self.assertEqual(res["summary"]["hosts_to_investigate"], ["10.60.1.16"])       # web-prod-07
+        self.assertEqual(res["summary"]["threat_alerts"], 4)
 
 
 if __name__ == "__main__":

@@ -299,7 +299,11 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         }
 
     # overview edges: internal pairs touching at least one node we keep
-    keep = sorted(nodes, key=lambda n: (not nodes[n]["observed"], n))[:MAX_NODES]
+    # Past MAX_NODES, draw the riskiest hosts: evidence first, then priority and score. Sorting by
+    # address alone would drop whole ranges (for example cloud subnets that sort after on-prem).
+    ev_rank = {"likely": 0, "lead": 1}
+    keep = sorted(nodes, key=lambda n: (not nodes[n]["observed"], ev_rank.get(nodes[n]["ev"], 2),
+                                        nodes[n]["pri"] or "P9", -(nodes[n]["score"] or 0), n))[:MAX_NODES]
     kept = set(keep)
     links = {}
     for (s, d), p in pairs.items():
@@ -322,11 +326,12 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     return {
         "vulnerability_data_available": not telemetry_only,
         "generated": res["generated"], "window": [s.get("window_start"), s.get("window_end")],
-        "counts": {"hosts": len(scanned), "flows": s["flows"], "p1": s["priority_counts"]["P1"],
+        "counts": {"hosts": len(scanned) if telemetry_only else res["coverage"]["scanned_hosts"], "flows": s["flows"], "p1": s["priority_counts"]["P1"],
                    "alerts": s.get("threat_alerts", 0)},
         "nodes": [nodes[n] for n in keep],
         "links": [[a, b, w] for (a, b), w in sorted(links.items(), key=lambda kv: -kv[1])[:3000]],
-        "focus": focus, "ioc_matches": res.get("ioc_matches", []), **overview,
+        # the page expects every focusable host to be drawn
+        "focus": {ip: f for ip, f in focus.items() if ip in kept}, "ioc_matches": res.get("ioc_matches", []), **overview,
         "ioc_counts": {host: len(ids) for host, ids in ioc_by_host.items()},
         "article_briefs": res.get("article_briefs", {}),
         "start": res["hosts"][0]["host"] if res["hosts"] else None,

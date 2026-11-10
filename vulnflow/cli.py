@@ -165,7 +165,7 @@ def main(argv=None) -> int:
                    help="saved short source overviews keyed by article URL")
     common(x)
 
-    g = sub.add_parser("samples", help="write scan-backed and telemetry-only sample folders")
+    g = sub.add_parser("samples", help="write the scan-backed, telemetry-only and 4,324-host on-prem + AWS sample folders")
     g.add_argument("outdir", nargs="?", default="samples")
 
     sub.add_parser("branding-password",
