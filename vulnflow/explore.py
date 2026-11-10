@@ -529,7 +529,7 @@ def html(data: dict) -> str:
     blob = json.dumps(data, separators=(",", ":"), default=str).replace("<", "\\u003c")
     brand = load_branding()
     logo = brand.logo_data_uri()
-    brand_markup = ((f'<img class="brand-logo" src="{logo}" alt="" aria-hidden="true">' if logo else "")
+    brand_markup = ((f'<img class="brand-logo{brand.logo_class}" src="{logo}" alt="" aria-hidden="true">' if logo else "")
                     + (f'{escape(brand.prefix)} ' if brand.prefix else "") + "<b>VULNSCOPE</b>")
     return ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
