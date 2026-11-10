@@ -1,0 +1,4 @@
+cidr,name,type
+10.40.0.0/16,HQ on-prem,on-prem
+10.60.0.0/16,AWS prod (us-east-2),aws
+10.61.0.0/16,AWS dev (us-west-2),aws

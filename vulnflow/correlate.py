@@ -39,6 +39,8 @@ class Config:
     scan_window_days: float | None = 7
     # Clock-skew tolerance for recognising one session seen by two sensors (Zeek + firewall).
     dedup_skew_seconds: float | None = 2.0
+    # Optional CSV naming address ranges (cidr,name,type), e.g. AWS VPCs; see netmap.py.
+    network_map: str | None = None
 
 
 class _Net:

@@ -34,6 +34,12 @@ const [BG_IN, BG_OUT] = BACKDROP[themeName] || SLATE;
 document.documentElement.style.setProperty('--bg', BG_OUT);
 const SEV = {Critical: '#ff3b5c', High: '#ff8a3d', Medium: '#ffd23f', Low: '#4dabf7', Info: '#8da2b5', '': '#8da2b5'};
 const RETURN = '#b98cff';
+// optional network map (network_map.csv): named ranges such as AWS VPCs; empty without a map
+const NETS = D.networks || [], CLOUD_COL = '#e4ecfa';
+const netOf = d => (d && d.net != null && NETS[d.net]) || null;
+const SUBNET_NET = new Map((D.subnets || []).filter(x => x.net != null).map(x => [x.id, NETS[x.net]]));
+const subnetNet = id => SUBNET_NET.get(id) || null;
+const netTag = n => n ? (n.cloud ? '☁ ' : '') + n.name : '';
 const KIND = {alert: '#ff3b5c', vuln: '#ff8a3d', reached: '#ffc857', outbound: RETURN, attempt: '#8892a6', blocked: '#5b6b82'};
 const KIND_RANK = {alert: 0, vuln: 1, reached: 2, outbound: 3, attempt: 4, blocked: 5};
 const KIND_TXT = {alert: 'IPS alert, not blocked', vuln: 'Reached a vulnerable service', reached: 'Reached the host',
@@ -71,7 +77,11 @@ function overviewLayout() {
   const sized = subnets.map(s => {
     const members = groups.get(s).sort((a, b) => (b.observed - a.observed) || (b.score - a.score) || a.id.localeCompare(b.id));
     return {s, members, cr: 40 + spacing(members.length) * Math.sqrt(members.length)};
-  }).sort((a, b) => b.members.length - a.members.length || a.s.localeCompare(b.s));
+  }).sort((a, b) => {
+    const ca = subnetNet(a.s), cb = subnetNet(b.s);
+    return (!!(ca && ca.cloud) - !!(cb && cb.cloud)) || (ca ? ca.name : '').localeCompare(cb ? cb.name : '') ||
+      b.members.length - a.members.length || a.s.localeCompare(b.s);
+  });
   const placed = [];
   sized.forEach(({s, members, cr}, i) => {
     let cx = 0, cy = 0;
@@ -390,10 +400,12 @@ function frame(now) {
   clusters.forEach(c => {
     const [x, y] = toS(c.x * (focusing ? 2.4 : 1), c.y * (focusing ? 2.4 : 1));
     ctx.globalAlpha = focusing ? 0.05 : 0.5;
-    ctx.strokeStyle = 'rgba(120,170,255,.22)'; ctx.setLineDash([3, 6]); ctx.lineWidth = 1;
+    const cn = subnetNet(c.subnet), cloud = cn && cn.cloud;
+    ctx.strokeStyle = cloud ? 'rgba(228,236,250,.55)' : 'rgba(120,170,255,.22)'; ctx.setLineDash(cloud ? [8, 4] : [3, 6]); ctx.lineWidth = cloud ? 1.6 : 1;
     ctx.beginPath(); ctx.arc(x, y, c.r * cam.z, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     if (!focusing && cam.z > 0.35) { ctx.fillStyle = '#6f86a6'; ctx.font = '11px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center';
-      ctx.fillText(c.subnet, x, y - c.r * cam.z - 6); }
+      ctx.fillText(c.subnet, x, y - c.r * cam.z - 6);
+      if (cloud) { ctx.fillStyle = cloud ? CLOUD_COL : '#8fa3c0'; ctx.font = '600 11px ui-monospace,Menlo,monospace'; ctx.fillText(netTag(cn), x, y - c.r * cam.z - 20); } }
   });
   ctx.globalAlpha = 1;
   // overview links
@@ -614,7 +626,7 @@ function edgeCurve(e) {
 }
 const qb = (c, t) => { const u = 1 - t, A = u * u, B = 2 * u * t, C = t * t;
   return [A * c[0] + B * c[3] + C * c[6], A * c[1] + B * c[4] + C * c[7], A * c[2] + B * c[5] + C * c[8]]; };
-const HALO = RGB('#78aaff');
+const HALO = RGB('#78aaff'), CLOUD_RGB = RGB(CLOUD_COL);
 const RISK2 = RGB('#ff2e88'), RISK1 = RGB('#ffb020'), BUNDLE = RGB('#6ea8ff'), BUNDLE_LAT = RGB('#ff8a3d'),
   RING = RGB('#2ee6d6'), P_CRIT = RGB('#ff3b5c'), P_HIGH = RGB('#ff8a3d');
 const BEAM_ALPHA = {alert: 0.85, vuln: 0.13, reached: 0.08, outbound: 0.08, attempt: 0.04, blocked: 0.035};
@@ -634,6 +646,8 @@ function overviewScene(L, T, cm, cs, cdz) {
     const on = !hc || hc === c;
     L.circle(c.x * cs, c.y * cs, cdz, c.r, 80, hc === c ? 2.2 : 1.4, col, cm * (on ? 0.5 : 0.18), false);
     L.circle(c.x * cs, c.y * cs, cdz, c.r * 0.97, 80, 0.8, HALO, cm * 0.12, true);
+    const cn = subnetNet(c.subnet);
+    if (cn && cn.cloud) L.circle(c.x * cs, c.y * cs, cdz, c.r * 1.08, 80, 1.6, CLOUD_RGB, cm * (on ? 0.7 : 0.25), true);
   });
   // bundled subnet-to-subnet traffic, sagging under the plane; orange share = admin/lateral protocols
   const maxW = subLinks.reduce((m, l) => Math.max(m, l.w), 1);
@@ -766,6 +780,9 @@ function draw3d(now, dt, k) {
     ctx.font = (hov ? '600 ' : '') + '11px ui-monospace,Menlo,monospace'; ctx.fillStyle = hov ? '#e6f1ff' : '#a9bcd6';
     ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(3,6,12,.8)';
     ctx.strokeText(c.subnet, x, y + 14); ctx.fillText(c.subnet, x, y + 14);
+    const cn = subnetNet(c.subnet);
+    if (cn && cn.cloud) { ctx.font = '600 11px ui-monospace,Menlo,monospace'; ctx.fillStyle = CLOUD_COL;
+      ctx.strokeText(netTag(cn), x, y + 1); ctx.fillText(netTag(cn), x, y + 1); }
     if (si && (sc > 0.25 || hov)) {
       const bits = [`${si.hosts} host${si.hosts === 1 ? '' : 's'}`];
       if (si.p1) bits.push(`${si.p1} P1`);
@@ -922,7 +939,8 @@ function subnetTip(c, x, y) {
   const si = subnetInfo.get(c.subnet) || {hosts: 0};
   const out = subLinks.filter(l => l.a === c || l.b === c).sort((a, b) => b.w - a.w).slice(0, 3)
     .map(l => `${esc((l.a === c ? l.b : l.a).subnet)} · ${l.w.toLocaleString()} sessions` + (l.lw ? ` (${l.lw.toLocaleString()} admin/lateral)` : ''));
-  placeTip(`<b>${esc(c.subnet)}</b> <span class="m">subnet</span><br>${si.hosts} host(s)` +
+  const cn = subnetNet(c.subnet);
+  placeTip(`<b>${esc(c.subnet)}</b> <span class="m">subnet${cn ? ' · ' + esc(netTag(cn)) : ''}</span><br>${si.hosts} host(s)` +
     (si.drawn < si.hosts ? `, ${si.hosts - si.drawn} not drawn` : '') +
     (telemetryOnly ? '' : `<br>${si.p1 || 0} P1 · ${si.likely || 0} likely exploitation · ${si.lead || 0} lead`) +
     `<br>${si.exposed || 0} exposed to outside addresses` + (si.alert_hosts ? `, ${si.alert_hosts} with IPS alerts` : '') +
@@ -1010,9 +1028,10 @@ function renderList() {
   const q = $('search').value.trim().toLowerCase();
   const rows = hostOrder().filter(id => {
     if (iocOnly && !iocCounts[id]) return false;
+    if (netFilter && !netFilter.split(',').includes(String(nodes.get(id).d.net ?? 'none'))) return false;
     if (!q) return true;
     const d = nodes.get(id).d, F = D.focus[id];
-    return (id + ' ' + d.name + ' ' + d.os + ' ' + F.findings.map(f => f.name + ' ' + f.cves.join(' ')).join(' ')).toLowerCase().includes(q);
+    return (id + ' ' + d.name + ' ' + d.os + ' ' + netTag(netOf(d)) + ' ' + F.findings.map(f => f.name + ' ' + f.cves.join(' ')).join(' ')).toLowerCase().includes(q);
   });
   $('hostlist').innerHTML = rows.map(id => {
     const d = nodes.get(id).d, F = D.focus[id];
@@ -1020,6 +1039,7 @@ function renderList() {
   const iocHint = iocCount ? `<span class="ioc-host-badge" title="${iocCount} exact IOC match${iocCount === 1 ? '' : 'es'}; review the source and traffic" aria-label="${iocCount} IOC match${iocCount === 1 ? '' : 'es'}">IOC ${iocCount}</span>` : '';
     return `<div class="hrow${id === state.focus ? ' on' : ''}" role="listitem" tabindex="0" data-id="${esc(id)}">` +
       (telemetryOnly ? '' : `<span class="pill ${esc(d.pri)}">${esc(d.pri)}</span>`) + `<span class="nm">${esc(d.name ? d.name.split('.')[0] : id)} ${iocHint}` +
+      (netOf(d) && netOf(d).cloud ? ` <span class="net-badge${netOf(d).cloud ? ' cloud' : ''}" title="${esc(netOf(d).name)}">${esc(netOf(d).cloud ? netOf(d).type.toUpperCase() : netOf(d).name)}</span>` : '') +
       `<br><span class="ip">${esc(id)} · ${F.attackers_total} N/S · ${F.peers_total} E/W</span></span>` +
       (d.ev ? `<span class="tag ${d.ev}">${d.ev === 'likely' ? 'LIKELY' : 'LEAD'}</span>` : '') + '</div>';
   }).join('') || `<div class="hrow">${iocOnly ? 'No IOC hosts match' : 'No match'}</div>`;
@@ -1056,7 +1076,16 @@ function otExamples(items, total) {
     }).join('') + (total > items.length ?
       `<div class="conn-more">Showing ${items.length} of ${total} industrial records. See normalized/ot_events.jsonl for all records.</div>` : '');
 }
-let iocOnly = false;
+let iocOnly = false, netFilter = '';
+if (NETS.length) {
+  const names = [...new Map(NETS.map((n, i) => [n.name, i])).entries()];
+  const sel = $('net-filter');
+  sel.hidden = false;
+  sel.innerHTML = '<option value="">All networks</option>' +
+    names.map(([name, i]) => `<option value="${NETS.map((m, j) => m.name === name ? j : null).filter(j => j !== null).join(',')}">${esc(netTag(NETS[i]))}</option>`).join('') +
+    '<option value="none">Not in the network map</option>';
+  sel.addEventListener('change', () => { netFilter = sel.value; renderList(); });
+}
 const iocHostTotal = Object.values(iocCounts).filter(count => count > 0).length;
 if (iocHostTotal) {
   $('ioc-filter').hidden = false;
@@ -1154,7 +1183,8 @@ function renderPanel(id) {
     f.evidence.map(e => `<div class="ev"><span class="tag ${e.c === 'corroborated' ? 'likely' : 'lead'}">${e.c === 'corroborated' ? 'LIKELY' : 'LEAD'}</span> ${esc(e.t)}</div>`).join('') + '</div>').join('');
   p.innerHTML =
     `<div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><h2>${esc(d.name ? d.name.split('.')[0] : id)}</h2>` +
-    `<div class="ipline">${esc(id)}${d.name ? ' · ' + esc(d.name) : ''}</div><div class="ipline">${esc(d.os)}</div></div>` +
+    `<div class="ipline">${esc(id)}${d.name ? ' · ' + esc(d.name) : ''}</div><div class="ipline">${esc(d.os)}</div>` +
+    (netOf(d) ? `<div class="ipline net-line${netOf(d).cloud ? ' cloud' : ''}">${esc(netTag(netOf(d)))} · ${esc(netOf(d).cidr)}</div>` : '') + `</div>` +
     `<div style="text-align:right">${telemetryOnly ? '<span class="pill">UNKNOWN</span><div class="ipline">No vulnerability data</div>' : `<span class="pill ${esc(d.pri)}">${esc(d.pri)}</span><div class="ipline">score ${d.score}</div>`}` +
     (d.ev ? `<span class="tag ${d.ev}">${d.ev === 'likely' ? 'LIKELY EXPLOITATION' : 'LEAD'}</span>` : '') + `</div></div>` +
     `<div class="stats"><div class="stat red"><b>${F.attackers_total}</b><span>outside addresses (N/S)${nAlert ? `, ${nAlert} with IPS alerts` : ''}</span></div>` +
@@ -1286,6 +1316,7 @@ $('legend').innerHTML =
   `<span class="only3d"><i style="background:#2ee6d6"></i>Arc above: top outside addresses, beams down to hosts they reached, violet beams up from hosts that called out</span>` +
   `<span class="only3d"><i style="background:#6ea8ff"></i><i style="background:#ff8a3d;width:12px"></i>Traffic between subnets (orange: mostly admin protocols)</span>` +
   `<span class="only3d"><i style="background:#ff2e88"></i><i style="background:#ffb020;width:12px"></i>Risky host paths: admin protocol into P1 or flagged host / either one</span>` +
+  (NETS.some(n => n.cloud) ? `<span><i style="background:repeating-linear-gradient(90deg,${CLOUD_COL} 0 6px,transparent 6px 9px)"></i>☁ Cloud network (from the network map)</span>` : '') +
   `<span><i style="background:${KIND.alert}"></i>IPS alert, not blocked</span>` +
   (telemetryOnly ? '' : `<span><i style="background:${KIND.vuln}"></i>Reached a vulnerable service</span>`) +
   `<span><i style="background:${KIND.reached}"></i>Reached the host</span>` +

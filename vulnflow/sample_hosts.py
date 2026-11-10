@@ -538,6 +538,12 @@ def _write(outdir, zeek, pan, threats, vpc, rng):
                          f"{max(1, r['bytes'] // 900)} {r['bytes']} {s} {s + 60} {r['action']} OK\n")
         paths.append(p)
 
+    p = os.path.join(outdir, "network_map.csv")         # optional: names the ranges so AWS stands out
+    with open(p, "w", newline="") as fh:
+        fh.write("cidr,name,type\n10.40.0.0/16,HQ on-prem,on-prem\n"
+                 "10.60.0.0/16,AWS prod (us-east-2),aws\n10.61.0.0/16,AWS dev (us-west-2),aws\n")
+    paths.append(p)
+
     p = os.path.join(outdir, "estate_scan.nessus")
     _nessus(p)
     paths.append(p)

@@ -198,6 +198,22 @@ source-linked indicators.
 | Scan | Nessus `.nessus` (v2 XML) | Preferred: carries exploit availability and Metasploit flags. |
 | Scan | Nessus CSV export | One row per CVE is merged per host/port/plugin. |
 
+### Optional network map (on-prem vs. cloud)
+
+To tell cloud hosts such as AWS VPCs apart from on-prem ones, add a `network_map.csv` to the input
+folder (or pass `--network-map FILE`). It is optional: without it nothing changes.
+
+```csv
+cidr,name,type
+10.40.0.0/16,HQ on-prem,on-prem
+10.60.0.0/16,AWS prod (us-east-2),aws
+```
+
+The most specific range wins. Types `aws`, `azure`, `gcp`, `oci` and `cloud` are drawn as cloud
+networks in the Explorer (dashed white ring and label on the subnet, a badge on each host), and a
+network filter appears above the host list. The reports add a Networks table and each host's
+network. The file is not read as telemetry; a malformed line stops the run with its line number.
+
 Force a format with `--format file.csv=paloalto` if detection guesses wrong.
 
 ## Pipeline

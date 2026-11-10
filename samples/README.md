@@ -105,6 +105,10 @@ office-to-cloud traffic appears in the firewall log and traffic inside AWS appea
 format). All 4,324 hosts are in `estate_scan.nessus` and in the network logs, so a run reports
 4,324 scanned hosts, all of them seen.
 
+`network_map.csv` names the three ranges (HQ on-prem, AWS prod, AWS dev). It is optional; the
+Explorer uses it to mark the AWS subnets and hosts and the reports add a Networks table. Remove it
+to see the same run without network names.
+
 Fictional investigation leads in the data:
 
 - `fw01` (GlobalProtect, CVE-2024-3400 in the scan) receives four exploit attempts that the IPS resets.
