@@ -30,7 +30,7 @@ BASE_NAME = "VulnScope"
 DEFAULT_PREFIX = "Múcaro"
 EXPLORER_NAME = "VulnScope Explorer"
 MAX_PREFIX = 40
-MAX_LOGO_BYTES = 256 * 1024
+MAX_LOGO_BYTES = 512 * 1024
 MAX_LOGO_SIDE = 2048
 LOGO_TYPES = ("image/png", "image/jpeg", "image/gif", "image/webp")
 

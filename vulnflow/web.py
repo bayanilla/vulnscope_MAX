@@ -265,7 +265,7 @@ button.secondary{background:transparent;color:var(--fg);border:1px solid var(--l
 BRANDING = """<style>{css}
 .brand-preview{{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:8px 0 4px;max-width:520px;
 border:1px solid var(--line);border-radius:var(--radius);background:var(--bar);font-weight:800;font-size:1.1rem;letter-spacing:.02em}}
-.brand-preview img{{height:28px;width:auto;max-width:110px;object-fit:contain}}
+.brand-preview img{{height:42px;width:auto;max-width:200px;object-fit:contain}}
 .check{{display:flex;gap:8px;align-items:center;font-weight:400;margin-top:10px}}
 form{{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:16px 0;max-width:640px}}</style>
 <h1>Branding</h1>
@@ -282,7 +282,7 @@ already generated keep the branding they were made with.</p>
 <div class="hint">Shown as “<i>name</i> VulnScope”. Leave blank to show just “VulnScope”. Up to {max_prefix} characters.</div>
 <label for="logo">Logo (optional)</label>
 <input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/gif,image/webp">
-<div class="hint">PNG, JPEG, GIF or WebP, up to {max_kb} KB. It is shown about 24 pixels tall, so a square or wide image
+<div class="hint">PNG, JPEG, GIF or WebP, up to {max_kb} KB. It is shown about 36 pixels tall, so a square or wide image
 with a transparent background works best. SVG isn't accepted. Leave empty to keep the current logo.</div>
 {remove}
 <button type="submit">Save branding</button>
