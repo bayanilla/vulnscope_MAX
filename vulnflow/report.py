@@ -23,6 +23,23 @@ def _name(host: str, hostname: str) -> str:
     return f"{hostname} ({host})" if hostname else host
 
 
+def _networks_table(res: dict) -> list[str]:
+    """Per-network host counts; only present when a network map was supplied."""
+    nets = res.get("networks")
+    if not nets:
+        return []
+    L = ["", "## Networks", "", "From the supplied network map.", "",
+         "| Network | Type | Ranges | Hosts scanned | With findings | P1 hosts |", "|---|---|---|---|---|---|"]
+    for n in nets:
+        L.append(f"| {_c(n['name'])} | {_c(n['type'] or '-')} | {_c(', '.join(n['ranges']) or '-')} | "
+                 f"{n['scanned']} | {n['with_findings']} | {n['p1']} |")
+    return L
+
+
+def _net(r) -> str:
+    return f" [{r['network']}]" if r.get("network") else ""
+
+
 def _plural(n, word, plural=None):
     return f"{n} {word if n == 1 else (plural or word + 's')}"
 
@@ -162,6 +179,7 @@ def executive_summary(res: dict) -> str:
           f"| Active servers missing from the scan | {len(gaps)} |"]
     if "ioc_matches" in res:
         L.append(f"| IOC CSV matches | {len(res['ioc_matches'])} |")
+    L += _networks_table(res)
     L += ["", "## Top risks", ""]
     top = [r for r in F if r["priority"] in ("P1", "P2")][:5] or F[:3]
     if not top:
@@ -180,7 +198,7 @@ def executive_summary(res: dict) -> str:
             bits.append("**traffic pattern worth investigating (not confirmed)**")
         cves = [c for c in r["cves"][:2] if c not in r["plugin_name"]]
         cve = f" ({', '.join(cves)})" if cves else ""
-        L.append(f"{i}. **{_name(r['host'], r['hostname'])}**: {r['plugin_name']}{cve}. "
+        L.append(f"{i}. **{_name(r['host'], r['hostname'])}**{_net(r)}: {r['plugin_name']}{cve}. "
                  f"{_cap('; '.join(bits))}. Risk score {r['score']}/100, {PRIORITY_LABELS[r['priority']]}.")
     L += ["", "## Recommended actions", ""]
     recs = []
@@ -278,6 +296,7 @@ def technical_report(res: dict) -> str:
                  f"{_c(r['plugin_name'])} ({r['plugin_id']}) | {_c(_svc(r))} | {r['cvss']:.1f} | "
                  f"{'Yes' if r['exploit_available'] else 'No'} | {_c(r['exposure']['label'])} | "
                  f"x{r['blast_factor']} | {r['likelihood']} |")
+    L += _networks_table(res)
     L += ["", "## 4. Host details", ""]
     by_host = {}
     for r in F:
@@ -286,6 +305,7 @@ def technical_report(res: dict) -> str:
         bl = h["blast"]
         L += [f"### {_name(h['host'], h['hostname'])} - {PRIORITY_LABELS[h['priority']]}", "",
               f"- Operating system: {h['os'] or 'unknown'}",
+              *([f"- Network: {h['network']}"] if h.get("network") else []),
               f"- Findings: " + ", ".join(f"{n} {k}" for k, n in h["by_severity"].items()),
               f"- Seen in telemetry: {'yes' if h['telemetry_seen'] else 'no'} "
               f"({h['inbound_flows']} inbound, {h['outbound_flows']} outbound sessions)",

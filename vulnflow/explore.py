@@ -176,6 +176,8 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
 
     scanned = [h["host"] for h in res["hosts"]]
     nodes: dict[str, dict] = {}
+    from .netmap import NetMap
+    netmap = NetMap(res.get("network_map", []))
 
     def node(ip):
         if ip in nodes:
@@ -189,6 +191,8 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                      "observed": h is not None,
                      "subnet": _subnet(ip), "sev": SEV.get(worst, ""), "pri": (h or {}).get("priority", ""),
                      "score": (h or {}).get("max_score", 0), "ev": ev, "os": (h or {}).get("os", "") or ""}
+        if netmap and netmap.index(ip) is not None:
+            nodes[ip]["net"] = netmap.index(ip)
         return nodes[ip]
 
     focus = {}
@@ -299,7 +303,11 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         }
 
     # overview edges: internal pairs touching at least one node we keep
-    keep = sorted(nodes, key=lambda n: (not nodes[n]["observed"], n))[:MAX_NODES]
+    # Past MAX_NODES, draw the riskiest hosts: evidence first, then priority and score. Sorting by
+    # address alone would drop whole ranges (for example cloud subnets that sort after on-prem).
+    ev_rank = {"likely": 0, "lead": 1}
+    keep = sorted(nodes, key=lambda n: (not nodes[n]["observed"], ev_rank.get(nodes[n]["ev"], 2),
+                                        nodes[n]["pri"] or "P9", -(nodes[n]["score"] or 0), n))[:MAX_NODES]
     kept = set(keep)
     links = {}
     for (s, d), p in pairs.items():
@@ -322,11 +330,14 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     return {
         "vulnerability_data_available": not telemetry_only,
         "generated": res["generated"], "window": [s.get("window_start"), s.get("window_end")],
-        "counts": {"hosts": len(scanned), "flows": s["flows"], "p1": s["priority_counts"]["P1"],
+        "counts": {"hosts": len(scanned) if telemetry_only else res["coverage"]["scanned_hosts"], "flows": s["flows"], "p1": s["priority_counts"]["P1"],
                    "alerts": s.get("threat_alerts", 0)},
         "nodes": [nodes[n] for n in keep],
         "links": [[a, b, w] for (a, b), w in sorted(links.items(), key=lambda kv: -kv[1])[:3000]],
-        "focus": focus, "ioc_matches": res.get("ioc_matches", []), **overview,
+        # the page expects every focusable host to be drawn
+        "networks": [{"name": e["name"], "type": e["type"], "cloud": e["cloud"], "cidr": e["cidr"]}
+                     for e in res.get("network_map", [])],
+        "focus": {ip: f for ip, f in focus.items() if ip in kept}, "ioc_matches": res.get("ioc_matches", []), **overview,
         "ioc_counts": {host: len(ids) for host, ids in ioc_by_host.items()},
         "article_briefs": res.get("article_briefs", {}),
         "start": res["hosts"][0]["host"] if res["hosts"] else None,
@@ -447,6 +458,9 @@ def _overview_summary(pairs, nodes, focus, kept, ext) -> dict:
                                                "lead": 0, "max_score": 0, "exposed": 0, "alert_hosts": 0})
         sn["hosts"] += 1
         sn["drawn"] += ip in kept
+        if "net" in n:
+            sn.setdefault("nets", {})
+            sn["nets"][n["net"]] = sn["nets"].get(n["net"], 0) + 1
         sn["p1"] += n["pri"] == "P1"
         sn["likely"] += n["ev"] == "likely"
         sn["lead"] += n["ev"] == "lead"
@@ -505,6 +519,10 @@ def _overview_summary(pairs, nodes, focus, kept, ext) -> dict:
         e["targets"] = sorted((t for t in e["targets"] if t[0] in kept),
                               key=lambda t: (KIND_RANK[t[1]], -t[2], t[0]))[:MAX_INTERNET_TARGETS]
         internet.append(e)
+    for sn in subnets.values():          # a subnet belongs to the named network most of its hosts are in
+        nets = sn.pop("nets", None)
+        if nets:
+            sn["net"] = max(nets, key=lambda k: (nets[k], -k))
     return {
         "subnets": sorted(subnets.values(), key=lambda x: x["id"]),
         "subnet_links": [[a, b, w, lw] for (a, b), (w, lw) in

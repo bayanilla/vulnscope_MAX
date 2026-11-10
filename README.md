@@ -75,6 +75,9 @@ python3 -m vulnflow analyze samples/scan_and_telemetry \
 # Or analyze the same network traffic without vulnerability scans
 python3 -m vulnflow analyze samples/telemetry_only -o telemetry_output
 
+# Or a larger 4,324-host company whose network extends into AWS (scan, firewall, Zeek, VPC Flow Logs)
+python3 -m vulnflow analyze samples/hosts_onprem_and_aws -o hosts_output
+
 # 2. Run on real data (files or recursively scanned folders, any mix of formats)
 python3 -m vulnflow analyze /path/to/log-bundle -o out \
     --internal-net 10.0.0.0/8 --internal-net 172.16.0.0/12
@@ -113,7 +116,9 @@ Run tests with `python3 -m unittest discover -s tests` (no model or network need
 For the same demo in the upload page, select `samples/scan_and_telemetry` under **Analyze files with
 Múcaro VulnScope** and click **Analyze folder**. Select `samples/telemetry_only` to inspect the
 network records without a vulnerability scan. The latter includes flow, firewall, NetFlow, Zeek
-connection, DNS, notice, and Modbus records from a small synthetic OT segment. See
+connection, DNS, notice, and Modbus records from a small synthetic OT segment. Select
+`samples/hosts_onprem_and_aws` for a larger 4,324-host estate: an on-prem site plus two AWS VPCs,
+with a Nessus scan of every host, Palo Alto and Zeek traffic, and AWS VPC Flow Logs. See
 [the sample guide](samples/README.md).
 
 ### IOC CSV matches
@@ -192,6 +197,22 @@ source-linked indicators.
 | Telemetry | Generic flow CSV / TSV / space-delimited | nfdump CSV, AWS VPC flow logs, SIEM exports. Columns are matched by common names (`src_ip`, `sa`, `srcaddr`, ...). |
 | Scan | Nessus `.nessus` (v2 XML) | Preferred: carries exploit availability and Metasploit flags. |
 | Scan | Nessus CSV export | One row per CVE is merged per host/port/plugin. |
+
+### Optional network map (on-prem vs. cloud)
+
+To tell cloud hosts such as AWS VPCs apart from on-prem ones, add a `network_map.csv` to the input
+folder (or pass `--network-map FILE`). It is optional: without it nothing changes.
+
+```csv
+cidr,name,type
+10.40.0.0/16,HQ on-prem,on-prem
+10.60.0.0/16,AWS prod (us-east-2),aws
+```
+
+The most specific range wins. Types `aws`, `azure`, `gcp`, `oci` and `cloud` are drawn as cloud
+networks in the Explorer (dashed white ring and label on the subnet, a badge on each host), and a
+network filter appears above the host list. The reports add a Networks table and each host's
+network. The file is not read as telemetry; a malformed line stops the run with its line number.
 
 Force a format with `--format file.csv=paloalto` if detection guesses wrong.
 

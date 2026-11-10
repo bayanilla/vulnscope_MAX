@@ -13,7 +13,8 @@ def _cfg(a) -> Config:
     return Config(internal_nets=a.internal_net or list(DEFAULT_INTERNAL_NETS), hops=a.hops,
                   min_severity=a.min_severity,
                   scan_window_days=a.scan_window_days or None,
-                  dedup_skew_seconds=None if a.dedup_skew < 0 else a.dedup_skew)
+                  dedup_skew_seconds=None if a.dedup_skew < 0 else a.dedup_skew,
+                  network_map=getattr(a, "network_map", None))
 
 
 def _llm_cfg(a, required=True):
@@ -96,6 +97,9 @@ def main(argv=None) -> int:
         p.add_argument("--internal-net", action="append", metavar="CIDR",
                        help="internal address range (repeatable; default RFC1918 etc.)")
         p.add_argument("--hops", type=int, default=2, help="blast-radius depth (default 2)")
+        p.add_argument("--network-map", metavar="CSV",
+                       help="CSV naming address ranges (cidr,name,type), e.g. AWS VPCs; a network_map.csv "
+                            "inside an input folder is used automatically")
         p.add_argument("--min-severity", type=int, default=1, choices=range(5),
                        help="lowest Nessus severity to score, 0=Info..4=Critical (default 1)")
         p.add_argument("--scan-window-days", type=float, default=7, metavar="DAYS",
@@ -165,7 +169,7 @@ def main(argv=None) -> int:
                    help="saved short source overviews keyed by article URL")
     common(x)
 
-    g = sub.add_parser("samples", help="write scan-backed and telemetry-only sample folders")
+    g = sub.add_parser("samples", help="write the scan-backed, telemetry-only and 4,324-host on-prem + AWS sample folders")
     g.add_argument("outdir", nargs="?", default="samples")
 
     sub.add_parser("branding-password",

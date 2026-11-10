@@ -155,3 +155,10 @@ body:not(.gl3d) #legend .only3d,body.focused #legend .only3d{display:none}
 #viewctl button{padding:4px 10px;font-size:12px}#viewctl button[aria-pressed="false"]{opacity:.7}
 #viewctl button[aria-pressed="true"]{border-color:var(--cyan);color:#fff}
 body:not(.gl3d) #viewctl,body.focused #viewctl{display:none}
+
+/* optional network map: network filter, host badge and panel line */
+#net-filter:not([hidden]){flex:1 1 100%;padding:4px 6px;border:1px solid var(--line,#2a3b55);border-radius:8px;background:var(--glass);color:inherit;font:600 11px var(--mono)}
+.net-badge{display:inline-block;margin-left:4px;padding:0 6px;border:1px solid #8fa3c0;border-radius:999px;color:#8fa3c0;font:700 9px var(--mono);vertical-align:1px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.net-badge.cloud{border-color:#e4ecfa;color:#e4ecfa;border-style:dashed}
+.net-line.cloud{color:#e4ecfa}
+.railtop:has(#net-filter:not([hidden])){flex-wrap:wrap}

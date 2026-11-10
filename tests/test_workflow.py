@@ -501,11 +501,12 @@ class EndToEndTests(Base):
 
 
 class BundledSamplesTests(unittest.TestCase):
-    def test_generator_writes_two_distinct_input_folders(self):
+    def test_generator_writes_three_distinct_input_folders(self):
         with tempfile.TemporaryDirectory() as root:
             paths = generate_bundles(root)
-            self.assertEqual(sorted(os.listdir(root)), ["scan_and_telemetry", "telemetry_only"])
-            self.assertEqual(len(paths), 9)
+            self.assertEqual(sorted(os.listdir(root)),
+                             ["hosts_onprem_and_aws", "scan_and_telemetry", "telemetry_only"])
+            self.assertEqual(len(paths), 15)
             self.assertTrue(os.path.isfile(os.path.join(root, "scan_and_telemetry", "quarterly_scan.nessus")))
             self.assertFalse(any(name.endswith((".nessus", "scan.csv"))
                                  for name in os.listdir(os.path.join(root, "telemetry_only"))))
@@ -515,7 +516,7 @@ class BundledSamplesTests(unittest.TestCase):
         from vulnflow.cli import _input_files
         root = os.path.join(os.path.dirname(__file__), "..", "samples")
         self.assertEqual(sorted(name for name in os.listdir(root) if os.path.isdir(os.path.join(root, name))),
-                         ["scan_and_telemetry", "telemetry_only"])
+                         ["hosts_onprem_and_aws", "scan_and_telemetry", "telemetry_only"])
         with tempfile.TemporaryDirectory() as output:
             full_files = _input_files([os.path.join(root, "scan_and_telemetry")], output)
             network_files = _input_files([os.path.join(root, "telemetry_only")], output)
@@ -561,6 +562,79 @@ class BundledSamplesTests(unittest.TestCase):
             data = json.loads(re.search(r'<script id="vf-data" type="application/json">(.*?)</script>', page, re.S)[1])
             self.assertEqual(data["focus"]["10.10.6.10"]["ot_events_total"], 4)
             self.assertIn("No vulnerability data", page)
+
+    def test_host_sample_has_4324_hosts_on_prem_and_in_aws(self):
+        from vulnflow import sample_hosts
+        from vulnflow.cli import _input_files
+        root = os.path.join(os.path.dirname(__file__), "..", "samples", sample_hosts.FOLDER)
+        with tempfile.TemporaryDirectory() as tmp:
+            fresh = os.path.join(tmp, "fresh")
+            for path in sample_hosts.generate(fresh):          # checked-in folder matches the generator
+                with open(path, "rb") as a, open(os.path.join(root, os.path.basename(path)), "rb") as b:
+                    self.assertEqual(a.read(), b.read(), os.path.basename(path))
+            files = _input_files([root], tmp)
+            fmts = {os.path.basename(p): detect(p) for p in files}
+            self.assertEqual(fmts["aws_vpcflow_prod_us-east-2.log"], "generic")
+            self.assertEqual(fmts["estate_scan.nessus"], "nessus")
+            res, paths = run(files, os.path.join(tmp, "out"), article_previews=False)
+            with open(paths["explorer.html"], encoding="utf-8") as fh:
+                page = fh.read()
+        data = json.loads(re.search(r'<script id="vf-data" type="application/json">(.*?)</script>', page, re.S)[1])
+        drawn = {n["id"] for n in data["nodes"]}
+        self.assertEqual(len(drawn), 2000)                     # capped, riskiest first
+        self.assertLessEqual(set(data["focus"]), drawn)          # the host list only offers drawn hosts
+        self.assertIn("10.60.1.16", drawn)
+        self.assertEqual(data["counts"]["hosts"], 4324)
+        cov = res["coverage"]
+        self.assertEqual((cov["scanned_hosts"], cov["telemetry_internal_hosts"], cov["scanned_and_seen"]),
+                         (4324, 4324, 4324))
+        self.assertEqual(sum(place.startswith("aws") for *_, place in sample_hosts.HOSTS.values()), 413)
+        self.assertTrue(any(h["host"].startswith(("10.60.", "10.61.")) for h in res["hosts"]))
+        self.assertTrue(all(sum(st["dropped"].values()) == 0 for st in res["inputs"]))
+        self.assertEqual(res["summary"]["hosts_to_investigate"], ["10.60.1.16"])       # web-prod-07
+        self.assertEqual(res["summary"]["threat_alerts"], 4)
+        self.assertEqual([(n["name"], n["scanned"]) for n in res["networks"]],
+                         [("HQ on-prem", 3911), ("AWS prod (us-east-2)", 280), ("AWS dev (us-west-2)", 133)])
+        self.assertNotIn("network_map.csv", [i["file"] for i in res["inputs"]])   # not read as telemetry
+        self.assertEqual(next(h for h in res["hosts"] if h["host"] == "10.60.1.16")["network"], "AWS prod (us-east-2)")
+        self.assertEqual(data["networks"][1]["type"], "aws")
+        self.assertEqual(next(n for n in data["nodes"] if n["id"] == "10.60.1.16")["net"], 1)
+
+    def test_network_map_is_optional(self):
+        """Without a network map, results, reports and the Explorer carry no network fields."""
+        from vulnflow import sample_hosts
+        src = os.path.join(os.path.dirname(__file__), "..", "samples", sample_hosts.FOLDER)
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = os.path.join(tmp, "in")
+            shutil.copytree(src, folder, ignore=shutil.ignore_patterns("network_map.csv"))
+            from vulnflow.cli import _input_files
+            res, paths = run(_input_files([folder], tmp), os.path.join(tmp, "out"), article_previews=False)
+            with open(paths["explorer.html"], encoding="utf-8") as fh:
+                page = fh.read()
+            with open(paths["executive_summary.md"], encoding="utf-8") as fh:
+                summary = fh.read()
+        self.assertNotIn("networks", res)
+        self.assertFalse(any("network" in h for h in res["hosts"]))
+        self.assertNotIn("## Networks", summary)
+        data = json.loads(re.search(r'<script id="vf-data" type="application/json">(.*?)</script>', page, re.S)[1])
+        self.assertEqual(data["networks"], [])
+        self.assertFalse(any("net" in n for n in data["nodes"]) or any("net" in s for s in data["subnets"]))
+
+    def test_bad_network_map_names_the_line(self):
+        from vulnflow import netmap
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "network_map.csv")
+            with open(path, "w") as fh:
+                fh.write("cidr,name,type\n10.0.0.0/8,Office,on-prem\nnot-a-range,AWS,aws\n")
+            with self.assertRaisesRegex(ValueError, "line 3"):
+                netmap.read(path)
+            with open(path, "w") as fh:
+                fh.write("10.0.0.0/8,Office\n")
+            with self.assertRaisesRegex(ValueError, "cidr"):
+                netmap.read(path)
+            nm = netmap.NetMap([{"cidr": "10.0.0.0/8", "name": "Office", "type": "on-prem", "cloud": False},
+                                {"cidr": "10.60.0.0/16", "name": "AWS", "type": "aws", "cloud": True}])
+            self.assertEqual((nm.name("10.60.1.1"), nm.name("10.1.1.1"), nm.name("8.8.8.8")), ("AWS", "Office", ""))
 
 
 if __name__ == "__main__":

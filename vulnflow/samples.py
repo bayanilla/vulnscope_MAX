@@ -518,7 +518,9 @@ def generate(outdir: str, seed: int = 7) -> list[str]:
 
 
 def generate_bundles(outdir: str, seed: int = 7) -> list[str]:
-    """Write the scan-backed example and a matching network-only example."""
+    """Write the scan-backed example, a matching network-only example and the large
+    4,324-host on-prem + AWS example."""
+    from . import sample_hosts
     full = generate(os.path.join(outdir, "scan_and_telemetry"), seed)
     telemetry_dir = os.path.join(outdir, "telemetry_only")
     os.makedirs(telemetry_dir, exist_ok=True)
@@ -529,4 +531,5 @@ def generate_bundles(outdir: str, seed: int = 7) -> list[str]:
         target = os.path.join(telemetry_dir, os.path.basename(path))
         shutil.copy2(path, target)
         copied.append(target)
-    return full + copied
+    hosts = sample_hosts.generate(os.path.join(outdir, sample_hosts.FOLDER))
+    return full + copied + hosts
