@@ -97,6 +97,20 @@ class BrandingTests(unittest.TestCase):
         self.assertNotIn("<img src=x", page)
         self.assertIn("&lt;img src=x", page)
 
+    def test_logo_size_choice(self):
+        branding.update("Ford", png())
+        self.assertEqual(branding.load().logo_size, "medium")
+        self.assertIn('class="brand-logo" src=', report.theme_control())
+        branding.update("Ford", logo_size="small")
+        self.assertIsNotNone(branding.load().logo)
+        self.assertIn('class="brand-logo logo-small" src=', report.theme_control())
+        page = explore.html({"nodes": [], "edges": [], "focus": {}, "ioc_matches": []})
+        self.assertIn('<img class="brand-logo logo-small" src="data:image/png', page)
+        branding.update("Ford")                             # no size given keeps the saved one
+        self.assertEqual(branding.load().logo_size, "small")
+        with self.assertRaises(branding.BrandingError):
+            branding.update("Ford", logo_size="huge")
+
     def test_keep_and_remove_logo(self):
         branding.update("Ford", png())
         branding.update("Acme")
@@ -183,12 +197,14 @@ class BrandingTests(unittest.TestCase):
         s = self._server()
         self.assertIn('href="/branding"', s.request("GET", "/")[1])
         cookie = self._unlock(s)[2]
-        status, _, _ = self._post(s, {"csrf": s.token(), "prefix": "Ford"}, [("logo", "ford.png", png())], cookie)
+        status, _, _ = self._post(s, {"csrf": s.token(), "prefix": "Ford", "logo_size": "small"},
+                                  [("logo", "ford.png", png())], cookie)
         self.assertEqual(status, 303)
         self.assertEqual(branding.product_name(), "Ford VulnScope")
+        self.assertEqual(branding.load().logo_size, "small")
         page = s.request("GET", "/")[1]
         self.assertIn("<title>Ford VulnScope</title>", page)
-        self.assertIn('class="brand-logo" src="data:image/png;base64,', page)
+        self.assertIn('class="brand-logo logo-small" src="data:image/png;base64,', page)
 
     def test_branding_page_refuses_svg_and_missing_csrf(self):
         s = self._server()

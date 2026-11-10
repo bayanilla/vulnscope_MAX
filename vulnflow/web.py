@@ -265,7 +265,9 @@ button.secondary{background:transparent;color:var(--fg);border:1px solid var(--l
 BRANDING = """<style>{css}
 .brand-preview{{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:8px 0 4px;max-width:520px;
 border:1px solid var(--line);border-radius:var(--radius);background:var(--bar);font-weight:800;font-size:1.1rem;letter-spacing:.02em}}
-.brand-preview img{{height:28px;width:auto;max-width:110px;object-fit:contain}}
+.brand-preview img{{height:36px;width:auto;max-width:180px;object-fit:contain}}
+.brand-preview img.logo-small{{height:24px;max-width:96px}}
+.sizes{{display:flex;gap:18px;flex-wrap:wrap}} .sizes label{{display:flex;gap:6px;align-items:center;font-weight:400;margin:0}}
 .check{{display:flex;gap:8px;align-items:center;font-weight:400;margin-top:10px}}
 form{{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:16px 0;max-width:640px}}</style>
 <h1>Branding</h1>
@@ -282,9 +284,14 @@ already generated keep the branding they were made with.</p>
 <div class="hint">Shown as “<i>name</i> VulnScope”. Leave blank to show just “VulnScope”. Up to {max_prefix} characters.</div>
 <label for="logo">Logo (optional)</label>
 <input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/gif,image/webp">
-<div class="hint">PNG, JPEG, GIF or WebP, up to {max_kb} KB. It is shown about 24 pixels tall, so a square or wide image
-with a transparent background works best. SVG isn't accepted. Leave empty to keep the current logo.</div>
+<div class="hint">PNG, JPEG, GIF or WebP, up to {max_kb} KB. A square or wide image with a transparent background works best.
+SVG isn't accepted. Leave empty to keep the current logo.</div>
 {remove}
+<label>Logo size</label>
+<div class="sizes" role="radiogroup" aria-label="Logo size">
+<label><input type="radio" name="logo_size" value="small"{small_checked}> Small <span class="hint">(about 24 px tall)</span></label>
+<label><input type="radio" name="logo_size" value="medium"{medium_checked}> Medium <span class="hint">(about 36 px tall)</span></label>
+</div>
 <button type="submit">Save branding</button>
 </form>
 <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
@@ -298,6 +305,10 @@ with a transparent background works best. SVG isn't accepted. Leave empty to kee
 <script>
 (function () {{
   const input = document.getElementById("prefix"), out = document.getElementById("bp-name");
+  const img = document.querySelector("#bp img");
+  document.querySelectorAll('input[name="logo_size"]').forEach(r => r.addEventListener("change", () => {{
+    if (img) img.classList.toggle("logo-small", r.value === "small" && r.checked);
+  }}));
   input.addEventListener("input", () => {{
     const v = input.value.replace(/\\s+/g, " ").trim();
     out.textContent = v ? v + " VulnScope" : "VulnScope";
@@ -867,7 +878,8 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             body = BRANDING.format(css=SETTINGS_CSS, error=err, logo=branding.logo_img(""),
                                    name=html.escape(cur.name), prefix=html.escape(cur.prefix), csrf=csrf,
                                    max_prefix=branding.MAX_PREFIX, max_kb=branding.MAX_LOGO_BYTES // 1024,
-                                   remove=remove)
+                                   remove=remove, small_checked=" checked" if cur.logo_size == "small" else "",
+                                   medium_checked=" checked" if cur.logo_size != "small" else "")
             self._send(code, _page("Branding", body), headers={"Cache-Control": "no-store"})
 
         def _save_branding(self):
@@ -899,7 +911,8 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 if fields.get("action") == "reset":
                     branding.reset()
                 else:
-                    branding.update(fields.get("prefix", ""), logo, remove_logo=fields.get("remove_logo") == "1")
+                    branding.update(fields.get("prefix", ""), logo, remove_logo=fields.get("remove_logo") == "1",
+                                    logo_size=fields.get("logo_size") or None)
             except branding.BrandingError as exc:
                 return self._branding(str(exc), 400)
             except OSError:

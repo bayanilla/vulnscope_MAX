@@ -30,8 +30,10 @@ BASE_NAME = "VulnScope"
 DEFAULT_PREFIX = "Múcaro"
 EXPLORER_NAME = "VulnScope Explorer"
 MAX_PREFIX = 40
-MAX_LOGO_BYTES = 256 * 1024
+MAX_LOGO_BYTES = 512 * 1024
 MAX_LOGO_SIDE = 2048
+LOGO_SIZES = ("small", "medium")      # small = the original 24 px top-bar logo; medium = about 1.5x
+DEFAULT_LOGO_SIZE = "medium"
 LOGO_TYPES = ("image/png", "image/jpeg", "image/gif", "image/webp")
 
 
@@ -82,6 +84,12 @@ class Branding:
     prefix: str = DEFAULT_PREFIX
     logo: bytes | None = None
     logo_type: str | None = None
+    logo_size: str = DEFAULT_LOGO_SIZE
+
+    @property
+    def logo_class(self) -> str:
+        """Extra CSS class for the logo; medium needs none."""
+        return " logo-small" if self.logo_size == "small" else ""
 
     @property
     def name(self) -> str:
@@ -179,7 +187,8 @@ def _load_cached(path: str, mtime: float) -> Branding:
         prefix = clean_prefix(str(raw.get("prefix", DEFAULT_PREFIX)))
         logo = base64.b64decode(raw["logo"]) if raw.get("logo") else None
         kind = sniff_logo(logo) if logo else None
-        return Branding(prefix, logo, kind)
+        size = raw.get("logo_size", DEFAULT_LOGO_SIZE)
+        return Branding(prefix, logo, kind, size if size in LOGO_SIZES else DEFAULT_LOGO_SIZE)
     except (OSError, ValueError, TypeError, KeyError, AttributeError):
         return Branding()
 
@@ -198,7 +207,8 @@ def save(branding: Branding) -> None:
     path = config_path()
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     payload = {"prefix": branding.prefix,
-               "logo": base64.b64encode(branding.logo).decode("ascii") if branding.logo else None}
+               "logo": base64.b64encode(branding.logo).decode("ascii") if branding.logo else None,
+               "logo_size": branding.logo_size}
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".branding-", suffix=".json")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
@@ -212,17 +222,21 @@ def save(branding: Branding) -> None:
         raise
 
 
-def update(prefix: str, logo: bytes | None = None, remove_logo: bool = False) -> Branding:
+def update(prefix: str, logo: bytes | None = None, remove_logo: bool = False,
+           logo_size: str | None = None) -> Branding:
     """Validate and save a change; ``logo`` None keeps the current logo unless ``remove_logo``."""
     current = load()
     new_prefix = clean_prefix(prefix)
+    size = current.logo_size if logo_size is None else logo_size
+    if size not in LOGO_SIZES:
+        raise BrandingError("Choose Small or Medium for the logo size.")
     if logo:
         kind = sniff_logo(logo)
-        new = Branding(new_prefix, logo, kind)
+        new = Branding(new_prefix, logo, kind, size)
     elif remove_logo:
-        new = Branding(new_prefix)
+        new = Branding(new_prefix, logo_size=size)
     else:
-        new = Branding(new_prefix, current.logo, current.logo_type)
+        new = Branding(new_prefix, current.logo, current.logo_type, size)
     save(new)
     return new
 
@@ -249,8 +263,10 @@ def icon_data_uri() -> str:
 
 def logo_img(css_class: str = "brand-logo") -> str:
     """An <img> for the saved logo, or "" when none is set."""
-    uri = load().logo_data_uri()
-    return f'<img class="{css_class}" src="{uri}" alt="" aria-hidden="true">' if uri else ""
+    brand = load()
+    uri = brand.logo_data_uri()
+    cls = (css_class + brand.logo_class).strip()
+    return f'<img class="{cls}" src="{uri}" alt="" aria-hidden="true">' if uri else ""
 
 
 def brand_html(css_class: str = "brand-logo") -> str:

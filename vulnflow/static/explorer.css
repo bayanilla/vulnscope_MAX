@@ -18,7 +18,8 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 #hud{position:fixed;top:14px;left:18px;pointer-events:none;text-shadow:0 0 12px rgba(46,230,214,.35)}
 .brand{display:flex;align-items:center;gap:7px;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .brand b{color:var(--fg);letter-spacing:.14em}
-.brand .brand-logo{height:24px;width:auto;max-width:96px;object-fit:contain;margin-right:3px}
+.brand .brand-logo{height:34px;width:auto;max-width:170px;object-fit:contain;margin-right:3px}
+.brand .brand-logo.logo-small{height:24px;max-width:96px}
 .brand .view{color:var(--cyan);font-size:11px;letter-spacing:.16em;border-left:1px solid var(--line);padding-left:9px;margin-left:3px}
 #subtitle{color:var(--muted);font-size:12px;margin-top:4px}
 #about{position:fixed;top:var(--about-top,62px);right:var(--about-right,18px);z-index:6;width:max-content;max-width:min(440px,calc(100vw - 36px));
