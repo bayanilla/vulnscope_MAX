@@ -1042,7 +1042,7 @@ function renderList() {
     const d = nodes.get(id).d, F = D.focus[id];
     return (id + ' ' + d.name + ' ' + d.os + ' ' + netTag(netOf(d)) + ' ' + F.findings.map(f => f.name + ' ' + f.cves.join(' ')).join(' ')).toLowerCase().includes(q);
   });
-  $('hostlist').innerHTML = rows.map(id => {
+  const rowHtml = id => {
     const d = nodes.get(id).d, F = D.focus[id];
     const iocCount = iocCounts[id] || 0;
   const iocHint = iocCount ? `<span class="ioc-host-badge" title="${iocCount} exact IOC match${iocCount === 1 ? '' : 'es'}; review the source and traffic" aria-label="${iocCount} IOC match${iocCount === 1 ? '' : 'es'}">IOC ${iocCount}</span>` : '';
@@ -1051,7 +1051,32 @@ function renderList() {
       (netOf(d) && netOf(d).cloud ? ` <span class="net-badge${netOf(d).cloud ? ' cloud' : ''}" title="${esc(netOf(d).name)}">${esc(netOf(d).cloud ? netOf(d).type.toUpperCase() : netOf(d).name)}</span>` : '') +
       `<br><span class="ip">${esc(id)} · ${F.attackers_total} N/S · ${F.peers_total} E/W</span></span>` +
       (d.ev ? `<span class="tag ${d.ev}">${d.ev === 'likely' ? 'LIKELY' : 'LEAD'}</span>` : '') + '</div>';
-  }).join('') || `<div class="hrow">${iocOnly ? 'No IOC hosts match' : 'No match'}</div>`;
+  };
+  if (!rows.length) { $('hostlist').innerHTML = `<div class="hrow">${iocOnly ? 'No IOC hosts match' : 'No match'}</div>`; return; }
+  if (!groupByNet) { $('hostlist').innerHTML = rows.map(rowHtml).join(''); return; }
+  // one collapsible group per subnet, riskiest first (likely compromises, then P1 hosts, IOC hosts, size);
+  // hosts inside keep the priority order; a search or the IOC filter opens every group that still has a match
+  const groups = new Map();
+  rows.forEach(id => { const k = nodes.get(id).d.subnet || 'other'; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(id); });
+  if (state.focus && nodes.get(state.focus)) openNets.add(nodes.get(state.focus).d.subnet || 'other');
+  const filtered = !!q || iocOnly;
+  const tally = ids => { const ds = ids.map(id => nodes.get(id).d);
+    return [ds.filter(d => d.ev === 'likely').length, ds.filter(d => d.pri === 'P1').length, ids.filter(id => iocCounts[id]).length, ids.length]; };
+  const order = [...groups].map(g => [g[0], g[1], tally(g[1])])
+    .sort((a, b) => b[2][0] - a[2][0] || b[2][1] - a[2][1] || b[2][2] - a[2][2] || b[2][3] - a[2][3]);
+  $('hostlist').innerHTML = order.map(([k, ids, [likely, p1, ioc]]) => {
+    const open = filtered || openNets.has(k);
+    const net = netOf(nodes.get(ids[0]).d);
+    const label = k === 'other' ? 'Other addresses' : k;
+    return `<div class="hgroup${open ? ' open' : ''}" role="listitem">` +
+      `<div class="hghead" role="button" tabindex="0" aria-expanded="${open}" data-net="${esc(k)}">` +
+      `<span class="chev" aria-hidden="true">▸</span><span class="hgname">${esc(label)}` +
+      (net ? ` <span class="net-badge${net.cloud ? ' cloud' : ''}" title="${esc(net.name)}">${esc(net.cloud ? net.type.toUpperCase() : net.name)}</span>` : '') + `</span>` +
+      `<span class="hgcount">${ids.length} host${ids.length === 1 ? '' : 's'}` +
+      (!telemetryOnly && p1 ? ` · <b class="p1">${p1} P1</b>` : '') + (likely ? ` · <b class="lk">${likely} likely</b>` : '') +
+      (ioc ? ` · <b class="ioc">${ioc} IOC</b>` : '') + `</span></div>` +
+      (open ? `<div role="list">${ids.map(rowHtml).join('')}</div>` : '') + '</div>';
+  }).join('');
 }
 // These are recorded source/originator -> destination/responder tuples, not
 // arrows inferred from an internet/internal boundary or a vulnerability scan.
@@ -1086,6 +1111,17 @@ function otExamples(items, total) {
       `<div class="conn-more">Showing ${items.length} of ${total} industrial records. See normalized/ot_events.jsonl for all records.</div>` : '');
 }
 let iocOnly = false, netFilter = '';
+// host list grouped by subnet (the default), every subnet folded until clicked
+let groupByNet = true;
+const openNets = new Set();
+try { groupByNet = localStorage.getItem('vulnscope-explorer-hostgroups') !== '0'; } catch (_) {}
+$('group-toggle').setAttribute('aria-pressed', String(groupByNet));
+$('group-toggle').addEventListener('click', () => {
+  groupByNet = !groupByNet; $('group-toggle').setAttribute('aria-pressed', String(groupByNet));
+  try { localStorage.setItem('vulnscope-explorer-hostgroups', groupByNet ? '1' : '0'); } catch (_) {}
+  renderList();
+});
+function toggleNet(k) { openNets.has(k) ? openNets.delete(k) : openNets.add(k); renderList(); }
 if (NETS.length) {
   const names = [...new Map(NETS.map((n, i) => [n.name, i])).entries()];
   const sel = $('net-filter');
@@ -1106,8 +1142,16 @@ if (iocHostTotal) {
     renderList();
   });
 }
-$('hostlist').addEventListener('click', e => { const r = e.target.closest('.hrow[data-id]'); if (r) { focus(r.dataset.id); } });
-$('hostlist').addEventListener('keydown', e => { const r = e.target.closest('.hrow[data-id]'); if (r && e.key === 'Enter') { focus(r.dataset.id); } });
+$('hostlist').addEventListener('click', e => {
+  const g = e.target.closest('.hghead'); if (g) { toggleNet(g.dataset.net); return; }
+  const r = e.target.closest('.hrow[data-id]'); if (r) { focus(r.dataset.id); }
+});
+$('hostlist').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const g = e.target.closest('.hghead');
+  if (g) { e.preventDefault(); const k = g.dataset.net; toggleNet(k); const h = [...document.querySelectorAll('.hghead')].find(x => x.dataset.net === k); if (h) h.focus(); return; }
+  const r = e.target.closest('.hrow[data-id]'); if (r && e.key === 'Enter') { focus(r.dataset.id); }
+});
 $('search').addEventListener('input', renderList);
 $('search').addEventListener('keydown', e => { if (e.key === 'Enter') { const r = document.querySelector('.hrow[data-id]'); if (r) focus(r.dataset.id); } });
 
