@@ -304,6 +304,10 @@ totals and click it to zoom in. **Flat** (or the 2 key) switches to the flat vie
 remembered; `explorer.html?2d` always opens flat. Drawing is capped at
 2,000 hosts, 200 risky paths and 48 outside addresses, so very large log sets stay smooth; **Motion**
 turns the animated traffic off.
+**Host list.** The list on the left is grouped by subnet, riskiest subnet first (likely compromises,
+then P1 hosts, IOC hosts, size). Each subnet starts folded and shows its host, P1, likely and IOC
+counts; click it (or Enter) to open it. A search or **IOC hosts** opens every subnet with a match, and
+**By subnet** switches back to one flat list (remembered).
 Deep links work: `explorer.html#host=10.0.1.10`.
 
 **Timeline view.** **Timeline** in the view switcher (or the I key, or `explorer.html#timeline`) draws the

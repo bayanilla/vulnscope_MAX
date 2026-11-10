@@ -162,3 +162,16 @@ body:not(.gl3d) #viewctl,body.focused #viewctl{display:none}
 .net-badge.cloud{border-color:#e4ecfa;color:#e4ecfa;border-style:dashed}
 .net-line.cloud{color:#e4ecfa}
 .railtop:has(#net-filter:not([hidden])){flex-wrap:wrap}
+/* host list grouped by subnet */
+.railtop{flex-wrap:wrap}.railtop #search{flex:1 1 130px;min-width:130px}
+#group-toggle{flex:none;white-space:nowrap;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--glass);color:var(--muted);font:700 11px var(--mono);cursor:pointer}
+#group-toggle[aria-pressed="true"]{border-color:var(--cyan);color:var(--cyan);background:rgba(46,230,214,.1)}
+.hgroup+.hgroup{border-top:1px solid var(--line)}
+.hghead{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;padding:7px 6px;border-radius:6px;cursor:pointer;font:600 12px var(--mono)}
+.hghead:hover,.hghead:focus-visible{background:rgba(46,230,214,.08);outline:none}
+.hghead .chev{display:inline-block;width:10px;color:var(--muted);transition:transform .15s}
+.hgroup.open .chev{transform:rotate(90deg)}
+.hghead .hgname{flex:1;min-width:0}
+.hghead .hgcount{width:100%;padding-left:16px;color:var(--muted);font:400 10.5px var(--mono)}
+.hghead .hgcount .p1{color:#ff3b5c;font-weight:600}.hghead .hgcount .lk{color:#ff8a3d;font-weight:600}.hghead .hgcount .ioc{color:var(--cyan);font-weight:600}
+.hgroup .hrow{padding-left:16px}
