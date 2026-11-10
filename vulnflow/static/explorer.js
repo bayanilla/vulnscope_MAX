@@ -136,7 +136,7 @@ const ring = (() => {
   let minX = 0, maxX = 0, minY = 0, maxY = 0;
   clusters.forEach(c => { minX = Math.min(minX, c.x - c.r); maxX = Math.max(maxX, c.x + c.r); minY = Math.min(minY, c.y - c.r); maxY = Math.max(maxY, c.y + c.r); });
   const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, R = Math.max(260, Math.hypot(maxX - minX, maxY - minY) / 2 * 1.05);
-  return {cx, cy, R, z: 200 + R * 0.4};
+  return {cx, cy, R, z: 200 + R * 0.4, lift: 0};
 })();
 const inetNodes = [];
 // the internet arc always sits overhead on the far side of the network from the camera, so it never
@@ -719,6 +719,10 @@ function draw3d(now, dt, k) {
   const tyaw = focusing ? view.fyaw : view.oyaw, tpitch = focusing ? 0.13 + view.fpitch : view.opitch;
   view.yaw += (tyaw - view.yaw) * kv;
   view.pitch += (tpitch - view.pitch) * kv;
+  // the closer the camera is to the Low view, the higher the internet arc rides, so on Low it sits centred
+  // in the space above the network instead of crowding it; from Tilted up to Top it stays where it was
+  const lift = ring.R * 0.3 * Math.max(0, Math.min(1, (view.pitch - VIEWS.tilted) / (VIEWS.low - VIEWS.tilted)));
+  if (lift !== ring.lift) { const dz = lift - ring.lift; ring.lift = lift; ring.z += dz; inetNodes.forEach(n => { n.oz += dz; n.tz += dz; n.z += dz; }); }
   view.dist += (1 - view.dist) * (motion ? 1 - Math.pow(0.05, dt) : 1);
   view.cmix += ((focusing ? 0 : 1) - view.cmix) * k;
   // switching between orbit (overview) and front-on (focus) camera models: snap yaw so neither spins
