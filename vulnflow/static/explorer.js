@@ -55,8 +55,9 @@ let edges = [];                   // focus-mode edges
 let t0 = performance.now();
 // 3D camera. Overview: the user's own orbit (oyaw around the plane, opitch from straight above);
 // host focus: small offsets (fyaw, fpitch) from a front-on view, reset on each new host.
-// The overview opens on the low view, slowly turning to the left (view.spin). The turn stops for good
-// as soon as the user moves the camera, picks a view or opens a host; Reset or the Spin button restart it.
+// The overview opens on the low view, slowly turning to the left (view.spin). The turn stops as soon as
+// the user moves the camera, picks a view or opens a host; switching to 3D, "← All hosts", Reset or the
+// Spin button go back to the low view and restart it.
 const VIEWS = {top: 0, tilted: 0.82, low: 1.25};
 const DEFAULT_VIEW = 'low', SPIN = Math.PI * 2 / 150;   // one full turn every 150 s
 const view = {yaw: 0, pitch: VIEWS[DEFAULT_VIEW], dist: 1.6, oyaw: 0, opitch: VIEWS[DEFAULT_VIEW], fyaw: 0, fpitch: 0, idle: 0, cmix: 1, spin: true};
@@ -324,6 +325,7 @@ function overview() {
   state.mode = 'overview'; state.focus = null; state.history = [];
   document.body.classList.remove('focused');
   history.replaceState(null, '', '#');
+  homeView();
   nodes.forEach(n => { if (n.ext || n.domain) n.ta = 0; else { n.ta = 1; n.tx = n.ox; n.ty = n.oy; n.tz = n.oz; n.tr = n.r; } });
   showInet(!!R3);
   edges = [];
@@ -596,6 +598,8 @@ function setView(name, reset) {
   view.spin = !!reset;
   markView();
 }
+// back to the opening camera: Low view, facing front, slowly turning left (not under Reduce motion)
+function homeView() { view.opitch = VIEWS[DEFAULT_VIEW]; view.oyaw = 0; placeInet(0); view.spin = true; markView(); }
 function stopSpin() { if (view.spin) { view.spin = false; markView(); } }
 function markView() {
   for (const name of Object.keys(VIEWS)) {
@@ -615,6 +619,7 @@ function set3d(on, remember) {
   markSeg();
   if (remember) { try { localStorage.setItem(KEY3D, on ? '1' : '0'); } catch (_) {} }
   if (on && remember && state.motion) view.dist = 1.6;
+  if (on && remember) homeView();   // entering 3D always starts on Low, slowly turning left
   if (state.mode === 'focus') focus(state.focus, 'resize'); else { showInet(on); fitOverview(); }
   if (!state.motion) snap();
 }
@@ -1247,9 +1252,13 @@ $('btn-labels').onclick = toggleLabels;
 $('btn-motion').onclick = toggleMotion;
 $('btn-3d').hidden = !can3d;
 // one switcher for the four views: flat network, 3D network, attack paths (attackpaths.js), timeline (timeline3d.js)
+let otherOpen = false;   // Attack paths or Timeline was showing at the last markSeg
 function markSeg() {
   const ap = document.getElementById('attack-paths'), paths = !!ap && !ap.hidden;
   const tv = document.getElementById('timeline-view'), tl = !!tv && !tv.hidden, other = paths || tl;
+  // leaving Attack paths / Timeline back onto the 3D overview (Esc or its 3D button) restarts the Low spin
+  if (otherOpen && !other && R3 && state.mode === 'overview') homeView();
+  otherOpen = other;
   $('vw-flat').classList.toggle('on', !other && !R3); $('btn-3d').classList.toggle('on', !other && !!R3);
   $('btn-paths').classList.toggle('on', paths); $('btn-timeline').classList.toggle('on', tl);
   for (const id of ['vw-flat', 'btn-3d', 'btn-paths', 'btn-timeline']) $(id).setAttribute('aria-current', $(id).classList.contains('on') ? 'true' : 'false');

@@ -297,7 +297,9 @@ totals count every host, including any beyond the drawing limit. The overview op
 turns slowly to the left; the turn stops as soon as you move the camera, pick a view or open a host, and
 **Reset** (R) or **Spin** starts it again (it never runs with **Motion** off). Drag (or swipe sideways on
 a trackpad) to pan, right-drag or Shift-drag to rotate and tilt, scroll or pinch to zoom, and use the
-rotate / Top / Tilted / Low / Reset buttons (Q, E, T, Y, U, R) for set views. Hover a subnet for its
+rotate / Top / Tilted / Low / Reset buttons (Q, E, T, Y, U, R) for set views. Coming back to the 3D
+overview, whether from Flat, Attack paths, Timeline or a host (**← All hosts**), always puts it back on
+the Low view, turning slowly to the left. Hover a subnet for its
 totals and click it to zoom in. **Flat** (or the 2 key) switches to the flat view, and that choice is
 remembered; `explorer.html?2d` always opens flat. Drawing is capped at
 2,000 hosts, 200 risky paths and 48 outside addresses, so very large log sets stay smooth; **Motion**
