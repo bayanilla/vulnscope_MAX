@@ -10,6 +10,8 @@
 #tl-labels .inet{font-weight:700;letter-spacing:.12em;color:var(--cyan)}
 #timeline-view .tl-top{position:absolute;top:14px;left:18px;right:18px;display:flex;align-items:flex-start;gap:12px;pointer-events:none;z-index:2}
 #timeline-view .tl-top>*{pointer-events:auto}
+#timeline-view .tl-logo{height:34px;width:auto;max-width:170px;object-fit:contain;flex:none;pointer-events:none}
+#timeline-view .tl-logo.logo-small{height:24px;max-width:96px}
 #timeline-view .tl-title{margin-right:auto;pointer-events:none;text-shadow:0 0 12px rgba(46,230,214,.35)}
 #timeline-view .tl-title .t{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}
 #timeline-view .tl-title .s{font-size:12px;color:var(--muted);margin-top:3px}
