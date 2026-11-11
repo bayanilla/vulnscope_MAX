@@ -219,7 +219,9 @@ renames each field to ECS (`id.orig_h` -> `source.ip`, `uid` -> `zeek.session_id
 header, or NDJSON) in any folder or upload and reverses the renames per log type, using the
 rename table from the Filebeat module itself. When a row still holds the raw Zeek line
 (`event.original`, which Filebeat keeps for `dns`, `intel`, `ntp` and `signature`, or for every log
-with "preserve original event" on), that line is used as is.
+with "preserve original event" on), that line is used as is. The same goes for a plain Filebeat
+`log`/`filestream` input on Zeek's JSON logs, where the whole record is one long JSON string in the
+`message` column: the log type then comes from `_path`, `log.file.path` or the record's fields.
 
 To just get clean Zeek logs back, for VulnScope or any other tool:
 

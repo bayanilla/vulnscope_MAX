@@ -89,6 +89,7 @@ LIST_FIELDS = {"answers", "TTLs", "tunnel_parents", "resp_fuids", "resp_mime_typ
                "client_cert_chain_fuids", "conn_uids", "tx_hosts", "rx_hosts", "analyzers",
                "msg_types", "uids", "rcptto", "seen.where", "sources", "matched"}
 FIRST_KEYS = ("ts", "uid", "id.orig_h", "id.orig_p", "id.resp_h", "id.resp_p")
+RAW_ZEEK_RE = re.compile(r'\{"+(?:ts|_path)"+\s*:.{0,400}?"+(?:uid|id\.orig_h)"+\s*:')
 DATASET_RE = re.compile(r'"(?:event\.)?dataset"\s*:\s*"zeek\.|"(?:event\.)?module"\s*:\s*"zeek"')
 KIBANA_TS = ("%b %d, %Y @ %H:%M:%S.%f", "%b %d, %Y @ %H:%M:%S", "%B %d, %Y @ %H:%M:%S.%f",
              "%B %d, %Y @ %H:%M:%S", "%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S")
@@ -104,7 +105,11 @@ def looks_like(head: str, first: str) -> bool:
     cols = {c.strip().strip('"').strip() for c in re.split(r"[,;\t|]", first)}
     zeek_cols = any(c.startswith("zeek.") for c in cols)
     ecs = bool(cols & {"event.dataset", "data_stream.dataset", "fileset.name", "event.module"})
-    return zeek_cols or (ecs and "zeek." in head)
+    if zeek_cols or (ecs and "zeek." in head):
+        return True
+    # A column (message / event.original) holding whole Zeek JSON records; CSV doubles the quotes.
+    raw_col = bool(cols & {"message", "event.original", "log.original"})
+    return raw_col and bool(RAW_ZEEK_RE.search(head))
 
 
 # -- reading rows ----------------------------------------------------------------------------
@@ -286,15 +291,34 @@ def _original(row: dict):
     return None
 
 
+# Fields that identify a Zeek log when nothing else names it (no _path, dataset or file path).
+STREAM_HINTS = (("conn", {"conn_state"}), ("conn", {"history", "orig_bytes"}), ("dns", {"qtype_name"}),
+                ("dns", {"query", "rcode"}), ("http", {"method", "uri"}), ("ssl", {"server_name", "version"}),
+                ("ssl", {"cipher"}), ("x509", {"certificate.subject"}), ("notice", {"note"}),
+                ("files", {"fuid", "analyzers"}), ("files", {"fuid", "seen_bytes"}), ("weird", {"name", "addl"}),
+                ("smtp", {"mailfrom"}), ("ssh", {"auth_success"}), ("dhcp", {"assigned_addr"}),
+                ("kerberos", {"request_type"}), ("smb_files", {"action", "name", "path"}), ("ntlm", {"domainname"}),
+                ("rdp", {"cookie"}), ("software", {"software_type"}), ("dpd", {"analyzer", "failure_reason"}))
+
+
+def _guess_stream(rec: dict) -> str:
+    keys = set(rec)
+    return next((name for name, need in STREAM_HINTS if need <= keys), "unknown")
+
+
 def to_zeek(row: dict) -> tuple[str, dict, bool] | None:
     """Return (stream, Zeek record, came_from_raw_line) for one exported row, or None."""
+    raw = _original(row)
     fileset = _fileset(row)
+    if raw is not None:
+        # The whole Zeek JSON record sits in one column (message / event.original). Plain
+        # Filebeat "log" or "filestream" inputs do this with no zeek.* dataset at all.
+        stream = (STREAM_FOR_FILESET.get(fileset, fileset) if fileset else
+                  str(raw.get("_path") or "") or _guess_stream(raw))
+        return stream, raw, True
     if not fileset:
         return None
     stream = STREAM_FOR_FILESET.get(fileset, fileset)
-    raw = _original(row)
-    if raw is not None:
-        return stream, raw, True
     aliases = ALIASES.get(fileset, {})
     prefix = f"zeek.{fileset}."
     rec: dict = {}
@@ -344,7 +368,7 @@ def records(path: str, stats: ParseStats):
             lost_bytes = lost_bytes or (stream == "conn" and "orig_bytes" not in rec)
         yield stream, _ordered(rec)
     if raw:
-        stats.note(f"{raw} Filebeat row(s) carried the original Zeek line (event.original); used as is")
+        stats.note(f"{raw} Filebeat row(s) carried the whole Zeek record (message or event.original); used as is")
     if rebuilt:
         stats.note(f"{rebuilt} Filebeat row(s) rebuilt from ECS fields into Zeek field names")
     if lost_bytes:

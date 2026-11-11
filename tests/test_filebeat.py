@@ -109,7 +109,7 @@ class FilebeatZeekTests(unittest.TestCase):
     def test_original_zeek_line_is_used_when_present(self):
         recs, stats = self.records(self.csv)
         self.assertEqual(recs[("dns", "Cdns1")], json.loads(DNS_RAW))
-        self.assertTrue(any("event.original" in n for n in stats.notes))
+        self.assertTrue(any("whole Zeek record" in n for n in stats.notes))
 
     def test_semicolon_separator_and_gzip(self):
         import gzip
@@ -158,6 +158,35 @@ class FilebeatZeekTests(unittest.TestCase):
         ssl = recs[("ssl", "Cssl1")]
         self.assertEqual((ssl["server_name"], ssl["version"], ssl["ja3"]), ("evil.example", "TLSv13", "abc"))
         self.assertIs(ssl["established"], True)
+
+    def test_whole_zeek_json_in_message_column(self):
+        conn = {"ts": 1762850000.25, "uid": "Cm1", "id.orig_h": "10.0.1.5", "id.orig_p": 50000,
+                "id.resp_h": "203.0.113.9", "id.resp_p": 443, "proto": "tcp", "service": "ssl",
+                "duration": 1.5, "orig_bytes": 900, "resp_bytes": 40000, "conn_state": "SF"}
+        dns = json.loads(DNS_RAW)
+        http = {"ts": 1762850003.0, "uid": "Ch1", "id.orig_h": "10.0.1.5", "id.orig_p": 50001,
+                "id.resp_h": "203.0.113.9", "id.resp_p": 80, "method": "GET", "host": "evil.example",
+                "uri": "/a,b", "status_code": 200}
+        # Plain Filebeat log/filestream input: one long JSON string per row, no zeek.* fields.
+        with_path = os.path.join(self.tmp, "with_path.csv")
+        write_csv(with_path, [
+            {"@timestamp": "Nov 11, 2025 @ 08:33:20.250", "log.file.path": "/opt/zeek/logs/current/conn.log",
+             "input.type": "filestream", "message": json.dumps(conn)},
+            {"@timestamp": "Nov 11, 2025 @ 08:33:22.500", "log.file.path": "/opt/zeek/logs/current/dns.log",
+             "input.type": "filestream", "message": DNS_RAW}])
+        bare = os.path.join(self.tmp, "bare.csv")       # only a timestamp and the JSON string
+        write_csv(bare, [{"@timestamp": "x", "message": json.dumps(r)} for r in (conn, dns, http)])
+        for path in (with_path, bare):
+            self.assertEqual(detect(path), "filebeat_zeek")
+            recs, stats = self.records(path)
+            self.assertEqual(recs[("conn", "Cm1")], conn)     # untouched, orig_bytes included
+            self.assertEqual(recs[("dns", "Cdns1")], dns)
+        self.assertEqual(recs[("http", "Ch1")], http)
+        flows = [i for i in filebeat.parse(bare, ParseStats(file="b", fmt="f")) if isinstance(i, Flow)]
+        self.assertEqual((flows[0].bytes_out, flows[0].bytes_in), (900, 40000))
+        syslog = os.path.join(self.tmp, "syslog.csv")    # a message column that is not Zeek
+        write_csv(syslog, [{"@timestamp": "x", "message": "sshd[1]: Accepted password for root"}])
+        self.assertNotEqual(detect(syslog), "filebeat_zeek")
 
     def test_native_zeek_bytes_unchanged_when_orig_bytes_present(self):
         stats = ParseStats(file="conn.log", fmt="zeek")
