@@ -64,7 +64,17 @@ button.secondary{{background:transparent;color:var(--fg);border:1px solid var(--
 .pk-foot{{margin-top:8px}} #pk-roots{{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}} #pk-roots:empty{{display:none}} #pk-roots button{{margin-top:0;padding:4px 12px;font-size:.9rem}} .pk-foot span{{flex:1}} #pk-where{{overflow-wrap:anywhere}}
 #pk-list{{list-style:none;margin:8px 0 0;padding:0;max-height:280px;overflow:auto;border-top:1px solid var(--line)}}
 #pk-list li{{padding:5px 8px;cursor:pointer;border-bottom:1px solid var(--line)}} #pk-list li:hover,#pk-list li:focus{{background:rgba(127,127,127,.15)}}
-#pk-list li::before{{content:"📁  "}}</style></head><body>{theme_ui}
+#pk-list li::before{{content:"📁  "}}
+#busy[hidden]{{display:none}}
+#busy{{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:#000a;backdrop-filter:blur(2px)}}
+.busy-card{{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:var(--radius);padding:28px 36px;text-align:center;min-width:280px;max-width:90vw;box-shadow:0 18px 48px #0008}}
+.busy-stage{{perspective:600px;height:112px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}}
+.busy-logo{{height:96px;width:auto;max-width:200px;object-fit:contain;animation:busy-spin 2.4s linear infinite;transform-style:preserve-3d}}
+.busy-title{{font-size:1.15rem;font-weight:700;margin:0}} .busy-time{{font-variant-numeric:tabular-nums}}
+.busy-card .hint{{margin:6px 0 0}}
+@keyframes busy-spin{{from{{transform:rotateY(0deg)}}to{{transform:rotateY(360deg)}}}}
+@media (prefers-reduced-motion:reduce){{.busy-logo{{animation:busy-pulse 2s ease-in-out infinite}}
+@keyframes busy-pulse{{50%{{opacity:.55}}}}}}</style></head><body>{theme_ui}
 <h1>Analyze files with {product_name}</h1>
 <p>Point the workflow at network telemetry, with optional Nessus results, or upload files. It cleans and
 normalizes the data and produces an executive summary and a technical report. Without scan data,
@@ -108,7 +118,33 @@ vulnerability status remains unknown.</p>
 </form>
 <p class="hint">Formats are detected automatically: {formats}. Folder selection is supported by Chrome and other compatible browsers. Files stay on this machine.
 <a href="/settings">Security Assistant settings</a> · <a href="/branding">Branding</a></p>
+<div id="busy" role="alertdialog" aria-modal="true" aria-labelledby="busy-title" aria-describedby="busy-hint" hidden>
+<div class="busy-card"><div class="busy-stage"><img class="busy-logo" src="{icon}" alt=""></div>
+<p class="busy-title" id="busy-title" role="status">Analyzing&hellip; <span class="busy-time" id="busy-time">0:00</span></p>
+<p class="hint" id="busy-hint">Large folders can take several minutes. Keep this tab open; the report opens here when it's ready.</p></div></div>
 <script>
+(function () {{
+  const busy = document.getElementById("busy"), clock = document.getElementById("busy-time");
+  let timer = null;
+  document.querySelectorAll('form[action="/analyze"],form[action="/analyze-folder"]').forEach(f => f.addEventListener("submit", e => {{
+    if (busy.dataset.running) {{ e.preventDefault(); return; }}
+    const p = f.querySelector("#path");
+    if (p && !p.value.trim()) return;  // no folder chosen: the folder form shows its own message
+    busy.dataset.running = "1";
+    const start = Date.now(), tick = () => {{
+      const s = Math.floor((Date.now() - start) / 1000);
+      clock.textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    }};
+    tick(); timer = setInterval(tick, 1000);
+    busy.hidden = false;
+    document.querySelectorAll("button").forEach(b => b.disabled = true);
+  }}));
+  window.addEventListener("pageshow", e => {{
+    if (!e.persisted) return;          // back button from the report: clear the overlay
+    clearInterval(timer); delete busy.dataset.running; busy.hidden = true;
+    document.querySelectorAll("button").forEach(b => b.disabled = false);
+  }});
+}})();
 (function () {{
   const csrf = {csrf_js}, native = {native_js}, dialog = {dialog_js};
   const $ = id => document.getElementById(id), box = $("picker"), list = $("pk-list");
