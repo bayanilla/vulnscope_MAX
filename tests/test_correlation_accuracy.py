@@ -99,3 +99,92 @@ class CorrelationAccuracyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CorrelationAccuracyRound2Tests(unittest.TestCase):
+    """Scanner probes, rescans, self-traffic, asymmetric taps, mixed scan formats, telemetry-only."""
+
+    def run_folder(self, files):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, True)
+        paths = []
+        for name, text in files.items():
+            paths.append(os.path.join(tmp, name))
+            os.makedirs(os.path.dirname(paths[-1]), exist_ok=True)
+            with open(paths[-1], "w") as fh:
+                fh.write(text)
+        ds = load(paths)
+        self.addCleanup(ds.close)
+        res = correlate(ds)
+        return ds, res, {(r["host"], r["port"]): r for r in res["findings"]}
+
+    def nessus(self, *hosts):
+        return '<?xml version="1.0" ?><NessusClientData_v2><Report name="t">' + "".join(hosts) + "</Report></NessusClientData_v2>"
+
+    def test_scanner_probes_are_not_service_use(self):
+        info = ('<ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" '
+                'pluginName="Nessus Scan Information"><plugin_output>Nessus version : 10.8.3\nScanner IP : 10.70.9.9\n'
+                '</plugin_output></ReportItem>')
+        host = report_host("10.70.0.10", 8443).replace("</ReportHost>", info + "</ReportHost>")
+        ds, res, find = self.run_folder({
+            "conn.log": conn(SCAN + 60, "10.70.9.9", 60001, "10.70.0.10", 8443),
+            "scan.nessus": self.nessus(host)})
+        exp = find[("10.70.0.10", 8443)]["exposure"]
+        self.assertEqual((exp["label"], exp["established"]), ("Service not observed in use", 0))
+        self.assertTrue(exp["telemetry_seen"])
+        self.assertEqual((res["summary"]["scanner_ips"], res["summary"]["scanner_sessions_excluded"]), (["10.70.9.9"], 1))
+        x = explore.build(res, ds)
+        self.assertEqual({n["id"]: n["name"] for n in x["nodes"]}["10.70.9.9"], "Vulnerability scanner")
+
+    def test_rescanned_host_uses_every_scan_time(self):
+        old = report_host("10.70.0.12", 443).replace(str(SCAN), str(SCAN - 20 * DAY))
+        ds, res, find = self.run_folder({
+            "conn.log": conn(SCAN + 3600, "203.0.113.110", 1110, "10.70.0.12", 443),
+            "scan.nessus": self.nessus(old, report_host("10.70.0.12", 443))})
+        self.assertEqual(find[("10.70.0.12", 443)]["exposure"]["external_sources"], 1)
+        self.assertEqual(res["summary"]["duplicate_findings_merged"], 1)
+
+    def test_host_talking_to_itself_is_not_exposure(self):
+        ds, res, find = self.run_folder({
+            "conn.log": conn(SCAN, "10.70.0.15", 2200, "10.70.0.15", 8080),
+            "scan.nessus": self.nessus(report_host("10.70.0.15", 8080))})
+        self.assertEqual(find[("10.70.0.15", 8080)]["exposure"]["internal_sources"], 0)
+
+    def test_tap_that_saw_the_whole_session_wins(self):
+        ds, res, find = self.run_folder({
+            "a/conn.log": conn(SCAN, "10.70.1.50", 3200, "10.70.0.27", 5432, state="S0"),
+            "b/conn.log": conn(SCAN + 0.2, "10.70.1.50", 3200, "10.70.0.27", 5432),
+            "scan.nessus": self.nessus(report_host("10.70.0.27", 5432))})
+        exp = find[("10.70.0.27", 5432)]["exposure"]
+        self.assertEqual((exp["established"], exp["attempts"]), (1, 0))
+
+    def test_nessus_csv_and_xml_together_with_callback(self):
+        # Used to crash DuckDB's binder (correlated NOT EXISTS with mixed timed/untimed findings).
+        csv = ("Plugin ID,CVE,CVSS v3.0 Base Score,Risk,Host,Protocol,Port,Name\n"
+               "910014,CVE-2026-2001,8.8,High,10.70.0.21,tcp,3389,RDP flaw\n")
+        ds, res, find = self.run_folder({
+            "conn.log": conn(SCAN, "203.0.113.131", 2402, "10.70.0.18", 443)
+                        + conn(SCAN + 300, "10.70.0.18", 2403, "203.0.113.131", 8443)
+                        + conn(SCAN - 60 * DAY, "203.0.113.150", 2701, "10.70.0.21", 3389),
+            "scan.nessus": self.nessus(report_host("10.70.0.18", 443)), "scan.csv": csv})
+        self.assertEqual([i["type"] for i in find[("10.70.0.18", 443)]["indicators"]], ["return_connection"])
+        self.assertEqual(find[("10.70.0.21", 3389)]["exposure"]["external_sources"], 1)   # no scan time: all telemetry
+
+    def test_explorer_callback_needs_inbound_first(self):
+        ds, res, find = self.run_folder({
+            "conn.log": conn(SCAN, "10.70.0.17", 2400, "203.0.113.130", 443)
+                        + conn(SCAN + 300, "203.0.113.130", 2401, "10.70.0.17", 443),
+            "scan.nessus": self.nessus(report_host("10.70.0.17", 443))})
+        self.assertEqual(find[("10.70.0.17", 443)]["indicators"], [])
+        a = explore.build(res, ds)["focus"]["10.70.0.17"]["attackers"][0]
+        self.assertFalse(a["returned"])
+
+    def test_telemetry_only_outbound_alert_names_the_internal_host(self):
+        notice = ('{"ts":%d,"note":"Sig","msg":"Beacon","src":"10.80.0.16","dst":"203.0.113.240","p":8080,'
+                  '"actions":["Notice::ACTION_LOG"]}\n' % SCAN)
+        ds, res, _ = self.run_folder({"conn.log": conn(SCAN, "10.80.1.1", 4200, "10.80.0.13", 445),
+                                      "notice.log": notice})
+        self.assertFalse(res["summary"]["vulnerability_data_available"])
+        self.assertEqual([(l["host"], l["role"]) for l in res["telemetry_leads"]], [("10.80.0.16", ["source"])])
+        a = explore.build(res, ds)["focus"]["10.80.0.16"]["attackers"]
+        self.assertEqual([(x["ip"], x["kind"], x["dir"]) for x in a], [("203.0.113.240", "alert", "out")])

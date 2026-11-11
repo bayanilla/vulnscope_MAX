@@ -25,6 +25,7 @@ class Dataset:
     zeek_events: list[ZeekEvent] | EventSpool = field(default_factory=list)
     ot_events: list[OTEvent] | EventSpool = field(default_factory=list)
     scanned_hosts: dict[str, dict] = field(default_factory=dict)   # ip -> {hostname, os}
+    scanner_ips: set[str] = field(default_factory=set)   # the vulnerability scanner(s), from plugin 19506
     stats: list[ParseStats] = field(default_factory=list)
     duplicate_flows: int = 0
     duplicate_findings: int = 0
@@ -135,13 +136,20 @@ def _load(store, paths, overrides, skew_seconds, batch_size) -> Dataset:
         h = ds.scanned_hosts[f.host_ip]
         h["hostname"] = h["hostname"] or f.hostname
         h["os"] = h["os"] or f.os
+        if f.scanner_ip:
+            ds.scanner_ips.add(f.scanner_ip)
         cur = best.get(f.key())
         if cur is None:
             best[f.key()] = f
         else:
             ds.duplicate_findings += 1
+            # The flaw was present at every scan that found it: the scan window spans all of them.
+            starts = [x for x in (cur.scan_start, f.scan_start) if x]
+            ends = [x for x in (cur.scan_end, f.scan_end, cur.scan_start, f.scan_start) if x]
             if (f.exploit_available, f.cvss or 0) > (cur.exploit_available, cur.cvss or 0):
-                best[f.key()] = f
+                best[f.key()] = cur = f
+            cur.scan_start = min(starts) if starts else None
+            cur.scan_end = max(ends) if ends else None
     for f in best.values():
         f.hostname = f.hostname or ds.scanned_hosts[f.host_ip]["hostname"]
         f.os = f.os or ds.scanned_hosts[f.host_ip]["os"]

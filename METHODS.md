@@ -48,7 +48,8 @@ its counts.
 firewall) is counted once: records with the same 5-tuple whose start times are within
 `--dedup-skew` seconds (default 2) are merged, keeping the firewall record. The same applies to two
 sensors of the same kind in different files (for example two Zeek taps that both see a session):
-records with the same 5-tuple and outcome are kept once, from the file read first. `--dedup-skew -1`
+records with the same 5-tuple and firewall action are kept once, preferring the record that saw
+the completed session (an asymmetric tap may only see the SYN). `--dedup-skew -1`
 turns this off.
 
 **Scan window.** Each host's findings are compared with telemetry from `--scan-window-days`

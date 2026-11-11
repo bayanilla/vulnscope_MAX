@@ -98,6 +98,7 @@ class Finding:
     source: str = ""
     scan_start: datetime | None = None   # when the scanner checked this host (HOST_START)
     scan_end: datetime | None = None
+    scanner_ip: str = ""                 # "Scanner IP" from plugin 19506 (Nessus Scan Information)
 
     @property
     def severity_name(self) -> str:

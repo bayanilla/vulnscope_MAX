@@ -77,8 +77,9 @@ PRIORITY_LABELS = {"P1": "P1 - act now", "P2": "P2 - this cycle", "P3": "P3 - sc
 # Flow lookups run as DuckDB SQL over the clean ``flows`` table (see store.py); the
 # correlator never holds per-host flow lists in memory. ``fx`` is that table plus the
 # internal/external classification for the current Config.
-_KEY_MATCH = ("f.dst_ip = k.host AND (k.host_level OR (f.dst_port = k.port AND f.proto = k.proto)) "
-              "AND {win}")
+# A host talking to its own address is not exposure, so self-traffic never matches a finding.
+_KEY_MATCH = ("f.dst_ip = k.host AND f.src_ip <> f.dst_ip "
+              "AND (k.host_level OR (f.dst_port = k.port AND f.proto = k.proto)) AND {win}")
 _WIN = "(k.lo IS NULL OR f.ts IS NULL OR f.ts BETWEEN k.lo AND k.hi)"
 _LATERAL_SQL = ", ".join(str(p) for p in LATERAL_PORTS)
 
@@ -106,12 +107,20 @@ class Correlator:
         self.store.insert_rows("ipnet", {"ip": "VARCHAR", "internal": "BOOLEAN"},
                                ((ip, self.net.internal(ip)) for ip in ips))
         zones = ", ".join(f"'{z}'" for z in sorted(EXTERNAL_ZONES))
+        # The vulnerability scanner's own probes (address from Nessus plugin 19506) are not use of a
+        # service, so sessions it starts are left out of everything scored below. They still show
+        # that sensors cover a host ("seen"), which counts all flows.
+        self.scanner_ips = sorted(getattr(ds, "scanner_ips", ()) or ())
+        self.store.insert_rows("scanners", {"ip": "VARCHAR"}, ((ip,) for ip in self.scanner_ips))
         con.execute(f"""
             CREATE OR REPLACE TABLE fx AS
             SELECT f.*, s.internal AS src_int, d.internal AS dst_int,
                    (NOT s.internal OR f.src_zone IN ({zones})) AS ext_src,
                    (f.action = 'allow' AND f.established) AS est
-            FROM flows f JOIN ipnet s ON s.ip = f.src_ip JOIN ipnet d ON d.ip = f.dst_ip""")
+            FROM flows f JOIN ipnet s ON s.ip = f.src_ip JOIN ipnet d ON d.ip = f.dst_ip
+            WHERE f.src_ip NOT IN (SELECT ip FROM scanners)""")
+        self.scanner_sessions = con.execute(
+            "SELECT count(*) FROM flows WHERE src_ip IN (SELECT ip FROM scanners)").fetchone()[0]
         self.internal_ips = {r[0] for r in con.execute("SELECT ip FROM ipnet WHERE internal").fetchall()}
         del ips
         # per-host session counts, for internal hosts and scanned hosts
@@ -214,13 +223,20 @@ class Correlator:
                 JOIN fx f ON f.src_ip = k.host
                 WHERE f.action = 'allow' AND f.ts < a.t0 AND {_win()}""").fetchall():
             self._before[kid] = True
+        # Written as joins, not a correlated NOT EXISTS: DuckDB 1.5 fails to bind that form
+        # ("Failed to bind column reference") when timed and untimed findings are mixed.
         for kid, ip, ports in con.execute(f"""
-                SELECT a.kid, f.dst_ip, list(DISTINCT f.dst_port)
-                FROM anchors a JOIN xkeys k USING (kid) JOIN fx f ON f.src_ip = k.host
-                WHERE f.est AND f.ts >= a.t0 AND f.dst_int AND f.dst_port IN ({_LATERAL_SQL}) AND {_win()}
-                  AND NOT EXISTS (SELECT 1 FROM fx g WHERE g.src_ip = k.host AND g.dst_ip = f.dst_ip
-                                  AND g.action = 'allow' AND g.ts < a.t0 AND {_win('g')})
-                GROUP BY a.kid, f.dst_ip""").fetchall():
+                WITH cand AS (
+                    SELECT a.kid, k.host, a.t0, k.lo, k.hi, f.dst_ip, f.dst_port
+                    FROM anchors a JOIN xkeys k USING (kid) JOIN fx f ON f.src_ip = k.host
+                    WHERE f.est AND f.ts >= a.t0 AND f.dst_int AND f.dst_port IN ({_LATERAL_SQL}) AND {_win()}),
+                prior AS (
+                    SELECT DISTINCT c.kid, c.dst_ip
+                    FROM (SELECT DISTINCT kid, host, t0, lo, hi, dst_ip FROM cand) c
+                    JOIN fx g ON g.src_ip = c.host AND g.dst_ip = c.dst_ip
+                    WHERE g.action = 'allow' AND g.ts < c.t0 AND {_win('g').replace('k.', 'c.')})
+                SELECT kid, dst_ip, list(DISTINCT dst_port) FROM cand ANTI JOIN prior USING (kid, dst_ip)
+                GROUP BY kid, dst_ip""").fetchall():
             self._new_lat.setdefault(kid, {})[ip] = set(ports)
         for kid, ip, n in con.execute(f"""
                 SELECT a.kid, f.dst_ip, sum(f.bytes_out) AS n
@@ -237,17 +253,19 @@ class Correlator:
             return
         self.store.insert_rows("suspects", {"ip": "VARCHAR", "t": "TIMESTAMP"},
                                ((ip, naive(t)) for ip, t in self.suspects.items()))
+        # joins instead of a correlated EXISTS, for the same DuckDB binder issue as in prepare()
         for kid, src, port, proto, ts in self.con.execute(f"""
+                WITH prior AS (       -- the suspect's normal pre-incident traffic to this host
+                    SELECT DISTINCT k.kid, s.ip FROM xkeys k JOIN suspects s ON s.t IS NOT NULL
+                    JOIN fx g ON g.src_ip = s.ip AND g.dst_ip = k.host
+                    WHERE g.ts < s.t AND {_win('g')})
                 SELECT kid, src_ip, dst_port, proto, ts FROM (
                     SELECT k.kid, f.src_ip, f.dst_port, f.proto, f.ts,
                            row_number() OVER (PARTITION BY k.kid ORDER BY f.seq) AS rn
                     FROM xkeys k JOIN fx f ON {_key_match()} JOIN suspects s ON s.ip = f.src_ip
+                    ANTI JOIN prior p ON p.kid = k.kid AND p.ip = f.src_ip
                     WHERE f.est AND f.src_ip <> k.host
-                      AND NOT (s.t IS NOT NULL AND f.ts IS NOT NULL AND f.ts < s.t)
-                      -- ignore the suspect's normal pre-incident traffic to this host
-                      AND NOT (s.t IS NOT NULL AND EXISTS (
-                          SELECT 1 FROM fx g WHERE g.src_ip = f.src_ip AND g.dst_ip = k.host
-                          AND g.ts < s.t AND {_win('g')})))
+                      AND NOT (s.t IS NOT NULL AND f.ts IS NOT NULL AND f.ts < s.t))
                 WHERE rn = 1""").fetchall():
             self._spread[kid] = (src, port, proto, utc(ts))
 
@@ -628,6 +646,8 @@ class Correlator:
             "duplicate_flows_removed": ds.duplicate_flows,
             "cross_sensor_duplicates_removed": ds.cross_sensor_duplicates,
             "duplicate_findings_merged": ds.duplicate_findings,
+            "scanner_ips": self.scanner_ips,
+            "scanner_sessions_excluded": int(self.scanner_sessions),
         }
         network_leads = []
         if not vulnerability_data_available:
@@ -647,14 +667,27 @@ class Correlator:
             "inputs": [{"file": s.file, "format": s.fmt, "read": s.read, "kept": s.kept,
                         "dropped": dict(s.dropped), "notes": s.notes} for s in ds.stats],
             "summary": summary, "coverage": coverage, "hosts": host_list, "findings": scored,
-            "telemetry_leads": [
-                {"host": ip, "alerts": len(alerts), "unblocked": sum(not t.blocked for t in alerts),
-                 "blocked": sum(t.blocked for t in alerts),
-                 "signatures": sorted({t.name for t in alerts}),
-                 "note": "IPS/IDS alerts are investigation leads, not verified exploitation."}
-                for ip, alerts in sorted(self.threats_by_dst.items())] if not vulnerability_data_available else [],
+            "telemetry_leads": self._telemetry_leads() if not vulnerability_data_available else [],
             "network_leads": network_leads,
         }
+
+    def _telemetry_leads(self) -> list[dict]:
+        """IPS/IDS alerts grouped by the internal host involved: the target, or the source when
+        an internal host set off an alert towards an outside address (e.g. a beacon)."""
+        by_host: dict[str, list] = defaultdict(list)
+        role: dict[str, set] = defaultdict(set)
+        for t in self.ds.threats:
+            if self.net.internal(t.dst_ip):
+                by_host[t.dst_ip].append(t)
+                role[t.dst_ip].add("target")
+            elif self.net.internal(t.src_ip):
+                by_host[t.src_ip].append(t)
+                role[t.src_ip].add("source")
+        return [{"host": ip, "alerts": len(alerts), "unblocked": sum(not t.blocked for t in alerts),
+                 "blocked": sum(t.blocked for t in alerts), "role": sorted(role[ip]),
+                 "signatures": sorted({t.name for t in alerts}),
+                 "note": "IPS/IDS alerts are investigation leads, not verified exploitation."}
+                for ip, alerts in sorted(by_host.items())]
 
 
 def correlate(ds: Dataset, cfg: Config | None = None) -> dict:

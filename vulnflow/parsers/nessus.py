@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import re
 import xml.etree.ElementTree as ET
 
 from ..schema import Finding, ParseStats
@@ -11,6 +12,16 @@ RISK_TO_SEV = {"none": 0, "info": 0, "low": 1, "medium": 2, "high": 3, "critical
 FRAMEWORKS = {"exploit_framework_metasploit": "Metasploit",
               "exploit_framework_canvas": "CANVAS",
               "exploit_framework_core": "Core Impact"}
+
+
+SCAN_INFO_PLUGIN = "19506"
+_SCANNER_IP = re.compile(r"Scanner IP\s*:\s*([0-9A-Fa-f:.]+)")
+
+
+def scanner_ip(plugin_output: str) -> str:
+    """The scanner's own address from the "Nessus Scan Information" plugin output, if present."""
+    m = _SCANNER_IP.search(plugin_output or "")
+    return (clean_ip(m.group(1).rstrip(".")) or "") if m else ""
 
 
 def _float(v):
@@ -52,6 +63,8 @@ def parse_xml(path: str, stats: ParseStats):
             continue
         scan_start = parse_ts(props.get("HOST_START_TIMESTAMP")) or parse_ts(props.get("HOST_START"))
         scan_end = parse_ts(props.get("HOST_END_TIMESTAMP")) or parse_ts(props.get("HOST_END"))
+        scanner = next((scanner_ip(i.findtext("plugin_output") or "") for i in host.findall("ReportItem")
+                        if i.get("pluginID") == SCAN_INFO_PLUGIN), "")
         for item in host.findall("ReportItem"):
             stats.read += 1
             child = lambda t: (item.findtext(t) or "").strip()
@@ -69,7 +82,7 @@ def parse_xml(path: str, stats: ParseStats):
                 exploit_frameworks=[n for t, n in FRAMEWORKS.items() if child(t).lower() == "true"],
                 synopsis=child("synopsis"), solution=child("solution"),
                 plugin_output=child("plugin_output")[:2000],
-                scan_start=scan_start, scan_end=scan_end,
+                scan_start=scan_start, scan_end=scan_end, scanner_ip=scanner,
             ))
         host.clear()
     return findings
@@ -105,5 +118,7 @@ def parse_csv(path: str, stats: ParseStats):
             cve = row.get("cve")
             if cve and cve not in f.cves:
                 f.cves.append(cve)
+            if key[3] == SCAN_INFO_PLUGIN:
+                f.scanner_ip = f.scanner_ip or scanner_ip(row.get("plugin_output", ""))
     stats.note("Nessus CSV exports usually omit exploit availability; prefer the .nessus file")
     return list(merged.values())

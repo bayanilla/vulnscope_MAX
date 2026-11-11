@@ -86,7 +86,9 @@ def _telemetry_report(res: dict, technical: bool) -> str:
               "does not prove exploitation.", ""]
     if res["telemetry_leads"]:
         for lead in res["telemetry_leads"]:
-            lines.append(f"- **{_c(lead['host'])}**: {lead['unblocked']} unblocked, "
+            side = (" (as the source, towards an outside address)" if lead.get("role") == ["source"] else
+                    " (as target and as source)" if len(lead.get("role", [])) > 1 else "")
+            lines.append(f"- **{_c(lead['host'])}**{side}: {lead['unblocked']} unblocked, "
                          f"{lead['blocked']} blocked alert(s); signatures: "
                          f"{_c(', '.join(lead['signatures'][:5]))}.")
     else:
@@ -262,7 +264,9 @@ def technical_report(res: dict) -> str:
               f"Sessions seen by two sensors counted once: {s.get('cross_sensor_duplicates_removed', 0)}. "
               f"Duplicate findings merged across scans: {s['duplicate_findings_merged']}. "
               f"IPS/IDS alerts loaded: {s.get('threat_alerts', 0)}. "
-          f"Internal address space: {', '.join(cfg['internal_nets'])}.",
+              + (f"Sessions started by the vulnerability scanner ({', '.join(s['scanner_ips'])}) are not "
+                 f"counted as use of a service: {s.get('scanner_sessions_excluded', 0)}. " if s.get("scanner_ips") else "")
+              + f"Internal address space: {', '.join(cfg['internal_nets'])}.",
           ""]
     if s.get("zeek_event_counts"):
         L += ["Zeek stream events preserved (separate from connection sessions and alerts): "

@@ -127,7 +127,7 @@ class Store:
         2. The same session recorded by two different sensors (same 5-tuple, start times within
            ``skew_seconds``) is kept once, from the higher-ranked sensor. Two sensors of the same
            kind in different input files (e.g. two Zeek taps) count too: when they agree on the
-           outcome the record read first is kept.
+           action, the most complete record (completed session, then most bytes) is kept.
         Returns (exact duplicates removed, cross-sensor duplicates removed).
         """
         con = self.con
@@ -156,8 +156,14 @@ class Store:
                   ON a.src_ip = b.src_ip AND a.dst_ip = b.dst_ip AND a.src_port = b.src_port
                  AND a.dst_port = b.dst_port AND a.proto = b.proto
                 WHERE (b.sensor_rank < a.sensor_rank
-                       OR (b.sensor_rank = a.sensor_rank AND b.fid <> a.fid
-                           AND b.action = a.action AND b.ord < a.ord))
+                       OR (b.sensor_rank = a.sensor_rank AND b.fid <> a.fid AND b.action = a.action
+                           -- same kind of sensor: keep the most complete record (a tap that saw the
+                           -- whole session beats one that saw only the SYN), then the one read first
+                           AND (b.established AND NOT a.established
+                                OR (b.established = a.established
+                                    AND (b.bytes_out + b.bytes_in > a.bytes_out + a.bytes_in
+                                         OR (b.bytes_out + b.bytes_in = a.bytes_out + a.bytes_in
+                                             AND b.ord < a.ord))))))
                   AND abs(epoch_us(a.ts) - epoch_us(b.ts)) <= {int(skew_seconds * 1_000_000)}""")
         else:
             con.execute("CREATE OR REPLACE TEMP TABLE cross_dups (ord BIGINT)")
