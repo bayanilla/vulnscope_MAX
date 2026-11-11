@@ -94,7 +94,7 @@ vulnerability status remains unknown.</p>
 <div class="hint">{folder_hint}The files are read where they are, including subfolders; nothing is copied or uploaded. Hidden files are skipped.</div>
 <label for="nets2">Internal networks (optional)</label>
 <input id="nets2" type="text" name="internal_nets" placeholder="10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16">
-<button type="submit">Analyze folder</button>
+<button type="submit" id="analyze-folder">Analyze folder</button>
 </form>
 <h2>Or upload files</h2>
 <form method="post" action="/analyze" enctype="multipart/form-data">
@@ -190,13 +190,14 @@ vulnerability status remains unknown.</p>
     msg("Finding " + name + " ...");
     const d = await call("/locate-folder", {{name, samples, count: files.length}});
     if (d.error) {{ msg(d.error, true); return; }}
-    if (d.matches.length === 1) {{ $("path").value = d.matches[0]; box.hidden = true; msg(""); $("path").focus(); return; }}
+    const ready = p => {{ $("path").value = p; box.hidden = true; msg("Folder set. Click Analyze folder."); $("analyze-folder").focus(); }};
+    if (d.matches.length === 1) {{ ready(d.matches[0]); return; }}
     msg("Found " + d.matches.length + " folders named " + name + ". Pick one:");
     cur = null; $("pk-where").textContent = name; $("pk-up").disabled = true; $("pk-roots").innerHTML = "";
     list.innerHTML = "";
     d.matches.forEach(p => {{
       const li = document.createElement("li"); li.textContent = p; li.tabIndex = 0;
-      const use = () => {{ $("path").value = p; box.hidden = true; msg(""); }};
+      const use = () => ready(p);
       li.onclick = use; li.onkeydown = e => {{ if (e.key === "Enter") {{ e.preventDefault(); use(); }} }};
       list.appendChild(li);
     }});
@@ -219,7 +220,6 @@ vulnerability status remains unknown.</p>
     if (!$("path").value.trim()) {{ e.preventDefault(); msg("Choose a folder first: click Browse… and pick one, or type its full path.", true); $("path").focus(); }}
   }});
   $("pk-use").onclick = () => {{ if (cur) $("path").value = cur; box.hidden = true; $("path").focus(); }};
-  if ($("browse-shared")) $("browse-shared").onclick = e => {{ e.preventDefault(); msg(""); show($("path").value); }};
   $("pk-cancel").onclick = () => {{ box.hidden = true; }};
 }})();
 </script>
@@ -524,9 +524,10 @@ def locate_folder(name: str, samples: list, budget_s: float = 8.0, max_depth: in
     if found:
         return {"matches": found}
     shared = ", ".join(BROWSE_ROOTS)
-    return {"error": (f"Couldn't find {name} in the folders shared with VulnScope ({shared})"
-                      + (" before the search time ran out; type its path instead." if timed_out else
-                         ". Move it into one of them, type its path, or use Upload below."))}
+    return {"error": (f"VulnScope can't find {name}"
+                      + (" in time; type its full path instead." if timed_out else
+                         f". It's outside the folders VulnScope can see ({shared}); move it there, "
+                         "type its full path, or use Upload below."))}
 
 
 def list_folder(raw: str) -> dict:
@@ -691,13 +692,9 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                                         path=html.escape(state.get("last_path", "")),
                                         path_example=html.escape(browse_root() + "/case-logs" if CONTAINER_DATA
                                                                  else "~/Documents/case-logs"),
-                                        folder_hint=("Browse opens your computer's folder window; pick a folder "
-                                                     "inside one shared with VulnScope: "
-                                                     + ", ".join(f"<code>{html.escape(r)}</code>" for r in
-                                                                 (BROWSE_ROOTS or [browse_root()]))
-                                                     + ' (read-only, <a href="#" id="browse-shared">list them '
-                                                       'here</a>). Your browser may ask to "upload" the files: '
-                                                       "nothing is uploaded, only the folder is located. ")
+                                        folder_hint=("Click Browse&hellip;, choose the folder and confirm; its path fills in here. "
+                                                     "If your browser asks to upload the files, click Upload: nothing is "
+                                                     "sent, VulnScope only uses it to find the folder. ")
                                                     if CONTAINER_DATA else ""))
 
         def _analyze_folder(self):
