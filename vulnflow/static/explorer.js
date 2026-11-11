@@ -858,7 +858,7 @@ function pick(sx, sy) {
 }
 let drag = null;
 cv.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, cx: cam.tx, cy: cam.ty,
-  node: pick(e.clientX, e.clientY), moved: false, lx: e.clientX, ly: e.clientY, orbit: !!R3 && (e.button === 2 || e.shiftKey || e.altKey),
+  node: pick(e.clientX, e.clientY), moved: false, lx: e.clientX, ly: e.clientY, orbit: !!R3 && !(e.button === 2 || e.shiftKey),   // 3D: drag rotates, right/Shift-drag pans (same as Timeline)
   yaw: state.mode === 'focus' ? view.fyaw : view.oyaw, pitch: state.mode === 'focus' ? view.fpitch : view.opitch}; view.idle = performance.now(); cv.setPointerCapture(e.pointerId); });
 cv.addEventListener('contextmenu', e => { if (R3) e.preventDefault(); });
 cv.addEventListener('pointermove', e => {
@@ -1368,7 +1368,7 @@ markView();
 if (!state.motion) $('btn-motion').setAttribute('aria-pressed', 'false');
 
 $('legend').innerHTML =
-  `<span class="only3d m">Drag: pan · right-drag or Shift-drag: rotate and tilt · Q / E: rotate · T top · Y tilted · U low · R reset (low, turning)</span>` +
+  `<span class="only3d m">Drag: rotate and tilt · right-drag or Shift-drag: pan · Q / E: rotate · T top · Y tilted · U low · R reset (low, turning)</span>` +
   `<span class="only3d">${telemetryOnly ? 'Pillar height: outside exposure' : 'Pillar height: risk score'}</span>` +
   `<span class="only3d"><i style="background:#2ee6d6"></i>Arc above: top outside addresses, beams down to hosts they reached, violet beams up from hosts that called out</span>` +
   `<span class="only3d"><i style="background:#6ea8ff"></i><i style="background:#ff8a3d;width:12px"></i>Traffic between subnets (orange: mostly admin protocols)</span>` +
