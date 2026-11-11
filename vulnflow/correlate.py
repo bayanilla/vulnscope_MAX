@@ -80,7 +80,9 @@ PRIORITY_LABELS = {"P1": "P1 - act now", "P2": "P2 - this cycle", "P3": "P3 - sc
 # A host talking to its own address is not exposure, so self-traffic never matches a finding.
 _KEY_MATCH = ("f.dst_ip = k.host AND f.src_ip <> f.dst_ip "
               "AND (k.host_level OR (f.dst_port = k.port AND f.proto = k.proto)) AND {win}")
-_WIN = "(k.lo IS NULL OR f.ts IS NULL OR f.ts BETWEEN k.lo AND k.hi)"
+# A finding can have several scan windows (one row per window in xkeys, never overlapping). An
+# untimed flow matches only the first row, so it is counted once.
+_WIN = "(k.lo IS NULL OR (f.ts IS NULL AND k.wi = 0) OR f.ts BETWEEN k.lo AND k.hi)"
 _LATERAL_SQL = ", ".join(str(p) for p in LATERAL_PORTS)
 
 
@@ -156,18 +158,32 @@ class Correlator:
         self._before, self._new_lat, self._exfil, self._spread = {}, {}, {}, {}
 
     # -- scan time window -------------------------------------------------
-    def window(self, fd: Finding):
+    def windows(self, fd: Finding) -> tuple:
+        """((start, end), ...): telemetry within scan_window_days of each scan that reported the
+        finding, overlapping windows merged. () means all telemetry (no scan time, or disabled)."""
         days = self.cfg.scan_window_days
-        if not days or fd.scan_start is None:
-            return None, None
-        end = fd.scan_end or fd.scan_start
-        return fd.scan_start - timedelta(days=days), max(end, fd.scan_start) + timedelta(days=days)
+        times = fd.scan_times or ([(fd.scan_start, fd.scan_end)] if fd.scan_start else [])
+        if not days or not times:
+            return ()
+        d = timedelta(days=days)
+        spans = sorted((s - d, max(e or s, s) + d) for s, e in times)
+        merged = [list(spans[0])]
+        for lo, hi in spans[1:]:
+            if lo <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], hi)
+            else:
+                merged.append([lo, hi])
+        return tuple((lo, hi) for lo, hi in merged)
+
+    @staticmethod
+    def _in_windows(windows: tuple, ts) -> bool:
+        return not windows or ts is None or any(lo <= ts <= hi for lo, hi in windows)
 
     def _key(self, fd: Finding) -> tuple:
-        lo, hi = self.window(fd)
+        w = self.windows(fd)
         if fd.port == 0:
-            return (fd.host_ip, None, None, True, lo, hi)
-        return (fd.host_ip, fd.port, fd.proto, False, lo, hi)
+            return (fd.host_ip, None, None, True, w)
+        return (fd.host_ip, fd.port, fd.proto, False, w)
 
     # -- batch SQL ----------------------------------------------------------
     def prepare(self, findings: list[Finding]):
@@ -177,8 +193,10 @@ class Correlator:
             self._kid.setdefault(self._key(fd), len(self._kid))
         self.store.insert_rows(
             "xkeys", {"kid": "BIGINT", "host": "VARCHAR", "port": "INTEGER", "proto": "VARCHAR",
-                      "host_level": "BOOLEAN", "lo": "TIMESTAMP", "hi": "TIMESTAMP"},
-            ((kid, h, p, pr, hl, naive(lo), naive(hi)) for (h, p, pr, hl, lo, hi), kid in self._kid.items()))
+                      "host_level": "BOOLEAN", "wi": "INTEGER", "lo": "TIMESTAMP", "hi": "TIMESTAMP"},
+            ((kid, h, p, pr, hl, wi, naive(lo), naive(hi))
+             for (h, p, pr, hl, w), kid in self._kid.items()
+             for wi, (lo, hi) in enumerate(w or ((None, None),))))
         m = _key_match()
         for row in con.execute(f"""
                 SELECT k.kid, count(*), count(*) FILTER (f.est), count(*) FILTER (f.action = 'deny'),
@@ -227,12 +245,12 @@ class Correlator:
         # ("Failed to bind column reference") when timed and untimed findings are mixed.
         for kid, ip, ports in con.execute(f"""
                 WITH cand AS (
-                    SELECT a.kid, k.host, a.t0, k.lo, k.hi, f.dst_ip, f.dst_port
+                    SELECT a.kid, k.host, a.t0, k.wi, k.lo, k.hi, f.dst_ip, f.dst_port
                     FROM anchors a JOIN xkeys k USING (kid) JOIN fx f ON f.src_ip = k.host
                     WHERE f.est AND f.ts >= a.t0 AND f.dst_int AND f.dst_port IN ({_LATERAL_SQL}) AND {_win()}),
                 prior AS (
                     SELECT DISTINCT c.kid, c.dst_ip
-                    FROM (SELECT DISTINCT kid, host, t0, lo, hi, dst_ip FROM cand) c
+                    FROM (SELECT DISTINCT kid, host, t0, wi, lo, hi, dst_ip FROM cand) c
                     JOIN fx g ON g.src_ip = c.host AND g.dst_ip = c.dst_ip
                     WHERE g.action = 'allow' AND g.ts < c.t0 AND {_win('g').replace('k.', 'c.')})
                 SELECT kid, dst_ip, list(DISTINCT dst_port) FROM cand ANTI JOIN prior USING (kid, dst_ip)
@@ -342,9 +360,11 @@ class Correlator:
                                        Counter(t.src_ip for t in blocked).most_common(8)],
             "_kid": kid,
         }
-        lo, hi = self.window(fd)
-        if lo is not None:
-            exp["window"] = {"start": _iso(lo), "end": _iso(hi), "days": self.cfg.scan_window_days}
+        windows = self.windows(fd)
+        if windows:
+            spans = [{"start": _iso(lo), "end": _iso(hi), "days": self.cfg.scan_window_days} for lo, hi in windows]
+            exp["window"] = spans[-1]            # around the latest scan
+            exp["windows"] = spans               # one per scan (merged where they overlap)
         return exp
 
     # -- blast radius -----------------------------------------------------
@@ -389,10 +409,9 @@ class Correlator:
     # A finding is "corroborated" only when an IPS/IDS alert and post-contact host
     # behaviour agree. Even then only host forensics can confirm a compromise.
     def _threats_to(self, fd: Finding) -> tuple[list, list]:
-        lo, hi = self.window(fd)
+        windows = self.windows(fd)
         hits = [t for t in self.threats_by_dst.get(fd.host_ip, [])
-                if (fd.port == 0 or t.dst_port in (None, fd.port))
-                and (lo is None or t.ts is None or lo <= t.ts <= hi)]
+                if (fd.port == 0 or t.dst_port in (None, fd.port)) and self._in_windows(windows, t.ts)]
         return [t for t in hits if not t.blocked], [t for t in hits if t.blocked]
 
     def _return_peers(self, kid: int) -> list[tuple]:

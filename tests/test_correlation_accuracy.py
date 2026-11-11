@@ -19,9 +19,9 @@ def conn(ts, src, sport, dst, dport, proto="tcp", state="SF"):
             % (ts, sport, src, sport, dst, dport, proto, state, ob, rb))
 
 
-def report_host(ip, port, proto="tcp"):
+def report_host(ip, port, proto="tcp", start=SCAN):
     return (f'<ReportHost name="{ip}"><HostProperties><tag name="host-ip">{ip}</tag>'
-            f'<tag name="HOST_START_TIMESTAMP">{SCAN}</tag><tag name="HOST_END_TIMESTAMP">{SCAN + 600}</tag>'
+            f'<tag name="HOST_START_TIMESTAMP">{start}</tag><tag name="HOST_END_TIMESTAMP">{start + 600}</tag>'
             f'</HostProperties><ReportItem port="{port}" svc_name="x" protocol="{proto}" severity="3" '
             f'pluginID="9{port}" pluginName="flaw {port}"><cvss3_base_score>7.5</cvss3_base_score>'
             f'</ReportItem></ReportHost>')
@@ -137,7 +137,7 @@ class CorrelationAccuracyRound2Tests(unittest.TestCase):
         self.assertEqual({n["id"]: n["name"] for n in x["nodes"]}["10.70.9.9"], "Vulnerability scanner")
 
     def test_rescanned_host_uses_every_scan_time(self):
-        old = report_host("10.70.0.12", 443).replace(str(SCAN), str(SCAN - 20 * DAY))
+        old = report_host("10.70.0.12", 443, start=SCAN - 20 * DAY)
         ds, res, find = self.run_folder({
             "conn.log": conn(SCAN + 3600, "203.0.113.110", 1110, "10.70.0.12", 443),
             "scan.nessus": self.nessus(old, report_host("10.70.0.12", 443))})
@@ -188,3 +188,44 @@ class CorrelationAccuracyRound2Tests(unittest.TestCase):
         self.assertEqual([(l["host"], l["role"]) for l in res["telemetry_leads"]], [("10.80.0.16", ["source"])])
         a = explore.build(res, ds)["focus"]["10.80.0.16"]["attackers"]
         self.assertEqual([(x["ip"], x["kind"], x["dir"]) for x in a], [("203.0.113.240", "alert", "out")])
+
+
+class ReviewFollowUpTests(unittest.TestCase):
+    """Same-instant tap duplicates and rescans far apart (PR #34 review)."""
+
+    def run_folder(self, files):
+        return CorrelationAccuracyRound2Tests.run_folder(self, files)
+
+    def test_same_instant_taps_keep_the_completed_session(self):
+        for first, second in (("S0", "SF"), ("SF", "S0")):        # whichever file is read first
+            with self.subTest(first=first):
+                ds, res, find = self.run_folder({
+                    "a/conn.log": conn(SCAN, "10.70.1.50", 3200, "10.70.0.27", 5432, state=first),
+                    "b/conn.log": conn(SCAN, "10.70.1.50", 3200, "10.70.0.27", 5432, state=second),
+                    "scan.nessus": CorrelationAccuracyRound2Tests.nessus(self, report_host("10.70.0.27", 5432))})
+                exp = find[("10.70.0.27", 5432)]["exposure"]
+                self.assertEqual((exp["label"], exp["established"], exp["attempts"]),
+                                 ("Vulnerable service reached internally", 1, 0))
+                self.assertEqual(len(ds.flows), 1)
+
+    def test_rescans_use_a_window_per_scan_not_the_gap(self):
+        old = report_host("10.70.0.12", 443, start=SCAN - 60 * DAY)
+        flows = (conn(SCAN - 30 * DAY, "203.0.113.111", 1111, "10.70.0.12", 443)      # halfway: outside both
+                 + conn(SCAN - 60 * DAY + 3600, "203.0.113.112", 1112, "10.70.0.12", 443)   # near the old scan
+                 + conn(SCAN + 3600, "203.0.113.113", 1113, "10.70.0.12", 443))           # near the new scan
+        ds, res, find = self.run_folder({"conn.log": flows,
+                                         "scan.nessus": CorrelationAccuracyRound2Tests.nessus(self, old, report_host("10.70.0.12", 443))})
+        r = find[("10.70.0.12", 443)]
+        self.assertEqual(r["exposure"]["external_sources"], 2)
+        self.assertEqual(sorted(ip for ip, _, _ in r["exposure"]["top_sources"]), ["203.0.113.112", "203.0.113.113"])
+        self.assertEqual(len(r["exposure"]["windows"]), 2)
+        atk = {a["ip"]: a for a in explore.build(res, ds)["focus"]["10.70.0.12"]["attackers"]}
+        self.assertEqual(atk["203.0.113.111"]["kind"], "reached")          # Explorer agrees with the report
+        self.assertEqual(atk["203.0.113.113"]["kind"], "vuln")
+
+    def test_untimed_flow_counts_once_with_several_windows(self):
+        old = report_host("10.70.0.12", 443, start=SCAN - 60 * DAY)
+        untimed = conn(SCAN, "10.70.1.9", 1200, "10.70.0.12", 443).replace('"ts":%s' % SCAN, '"ts":"-"')
+        ds, res, find = self.run_folder({"conn.log": untimed,
+                                         "scan.nessus": CorrelationAccuracyRound2Tests.nessus(self, old, report_host("10.70.0.12", 443))})
+        self.assertEqual(find[("10.70.0.12", 443)]["exposure"]["established"], 1)

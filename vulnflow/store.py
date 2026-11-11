@@ -123,7 +123,8 @@ class Store:
     def finalize_flows(self, skew_seconds: float | None = DEFAULT_SKEW_SECONDS) -> tuple[int, int]:
         """Build the clean ``flows`` table from the Parquet partitions.
 
-        1. Exact duplicates (same time, 5-tuple and action) keep their first occurrence.
+        1. Exact duplicates (same time, 5-tuple and action) are kept once: the most complete copy
+           (preferred sensor, completed session, most bytes, then first read).
         2. The same session recorded by two different sensors (same 5-tuple, start times within
            ``skew_seconds``) is kept once, from the higher-ranked sensor. Two sensors of the same
            kind in different input files (e.g. two Zeek taps) count too: when they agree on the
@@ -144,8 +145,11 @@ class Store:
             SELECT * EXCLUDE (ts_us, day), make_timestamp(ts_us) AS ts,
                    CASE sensor {rank} ELSE 9 END AS sensor_rank
             FROM read_parquet('{glob}', hive_partitioning = true, hive_types_autocast = false)
+            -- keep the most complete copy: preferred sensor, then a completed session (one tap may have
+            -- seen only the SYN at the same instant), then most bytes, then the one read first
             QUALIFY row_number() OVER (PARTITION BY ts_us, src_ip, src_port, dst_ip, dst_port, proto, action
-                                       ORDER BY ord) = 1""")
+                                       ORDER BY CASE sensor {rank} ELSE 9 END, established DESC,
+                                                bytes_out + bytes_in DESC, ord) = 1""")
         total = con.execute(f"SELECT count(*) FROM read_parquet('{glob}')").fetchone()[0]
         kept = con.execute("SELECT count(*) FROM flows_exact").fetchone()[0]
         exact = total - kept

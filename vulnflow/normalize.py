@@ -51,6 +51,10 @@ class Dataset:
             self.store.close()
 
 
+def _scan_times(f: Finding) -> list[tuple]:
+    return list(f.scan_times) or ([(f.scan_start, f.scan_end)] if f.scan_start else [])
+
+
 def _sensor(fmt: str) -> str:
     return "zeek" if fmt in ("zeek", "filebeat_zeek") else fmt if fmt in SENSOR_RANK else "generic"
 
@@ -143,13 +147,13 @@ def _load(store, paths, overrides, skew_seconds, batch_size) -> Dataset:
             best[f.key()] = f
         else:
             ds.duplicate_findings += 1
-            # The flaw was present at every scan that found it: the scan window spans all of them.
-            starts = [x for x in (cur.scan_start, f.scan_start) if x]
-            ends = [x for x in (cur.scan_end, f.scan_end, cur.scan_start, f.scan_start) if x]
+            # Keep every scan's time: each scan gets its own window (not one span over the gap between them).
+            times = sorted(set(_scan_times(cur) + _scan_times(f)), key=lambda t: t[0])
             if (f.exploit_available, f.cvss or 0) > (cur.exploit_available, cur.cvss or 0):
                 best[f.key()] = cur = f
-            cur.scan_start = min(starts) if starts else None
-            cur.scan_end = max(ends) if ends else None
+            cur.scan_times = times
+            if times:
+                cur.scan_start, cur.scan_end = times[-1]          # the latest scan, for display
     for f in best.values():
         f.hostname = f.hostname or ds.scanned_hosts[f.host_ip]["hostname"]
         f.os = f.os or ds.scanned_hosts[f.host_ip]["os"]

@@ -115,8 +115,9 @@ def _vuln_services(res: dict) -> dict[str, list[tuple]]:
     for r in res["findings"]:
         if not r.get("port"):
             continue
-        w = (r.get("exposure") or {}).get("window") or {}
-        out[r["host"]].append((r["port"], r.get("proto") or "tcp", _parse_iso(w.get("start")), _parse_iso(w.get("end"))))
+        exp = r.get("exposure") or {}
+        for w in exp.get("windows") or [exp.get("window") or {}]:
+            out[r["host"]].append((r["port"], r.get("proto") or "tcp", _parse_iso(w.get("start")), _parse_iso(w.get("end"))))
     return out
 
 

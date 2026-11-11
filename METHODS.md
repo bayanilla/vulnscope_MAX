@@ -54,7 +54,9 @@ turns this off.
 
 **Scan window.** Each host's findings are compared with telemetry from `--scan-window-days`
 (default 7) before the host's Nessus scan start to the same number of days after it ends. `0` uses
-all telemetry; findings without a scan time always use all telemetry.
+all telemetry; findings without a scan time always use all telemetry. When several scans report the
+same finding (a rescan, or overlapping scan files), each scan gets its own window; the time between
+windows is not used.
 
 ### Packet captures
 
