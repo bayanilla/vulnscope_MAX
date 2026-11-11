@@ -172,3 +172,19 @@ class ContainerBrowseTests(unittest.TestCase):
             self.assertEqual(web.locate_folder("case1", [["conn.log", 10]]), {"matches": [case]})
             self.assertIn("error", web.locate_folder("case1", [["conn.log", 999]]))
             self.assertIn("error", web.locate_folder("case1", [["../../etc/passwd", 0]]))
+
+    def test_locate_folder_tells_copies_apart_by_file_time(self):
+        picked = os.path.join(self.home, "Documents", "telemetry_only")
+        copies = [os.path.join(self.home, d, "telemetry_only") for d in ("Downloads", "Old")]
+        for i, folder in enumerate([picked] + copies):
+            os.makedirs(folder, exist_ok=True)
+            for name in ("conn.log", "dns.log"):
+                path = os.path.join(folder, name)
+                with open(path, "w") as fh:
+                    fh.write("z" * 20)
+                os.utime(path, (1_700_000_000 + i * 3600, 1_700_000_000 + i * 3600))
+        samples = [[n, 20, 1_700_000_000_000] for n in ("conn.log", "dns.log")]
+        with self.patched(""):
+            self.assertEqual(web.locate_folder("telemetry_only", samples), {"matches": [picked]})
+            # without file times (older page) every copy still matches, so the user picks
+            self.assertEqual(len(web.locate_folder("telemetry_only", [s[:2] for s in samples])["matches"]), 3)
