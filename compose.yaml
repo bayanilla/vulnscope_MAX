@@ -1,0 +1,41 @@
+# VulnScope MAX + Zeek.  Copy .env.example to .env to change folders, port or memory.
+#
+#   docker compose up -d                 # build (first time) and start the upload page
+#   open http://127.0.0.1:8080/          # Windows: start http://127.0.0.1:8080/
+#   docker compose run --rm vulnscope analyze /data/case1 -o /runs/case1
+#   docker compose down
+name: vulnscope
+
+services:
+  vulnscope:
+    image: ${VULNSCOPE_IMAGE:-vulnscope-max:latest}
+    build:
+      context: .
+    pull_policy: never              # local build or `docker load`; never fetched from a registry
+    restart: unless-stopped
+    ports:
+      # Loopback only: the upload page can read every folder mounted below and has no login.
+      # Do not change this to 0.0.0.0; for a shared server see "Docker" in README.md.
+      - "127.0.0.1:${VULNSCOPE_PORT:-8080}:8080"
+    environment:
+      VULNSCOPE_PUBLIC_PORT: "${VULNSCOPE_PORT:-8080}"
+      VULNSCOPE_OFFLINE: "${VULNSCOPE_OFFLINE:-0}"
+      VULNSCOPE_DUCKDB_MEMORY: "${VULNSCOPE_DUCKDB_MEMORY:-}"
+      # Folders the Browse button may show: the shared computer folder first, then /data.
+      VULNSCOPE_DATA_ROOT: "${VULNSCOPE_BROWSE_AT:-${VULNSCOPE_BROWSE:-${HOME:-/host}}}:/data"
+      # The same folder as the computer names it, so pasted paths (C:\Users\you\...) also work.
+      VULNSCOPE_HOST_ROOT: "${VULNSCOPE_BROWSE:-${HOME:-${USERPROFILE:-}}}"
+    volumes:
+      - "${VULNSCOPE_DATA:-./data}:/data:ro"     # logs, scans and PCAPs, read-only
+      # Your home folder (or VULNSCOPE_BROWSE), read-only. macOS/Linux: at the same path, so Browse
+      # shows /Users/you or /home/you. Windows (no HOME, uses USERPROFILE): at /host.
+      - "${VULNSCOPE_BROWSE:-${HOME:-${USERPROFILE:-./data}}}:${VULNSCOPE_BROWSE_AT:-${VULNSCOPE_BROWSE:-${HOME:-/host}}}:ro"
+      - "${VULNSCOPE_RUNS:-./vulnscope-out}:/runs" # results and temporary files: needs free space
+    mem_limit: ${VULNSCOPE_MEMORY:-0}             # 0 = no limit beyond Docker's own
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID]               # entry point only: fix /runs owner, then drop root

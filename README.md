@@ -101,6 +101,115 @@ python3 -m vulnflow serve --port 8080          # http://127.0.0.1:8080/
 
 Run tests with `python3 -m unittest discover -s tests` (no model or network needed).
 
+**Prefer Docker?** One image holds VulnScope and Zeek and runs the same on Linux, macOS and Windows,
+including on networks with no internet. See [Docker](#docker-linux-macos-windows-and-air-gapped-networks).
+
+## Docker (Linux, macOS, Windows and air-gapped networks)
+
+The image bundles VulnScope MAX, DuckDB and [Zeek](https://zeek.org) on the official `zeek/zeek`
+base (linux/amd64 and linux/arm64, so Intel/AMD PCs, servers and Apple silicon Macs). Packet
+captures work out of the box. Nothing is fetched while it runs.
+
+You need Docker: Docker Desktop on macOS and Windows, Docker Engine with the Compose plugin on Linux.
+
+```bash
+cp .env.example .env          # set VULNSCOPE_DATA to your logs/scans/PCAP folder
+docker compose up -d          # builds once, then starts the upload page
+```
+
+Open <http://127.0.0.1:8080/>. Results, settings and temporary Parquet/DuckDB/Zeek files go to
+`VULNSCOPE_RUNS` (default `./vulnscope-out`). Stop it with `docker compose down`.
+
+**Choosing a folder.** A container only sees folders that are shared with it, so Compose shares
+your home folder **read-only**, and **Browse** walks it like a file picker:
+
+| Computer | Browse starts at | Paths you can type or paste |
+|---|---|---|
+| macOS | `/Users/you` | `/Users/you/Documents/case1`, as in Finder |
+| Linux | `/home/you` | `/home/you/cases/case1` |
+| Windows | `/host` (your `C:\Users\you`) | `C:\Users\you\Documents\case1` (translated) or `/host/Documents/case1` |
+
+A **/data** button switches to the `VULNSCOPE_DATA` folder (default `./data`). To share something
+other than your home folder, such as an evidence drive, set `VULNSCOPE_BROWSE` in `.env`
+(`/Volumes/Evidence`, `/mnt/evidence`, or `D:\` with `VULNSCOPE_BROWSE_AT=/host` on Windows).
+For a **fixed-folder setup** (enclaves, locked-down sites), point `VULNSCOPE_BROWSE` at one inbox
+folder, such as `/Users/you/VulnScope/inbox`; the container then sees only that folder and
+`/data`. On macOS, drives under `/Volumes` must first be added in Docker Desktop > Settings > Resources >
+File sharing. On Linux hosts with SELinux enforcing (Fedora, RHEL), add `:z` to that volume if
+Browse shows nothing. VulnScope never writes to these folders; Browse hides dot-folders such as
+`.ssh`, but the container can read whatever you share, which is why the page is reachable from
+this computer only.
+
+The command line works the same way, with paths inside the container:
+
+```bash
+docker compose run --rm vulnscope analyze /data/case1 -o /runs/case1       # reports in ./vulnscope-out/case1
+docker compose run --rm vulnscope explore /data/case1 -o /runs/case1-explorer
+docker compose run --rm vulnscope analyze /opt/vulnscope/samples/gootloader_seo_poisoning -o /runs/demo
+docker compose run --rm vulnscope zeek -C -r /data/capture.pcap local     # Zeek by itself
+```
+
+Without Compose: `docker run --rm -p 127.0.0.1:8080:8080 -v "$PWD/data:/data:ro" -v "$PWD/out:/runs" vulnscope-max`.
+
+**Security.** The upload page has no login and can read everything mounted at `/data`, so the
+port is published on the host's `127.0.0.1` only. Inside the container the server listens on all
+of the container's interfaces (container mode, `VULNSCOPE_CONTAINER=1`) but still refuses any
+request whose Host header is not `localhost`/`127.0.0.1`, so DNS rebinding stays blocked. Always
+publish with `127.0.0.1:` in front of the port; `-p 8080:8080` alone would expose the page to
+your network. For a shared analysis server, run `serve --allow-remote` behind your SSO proxy
+instead (see [Upload page security](#upload-page-security)). The container runs read-only,
+with no added privileges; the analysis runs as the owner of the `/runs` folder (uid 1000 if
+that folder belongs to root), never as root.
+
+**Memory and disk.** DuckDB sizes itself to the container's memory limit. On macOS and Windows,
+Docker Desktop runs containers in a VM with its own memory cap (Settings > Resources), a fixed
+share of the computer's RAM; raise it for multi-GB inputs, or set `VULNSCOPE_MEMORY` in `.env`. Put
+`VULNSCOPE_RUNS` on a disk with room for about the size of the uncompressed logs. On macOS and
+Windows, reading large folders through Docker Desktop is slower than a native run; for the biggest
+jobs on a Mac, the native Python install is faster.
+
+**Behind a TLS-inspecting proxy**, give the build your proxy's CA so it can download DuckDB:
+`docker build --secret id=ca,src=corp-ca.pem -t vulnscope-max .`
+
+### Air-gapped networks and enclaves
+
+On a computer with internet access, build a bundle for the target's architecture:
+
+```bash
+scripts/docker/offline-bundle.sh linux/amd64     # Intel/AMD PCs and servers
+scripts/docker/offline-bundle.sh linux/arm64     # Apple silicon Macs, ARM servers
+```
+
+It writes `dist/vulnscope-max-<version>-<arch>/` with the saved image, this source tree,
+`SHA256SUMS` and `LOAD.txt`. Carry that folder across, then on the enclave side:
+
+```bash
+sha256sum -c SHA256SUMS
+docker load -i vulnscope-max-image-amd64.tar.gz
+mkdir vulnscope && tar -xzf vulnscope-max-source.tar.gz -C vulnscope && cd vulnscope
+cp .env.example .env          # set VULNSCOPE_DATA, and VULNSCOPE_OFFLINE=1
+docker compose up -d --no-build
+```
+
+Compose never pulls the image (`pull_policy: never`). With `VULNSCOPE_OFFLINE=1` VulnScope makes no
+outbound connections at all: IOC article previews are skipped, Cloudflare Radar stays off unless a
+token is set, and the Security Assistant uses the built-in offline assistant unless you choose a
+model on `/settings` (a model on your own network, such as Ollama via `local`, also works).
+
+### Packet captures (PCAP)
+
+`.pcap` and `.pcapng` files, plain or `.gz`, are recognized by their contents in any folder or
+upload. VulnScope runs `zeek -C -r <capture> local` on each one into a temporary folder,
+analyzes the `conn`, `dns`, `http` and other logs Zeek writes, then deletes them. Each capture
+appears in the input table with the Zeek version and the logs it produced. A capture Zeek can't
+read is reported there and the rest of the run continues.
+
+The Docker image includes Zeek. Without Docker, install Zeek (`brew install zeek`, a Linux
+package, or set `VULNSCOPE_ZEEK=/path/to/zeek`); if it's missing, VulnScope stops with that hint.
+You can also convert ahead of time and analyze the logs as usual:
+`mkdir out && cd out && zeek -C -r ../capture.pcap local`. For captures larger than the upload
+limit (1 GB by default), use **Analyze folder** or the command line, which read files in place.
+
 ### Upload page security
 
 - The upload page can read any folder your account can, so it listens on `127.0.0.1` only and
@@ -199,6 +308,7 @@ source-linked indicators.
 | Telemetry + alerts | Palo Alto TRAFFIC and THREAT logs | Web UI / Panorama CSV export (header row) or raw syslog CSV in PAN-OS field order. THREAT rows become alerts; blocked/reset ones count as mitigation, not evidence. Zones `untrust/outside/internet/external/wan` count as external. Timestamps are assumed UTC. |
 | Telemetry + alerts | Suricata EVE JSON | `flow` events become sessions, `alert` events become alerts. |
 | Telemetry | Generic flow CSV / TSV / space-delimited | nfdump CSV, AWS VPC flow logs, SIEM exports. Columns are matched by common names (`src_ip`, `sa`, `srcaddr`, ...). |
+| Packets | `.pcap` / `.pcapng` (plain or `.gz`) | Converted with Zeek, then read as the Zeek logs above. Needs Zeek (bundled in the Docker image). See [Packet captures](#packet-captures-pcap). |
 | Scan | Nessus `.nessus` (v2 XML) | Preferred: carries exploit availability and Metasploit flags. |
 | Scan | Nessus CSV export | One row per CVE is merged per host/port/plugin. |
 
@@ -443,7 +553,8 @@ How it is kept honest and safe:
 - Hosts are joined by IP. Scans run by hostname only, or DHCP churn during the telemetry window, reduce matches; NAT'd
   firewall logs should be exported with pre-NAT addresses.
 - Industrial protocol support reads exported Zeek logs, including logs produced by installed ICS analyzers.
-  Raw packet captures and vendor-specific historian/PLC exports need an upstream decoder or a source-specific parser.
+  Packet captures are decoded by Zeek (OT protocols only when the matching Zeek analyzers are installed);
+  vendor-specific historian/PLC exports need a source-specific parser.
   Zeek events outside `conn` and `notice`, including OT operations, are preserved as context and counted but do not
   affect vulnerability scores yet.
 - Absence of traffic means "not observed by these sensors", which is why unseen hosts are scored as unknown rather than safe.

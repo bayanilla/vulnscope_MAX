@@ -10,3 +10,8 @@ vulnflow_out/
 demo/*_output/
 # separate git repository (github.com/bayanilla/vulnpath)
 vulnpath/
+# Docker
+dist/
+vulnscope-out/
+/data/
+.env

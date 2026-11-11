@@ -1,0 +1,28 @@
+VulnScope MAX + Zeek, offline bundle @VERSION@ (@ARCH@)
+=========================================================
+
+Needs Docker (Docker Engine on Linux, Docker Desktop on macOS/Windows) with Compose v2.
+Nothing in this bundle reaches the internet, and the container needs no internet to run.
+
+1. Check the files arrived intact:
+     sha256sum -c SHA256SUMS          (macOS: shasum -a 256 -c SHA256SUMS;
+                                       Windows: Get-FileHash <file> and compare)
+
+2. Load the image:
+     docker load -i vulnscope-max-image-@ARCH@.tar.gz
+
+3. Unpack the source (compose file, README, .env.example):
+     mkdir vulnscope && tar -xzf vulnscope-max-source.tar.gz -C vulnscope && cd vulnscope
+     cp .env.example .env
+   Edit .env: VULNSCOPE_DATA = your logs/scans/PCAP folder, VULNSCOPE_RUNS = where results go,
+   and set VULNSCOPE_OFFLINE=1.
+
+4. Start it without building or pulling anything:
+     docker compose up -d --no-build
+   Open http://127.0.0.1:8080/ in a browser on this computer.
+
+5. Command line instead of the upload page:
+     docker compose run --rm vulnscope analyze /data/case1 -o /runs/case1
+   Results appear in the VULNSCOPE_RUNS folder.
+
+Updating: load the newer image the same way; `docker compose up -d --no-build` restarts on it.
