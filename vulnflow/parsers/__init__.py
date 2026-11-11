@@ -4,10 +4,11 @@ from __future__ import annotations
 import gzip
 import os
 
-from . import generic, nessus, paloalto, suricata, zeek
+from . import filebeat, generic, nessus, paloalto, suricata, zeek
 
 FORMATS = {
     "zeek": ("flows", zeek.parse),
+    "filebeat_zeek": ("flows", filebeat.parse),
     "paloalto": ("flows", paloalto.parse),
     "suricata": ("flows", suricata.parse),
     "generic": ("flows", generic.parse),
@@ -25,6 +26,8 @@ def detect(path: str) -> str:
     low = first.lower()
     if "NessusClientData" in head:
         return "nessus"
+    if filebeat.looks_like(head, first):
+        return "filebeat_zeek"
     if head.startswith("#separator") or "\n#fields" in head or first.startswith("#fields"):
         return "zeek"
     if first.lstrip().startswith("{") and '"event_type"' in first:

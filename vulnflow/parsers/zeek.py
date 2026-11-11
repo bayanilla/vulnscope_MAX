@@ -33,7 +33,9 @@ def _to_flow(rec: dict, stats: ParseStats) -> Flow | None:
         stats.drop("missing or invalid IP")
         return None
     state = (rec.get("conn_state") or "").upper()
-    b_out, b_in = to_int(rec.get("orig_bytes"), 0), to_int(rec.get("resp_bytes"), 0)
+    # Filebeat drops orig_bytes/resp_bytes; fall back to the IP-level counts only when absent.
+    b_out = to_int(rec["orig_bytes"] if "orig_bytes" in rec else rec.get("orig_ip_bytes"), 0)
+    b_in = to_int(rec["resp_bytes"] if "resp_bytes" in rec else rec.get("resp_ip_bytes"), 0)
     ts = parse_ts(rec.get("ts"))
     if ts is None:
         stats.note("some rows had no parseable timestamp (kept, untimed)")

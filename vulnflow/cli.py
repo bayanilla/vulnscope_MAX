@@ -1,4 +1,4 @@
-"""Command line entry point: python -m vulnflow {analyze,serve,samples}."""
+"""Command line entry point: python -m vulnflow {analyze,serve,samples,filebeat-to-zeek,...}."""
 from __future__ import annotations
 
 import argparse
@@ -177,6 +177,12 @@ def main(argv=None) -> int:
     g = sub.add_parser("samples", help="write the scan-backed, telemetry-only and 4,324-host on-prem + AWS sample folders")
     g.add_argument("outdir", nargs="?", default="samples")
 
+    fb = sub.add_parser("filebeat-to-zeek",
+                        help="turn a Filebeat/Elastic export (CSV or NDJSON) of Zeek logs back into Zeek logs")
+    fb.add_argument("files", nargs="+", help="exported CSV/NDJSON file(s), plain or .gz")
+    fb.add_argument("-o", "--out", default="zeek_from_filebeat",
+                    help="folder for conn.log, dns.log, ... (Zeek JSON; default zeek_from_filebeat)")
+
     sub.add_parser("branding-password",
                    help="print a hash for a new Branding page password (set it as VULNSCOPE_BRANDING_PASSWORD_HASH)")
 
@@ -189,6 +195,15 @@ def main(argv=None) -> int:
             print("Passwords must match and be at least 12 characters.", file=sys.stderr)
             return 1
         print(f"{PASSWORD_ENV}='{hash_password(first)}'")
+        return 0
+    if args.cmd == "filebeat-to-zeek":
+        from .parsers.filebeat import export
+        counts = export(args.files, args.out, log=lambda m: print(m, file=sys.stderr))
+        if not counts:
+            print("No Zeek records found (expected event.dataset zeek.* or zeek.* columns).", file=sys.stderr)
+            return 1
+        for stream, n in sorted(counts.items()):
+            print(f"{os.path.join(args.out, stream + '.log')}: {n:,} record(s)")
         return 0
     if args.cmd in ("analyze", "explore", "serve"):
         os.umask(0o077)          # reports, normalized logs and spooled data are private to this account
