@@ -15,3 +15,7 @@ dist/
 vulnscope-out/
 /data/
 .env
+# Local branding and settings (set for testing; never commit)
+.vulnscope/
+**/.vulnscope/
+branding.json

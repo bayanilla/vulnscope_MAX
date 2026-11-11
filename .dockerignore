@@ -16,3 +16,6 @@ scripts/bench
 *.tar
 *.tar.gz
 .env
+.vulnscope
+**/.vulnscope
+branding.json
