@@ -1,9 +1,12 @@
 """One call that runs the whole workflow: load -> clean -> correlate -> report."""
 from __future__ import annotations
 
+import os
+import shutil
 import sys
+import tempfile
 
-from . import netmap, resources
+from . import netmap, pcap, resources
 from .correlate import Config, correlate
 from .ioc_archive import is_archive, match_archive, read_archives
 from .normalize import load
@@ -16,19 +19,40 @@ def run(paths: list[str], outdir: str, cfg: Config | None = None,
         article_preview_cache: str | None = None,
         workdir: str | None = None) -> tuple[dict, dict[str, str]]:
     """``workdir`` holds the run's Parquet batches and DuckDB file (default: system temp,
-    or $VULNSCOPE_WORKDIR); it is deleted when the run finishes."""
+    or $VULNSCOPE_WORKDIR); it is deleted when the run finishes.
+
+    Packet captures (.pcap/.pcapng, plain or .gz) are converted to Zeek logs with a local Zeek
+    first. ``VULNSCOPE_OFFLINE=1`` turns off every outbound lookup (article previews)."""
     cfg = cfg or Config()
+    if offline():
+        article_previews = False
     map_files = [path for path in paths if netmap.is_map_file(path)] + ([cfg.network_map] if cfg.network_map else [])
     networks = [e for path in map_files for e in netmap.read(path)]       # read first: a bad map fails fast
     paths = [path for path in paths if not netmap.is_map_file(path)]
     archive_paths = [path for path in paths if is_archive(path)]
+    overrides = overrides or {}
+    captures = [path for path in paths if path not in archive_paths and _is_capture(path, overrides)]
     with resources.job_slot():               # one heavy analysis at a time (VULNSCOPE_MAX_JOBS)
         budget = resources.plan(workdir=workdir)
         for warning in budget.warnings:
             print(f"warning: {warning}", file=sys.stderr)
         print(budget.describe(), file=sys.stderr)
-        ds = load([path for path in paths if path not in archive_paths], overrides,
-                  workdir=workdir, skew_seconds=cfg.dedup_skew_seconds, budget=budget)
+        zeek_dir = None
+        try:
+            capture_logs, capture_stats = [], []
+            if captures:
+                base = workdir or os.environ.get("VULNSCOPE_WORKDIR") or None
+                if base:
+                    os.makedirs(base, exist_ok=True)
+                zeek_dir = tempfile.mkdtemp(prefix="vulnscope-pcap-", dir=base)
+                capture_logs, capture_stats = pcap.convert(captures, zeek_dir)
+            inputs = [path for path in paths if path not in archive_paths and path not in captures]
+            ds = load(inputs + capture_logs, overrides,
+                      workdir=workdir, skew_seconds=cfg.dedup_skew_seconds, budget=budget)
+            ds.stats[:0] = capture_stats
+        finally:
+            if zeek_dir:
+                shutil.rmtree(zeek_dir, ignore_errors=True)
         try:
             return _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache, networks)
         except Exception as exc:
@@ -38,6 +62,16 @@ def run(paths: list[str], outdir: str, cfg: Config | None = None,
             raise
         finally:
             ds.close()
+
+
+def offline() -> bool:
+    """True when VULNSCOPE_OFFLINE asks for no outbound network use (air-gapped enclaves)."""
+    return os.environ.get("VULNSCOPE_OFFLINE", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _is_capture(path: str, overrides: dict[str, str]) -> bool:
+    forced = overrides.get(path) or overrides.get(os.path.basename(path))
+    return forced == "pcap" or (forced is None and pcap.is_pcap(path))
 
 
 def _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache, networks=()):

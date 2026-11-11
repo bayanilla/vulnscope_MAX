@@ -10,3 +10,12 @@ vulnflow_out/
 demo/*_output/
 # separate git repository (github.com/bayanilla/vulnpath)
 vulnpath/
+# Docker
+dist/
+vulnscope-out/
+/data/
+.env
+# Local branding and settings (set for testing; never commit)
+.vulnscope/
+**/.vulnscope/
+branding.json

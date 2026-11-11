@@ -61,7 +61,7 @@ input[type=text]{{width:100%;max-width:520px;padding:6px}}
 button.secondary{{background:transparent;color:var(--fg);border:1px solid var(--line)}}
 #picker{{max-width:640px;margin-top:8px;border:1px solid var(--line);border-radius:var(--radius);padding:10px}}
 .pk-head,.pk-foot{{display:flex;gap:8px;align-items:center}} .pk-head button,.pk-foot button{{margin-top:0;padding:4px 12px;font-size:.9rem;white-space:nowrap}}
-.pk-foot{{margin-top:8px}} .pk-foot span{{flex:1}} #pk-where{{overflow-wrap:anywhere}}
+.pk-foot{{margin-top:8px}} #pk-roots{{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}} #pk-roots:empty{{display:none}} #pk-roots button{{margin-top:0;padding:4px 12px;font-size:.9rem}} .pk-foot span{{flex:1}} #pk-where{{overflow-wrap:anywhere}}
 #pk-list{{list-style:none;margin:8px 0 0;padding:0;max-height:280px;overflow:auto;border-top:1px solid var(--line)}}
 #pk-list li{{padding:5px 8px;cursor:pointer;border-bottom:1px solid var(--line)}} #pk-list li:hover,#pk-list li:focus{{background:rgba(127,127,127,.15)}}
 #pk-list li::before{{content:"📁  "}}
@@ -83,13 +83,15 @@ vulnerability status remains unknown.</p>
 <form method="post" action="/analyze-folder">
 <input type="hidden" name="csrf" value="{csrf}">
 <label for="path">Folder on this computer</label>
-<div class="pathrow"><input id="path" type="text" name="path" value="{path}" placeholder="~/Documents/case-logs" autocomplete="off" spellcheck="false">
+<div class="pathrow"><input id="path" type="text" name="path" value="{path}" placeholder="{path_example}" autocomplete="off" spellcheck="false">
 <button type="button" id="browse" class="secondary">Browse&hellip;</button></div>
+<input type="file" id="pick-dir" webkitdirectory directory multiple hidden>
+<div id="pick-msg" class="hint" role="status" aria-live="polite"></div>
 <div id="picker" hidden><div class="pk-head"><button type="button" id="pk-up" class="secondary" title="Parent folder">&uarr; Up</button>
-<code id="pk-where"></code></div><ul id="pk-list"></ul>
+<code id="pk-where"></code></div><div id="pk-roots"></div><ul id="pk-list"></ul>
 <div class="pk-foot"><span id="pk-info" class="hint"></span><button type="button" id="pk-cancel" class="secondary">Cancel</button>
 <button type="button" id="pk-use">Use this folder</button></div></div>
-<div class="hint">The files are read where they are, including subfolders; nothing is copied or uploaded. Hidden files are skipped.</div>
+<div class="hint">{folder_hint}The files are read where they are, including subfolders; nothing is copied or uploaded. Hidden files are skipped.</div>
 <label for="nets2">Internal networks (optional)</label>
 <input id="nets2" type="text" name="internal_nets" placeholder="10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16">
 <button type="submit">Analyze folder</button>
@@ -102,7 +104,7 @@ vulnerability status remains unknown.</p>
 <div class="hint">Choose one folder to include its files and subfolders in a single analysis. A Nessus scan is optional.</div>
 <label for="telemetry">Network telemetry</label>
 <input id="telemetry" type="file" name="telemetry" multiple>
-<div class="hint">Optional additional files: Zeek connection, DNS, SMTP and industrial protocol logs; Palo Alto traffic and threat logs; NetFlow / VPC flow / SIEM CSV.</div>
+<div class="hint">Optional additional files: Zeek connection, DNS, SMTP and industrial protocol logs; Palo Alto traffic and threat logs; NetFlow / VPC flow / SIEM CSV; packet captures (.pcap/.pcapng, converted with Zeek).</div>
 <label for="scans">Vulnerability scans</label>
 <input id="scans" type="file" name="scans" multiple>
 <div class="hint">Optional: Nessus .nessus (preferred) or Nessus CSV export. Without one, no vulnerability score or priority is assigned.</div>
@@ -126,6 +128,8 @@ vulnerability status remains unknown.</p>
   let timer = null;
   document.querySelectorAll('form[action="/analyze"],form[action="/analyze-folder"]').forEach(f => f.addEventListener("submit", e => {{
     if (busy.dataset.running) {{ e.preventDefault(); return; }}
+    const p = f.querySelector("#path");
+    if (p && !p.value.trim()) return;  // no folder chosen: the folder form shows its own message
     busy.dataset.running = "1";
     const start = Date.now(), tick = () => {{
       const s = Math.floor((Date.now() - start) / 1000);
@@ -142,7 +146,7 @@ vulnerability status remains unknown.</p>
   }});
 }})();
 (function () {{
-  const csrf = {csrf_js}, native = {native_js};
+  const csrf = {csrf_js}, native = {native_js}, dialog = {dialog_js};
   const $ = id => document.getElementById(id), box = $("picker"), list = $("pk-list");
   let cur = null, parent = null;
   async function call(url, body) {{
@@ -154,6 +158,12 @@ vulnerability status remains unknown.</p>
     const d = await call("/browse", {{path}});
     if (d.error) {{ $("pk-info").textContent = d.error; return; }}
     cur = d.path; parent = d.parent; $("pk-where").textContent = d.path; $("pk-up").disabled = !d.parent;
+    const roots = $("pk-roots"); roots.innerHTML = "";
+    (d.roots || []).forEach(r => {{
+      const btn = document.createElement("button"); btn.type = "button"; btn.className = "secondary";
+      btn.textContent = (r === d.roots[0] ? "Home folder" : r); btn.title = r; btn.disabled = r === d.path; btn.onclick = () => show(r);
+      roots.appendChild(btn);
+    }});
     list.innerHTML = "";
     d.dirs.forEach(name => {{
       const li = document.createElement("li"); li.textContent = name; li.tabIndex = 0;
@@ -165,7 +175,35 @@ vulnerability status remains unknown.</p>
       (d.dirs.length ? ", " + d.dirs.length + " subfolder" + (d.dirs.length === 1 ? "" : "s") : "");
     box.hidden = false;
   }}
+  // In the container the browser's own folder window is used. Browsers never reveal where the
+  // chosen folder is, so the page sends its name plus a few file names and sizes (no contents),
+  // and the server finds that folder among the folders shared with the container.
+  const msg = (t, bad) => {{ const m = $("pick-msg"); m.textContent = t || "";
+    m.style.color = bad ? "#c0392b" : ""; m.style.fontWeight = bad ? "600" : ""; }};
+  if (dialog) $("pick-dir").onchange = async () => {{
+    const files = Array.from($("pick-dir").files || []); $("pick-dir").value = "";
+    if (!files.length) {{ msg("That folder looks empty, or the browser didn't list its files. Type the path instead.", true); return; }}
+    const name = files[0].webkitRelativePath.split("/")[0];
+    const step = Math.max(1, Math.floor(files.length / 12));
+    const samples = files.filter((f, i) => i % step === 0).slice(0, 12)
+      .map(f => [f.webkitRelativePath.split("/").slice(1).join("/"), f.size]);
+    msg("Finding " + name + " ...");
+    const d = await call("/locate-folder", {{name, samples, count: files.length}});
+    if (d.error) {{ msg(d.error, true); return; }}
+    if (d.matches.length === 1) {{ $("path").value = d.matches[0]; box.hidden = true; msg(""); $("path").focus(); return; }}
+    msg("Found " + d.matches.length + " folders named " + name + ". Pick one:");
+    cur = null; $("pk-where").textContent = name; $("pk-up").disabled = true; $("pk-roots").innerHTML = "";
+    list.innerHTML = "";
+    d.matches.forEach(p => {{
+      const li = document.createElement("li"); li.textContent = p; li.tabIndex = 0;
+      const use = () => {{ $("path").value = p; box.hidden = true; msg(""); }};
+      li.onclick = use; li.onkeydown = e => {{ if (e.key === "Enter") {{ e.preventDefault(); use(); }} }};
+      list.appendChild(li);
+    }});
+    $("pk-info").textContent = ""; box.hidden = false;
+  }};
   $("browse").onclick = async () => {{
+    if (dialog) {{ msg(""); $("pick-dir").click(); return; }}
     if (native) {{
       $("browse").disabled = true;
       try {{
@@ -177,7 +215,11 @@ vulnerability status remains unknown.</p>
     show($("path").value);
   }};
   $("pk-up").onclick = () => parent && show(parent);
-  $("pk-use").onclick = () => {{ $("path").value = cur; box.hidden = true; $("path").focus(); }};
+  $("path").form.addEventListener("submit", e => {{
+    if (!$("path").value.trim()) {{ e.preventDefault(); msg("Choose a folder first: click Browse… and pick one, or type its full path.", true); $("path").focus(); }}
+  }});
+  $("pk-use").onclick = () => {{ if (cur) $("path").value = cur; box.hidden = true; $("path").focus(); }};
+  if ($("browse-shared")) $("browse-shared").onclick = e => {{ e.preventDefault(); msg(""); show($("path").value); }};
   $("pk-cancel").onclick = () => {{ box.hidden = true; }};
 }})();
 </script>
@@ -395,11 +437,107 @@ def is_loopback_host(host: str) -> bool:
         return False
 
 
+# In the container image: the folders shared from the host, separated by ":" (for example your
+# home folder, mounted read-only at the same path, then /data). The folder picker starts at the
+# first one and stays inside them, since nothing else in the container is yours.
+CONTAINER_DATA = os.environ.get("VULNSCOPE_DATA_ROOT", "").strip()
+BROWSE_ROOTS = [os.path.realpath(r) for r in CONTAINER_DATA.split(":") if r.strip() and os.path.isdir(r)]
+
+
+def browse_root() -> str:
+    return BROWSE_ROOTS[0] if BROWSE_ROOTS else (CONTAINER_DATA.split(":")[0] if CONTAINER_DATA else "~")
+
+
+# The shared folder as the host names it (e.g. C:\Users\you on Windows), so a path copied from
+# Explorer or Finder can be pasted as is and is translated to where the container sees it.
+HOST_ROOT = os.environ.get("VULNSCOPE_HOST_ROOT", "").strip()
+
+
+def host_to_container(raw: str) -> str:
+    if not (HOST_ROOT and BROWSE_ROOTS):
+        return raw
+    norm = lambda p: p.replace("\\", "/").rstrip("/")
+    host, given = norm(HOST_ROOT), norm(raw)
+    if given.lower() == host.lower() or given.lower().startswith(host.lower() + "/"):
+        return BROWSE_ROOTS[0].rstrip("/") + given[len(host):]
+    return raw
+
+
+def _within(path: str, root: str) -> bool:
+    return path == root or path.startswith(root.rstrip(os.sep) + os.sep)
+
+
+_LOCATE_SKIP = {"Library", "AppData", "node_modules", "$RECYCLE.BIN", "System Volume Information",
+                "Applications", "Pictures", "Music", "Movies"}
+
+
+def _matches(folder: str, samples: list) -> bool:
+    hits = 0
+    for item in samples:
+        try:
+            rel, size = str(item[0]), int(item[1])
+        except (TypeError, ValueError, IndexError):
+            continue
+        p = os.path.join(folder, *[part for part in rel.split("/") if part not in ("", ".", "..")])
+        try:
+            if os.path.getsize(p) == size:
+                hits += 1
+        except OSError:
+            pass
+    return bool(samples) and hits >= max(1, (len(samples) * 4) // 5)
+
+
+def locate_folder(name: str, samples: list, budget_s: float = 8.0, max_depth: int = 8) -> dict:
+    """Search the shared folders for one called ``name`` holding files with the given relative
+    paths and sizes (the browser's folder window gives only these, never the real path).
+    Breadth-first, skipping hidden and bulky system folders, within a time budget."""
+    import time
+    samples = samples[:20]
+    if not BROWSE_ROOTS:
+        return {"error": "Folder search is only available in the container."}
+    deadline, found, queue = time.monotonic() + budget_s, [], [(r, 0) for r in BROWSE_ROOTS]
+    for root in BROWSE_ROOTS:                      # the shared folder itself (e.g. the inbox)
+        if _matches(root, samples):
+            found.append(root)
+    timed_out = False
+    while queue and len(found) < 10:
+        if time.monotonic() > deadline:
+            timed_out = True
+            break
+        folder, depth = queue.pop(0)
+        try:
+            entries = sorted(os.scandir(folder), key=lambda e: e.name.lower())
+        except OSError:
+            continue
+        for e in entries:
+            if e.name.startswith(".") or e.name in _LOCATE_SKIP:
+                continue
+            try:
+                if not e.is_dir(follow_symlinks=False):
+                    continue
+            except OSError:
+                continue
+            if e.name == name and e.path not in found and _matches(e.path, samples):
+                found.append(e.path)
+            if depth + 1 < max_depth:
+                queue.append((e.path, depth + 1))
+    if found:
+        return {"matches": found}
+    shared = ", ".join(BROWSE_ROOTS)
+    return {"error": (f"Couldn't find {name} in the folders shared with VulnScope ({shared})"
+                      + (" before the search time ran out; type its path instead." if timed_out else
+                         ". Move it into one of them, type its path, or use Upload below."))}
+
+
 def list_folder(raw: str) -> dict:
-    """Subfolders of `raw` (default: home), skipping hidden ones; falls back to the nearest existing parent."""
-    path = os.path.realpath(os.path.expanduser(raw.strip().strip('"').strip("'") or "~"))
+    """Subfolders of `raw` (default: home, or the container's data folder), skipping hidden ones;
+    falls back to the nearest existing parent."""
+    path = os.path.realpath(os.path.expanduser(host_to_container(raw.strip().strip('"').strip("'"))
+                                               or browse_root()))
     while not os.path.isdir(path) and os.path.dirname(path) != path:
         path = os.path.dirname(path)
+    if BROWSE_ROOTS and not any(_within(path, r) for r in BROWSE_ROOTS):
+        path = BROWSE_ROOTS[0]
     try:
         entries = list(os.scandir(path))
     except OSError as exc:
@@ -416,7 +554,9 @@ def list_folder(raw: str) -> dict:
         except OSError:
             continue
     parent = os.path.dirname(path)
-    return {"path": path, "parent": parent if parent != path else None, "sep": os.sep,
+    if parent == path or (BROWSE_ROOTS and path in BROWSE_ROOTS):
+        parent = None
+    return {"path": path, "parent": parent, "sep": os.sep, "roots": BROWSE_ROOTS[1:] and BROWSE_ROOTS,
             "dirs": sorted(dirs, key=str.lower), "files": files}
 
 
@@ -545,9 +685,20 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             err = f'<p style="color:#c0392b"><strong>{html.escape(error)}</strong></p>' if error else ""
             self._send(200, FORM.format(css=CSS, theme_init=THEME_INIT, theme_ui=theme_control(),
                                         product_name=html.escape(product_name()), icon=icon_data_uri(),
-                                        error=err, formats=", ".join(FORMATS), csrf=csrf,
+                                        error=err, formats=", ".join(FORMATS) + ", pcap/pcapng (converted with Zeek)", csrf=csrf,
                                         csrf_js=json.dumps(csrf), native_js="true" if NATIVE_PICKER else "false",
-                                        path=html.escape(state.get("last_path", ""))))
+                                        dialog_js="true" if BROWSE_ROOTS else "false",
+                                        path=html.escape(state.get("last_path", "")),
+                                        path_example=html.escape(browse_root() + "/case-logs" if CONTAINER_DATA
+                                                                 else "~/Documents/case-logs"),
+                                        folder_hint=("Browse opens your computer's folder window; pick a folder "
+                                                     "inside one shared with VulnScope: "
+                                                     + ", ".join(f"<code>{html.escape(r)}</code>" for r in
+                                                                 (BROWSE_ROOTS or [browse_root()]))
+                                                     + ' (read-only, <a href="#" id="browse-shared">list them '
+                                                       'here</a>). Your browser may ask to "upload" the files: '
+                                                       "nothing is uploaded, only the folder is located. ")
+                                                    if CONTAINER_DATA else ""))
 
         def _analyze_folder(self):
             """Analyze a folder on the machine running the server, reading the files in place."""
@@ -557,13 +708,16 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             if not secrets.compare_digest(form.get("csrf", ""), csrf):
                 return self._send(403, "Forbidden", "text/plain")
             raw = form.get("path", "").strip().strip('"').strip("'")
-            folder = os.path.realpath(os.path.expanduser(raw)) if raw else ""
+            folder = os.path.realpath(os.path.expanduser(host_to_container(raw))) if raw else ""
             state["last_path"] = raw
             if resources.busy():
                 return self._form("Another analysis is already running on this machine. "
                                   "Wait for it to finish and try again.")
+            if not raw:
+                return self._form("Choose a folder first: click Browse… and pick one, or type its full path.")
             if not folder or not os.path.isdir(folder):
-                return self._form(f"Folder not found: {raw or '(empty)'}. Use the full path, for example ~/Documents/case-logs.")
+                return self._form(f"Folder not found: {raw or '(empty)'}. Use the full path, for example "
+                                  f"{browse_root() + '/case-logs' if CONTAINER_DATA else '~/Documents/case-logs'}.")
             run_id = secrets.token_hex(8)
             out_dir = os.path.join(data_dir, run_id, "out")
             files = _input_files([folder], out_dir)
@@ -605,6 +759,16 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             if body is None:
                 return self._json(403, {"error": "Forbidden"})
             return self._json(200, list_folder(str(body.get("path") or "")))
+
+        def _locate_folder(self):
+            """Find the folder chosen in the browser's folder window among the shared folders."""
+            body = self._read_json()
+            if body is None:
+                return self._json(403, {"error": "Forbidden"})
+            name, samples = body.get("name"), body.get("samples")
+            if not isinstance(name, str) or not name or not isinstance(samples, list):
+                return self._json(400, {"error": "Bad request"})
+            return self._json(200, locate_folder(name, samples))
 
         def _pick_folder(self):
             """Open the operating system's own folder dialog (macOS) on the machine running the server."""
@@ -1016,6 +1180,8 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return self._browse()
             if self.path == "/pick-folder":
                 return self._pick_folder()
+            if self.path == "/locate-folder":
+                return self._locate_folder()
             if self.path != "/analyze":
                 return self._send(404, "Not found", "text/plain")
             if resources.busy():                          # refuse before reading a large upload
@@ -1065,9 +1231,28 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
 
 
 def serve(host: str, port: int, data_dir: str, cfg: Config, llm_cfg: LLMConfig | None = None,
-          max_upload: int = MAX_UPLOAD, allow_remote: bool = False):
-    """Serve on loopback only, unless ``allow_remote``: then every request needs a random access token."""
+          max_upload: int = MAX_UPLOAD, allow_remote: bool = False, container: bool = False,
+          public_port: int | None = None):
+    """Serve on loopback only, unless ``allow_remote``: then every request needs a random access token.
+
+    ``container`` is for the Docker image: the server must listen on the container's own interface
+    so the published port can reach it, and Docker publishes that port on the host's loopback only
+    (``-p 127.0.0.1:PORT:8080``). The Host-header check stays on, for ``localhost:<public_port>``,
+    so DNS rebinding is still refused. No access token is used unless ``allow_remote`` is also set.
+    """
     remote = not is_loopback_host(host)
+    if container and remote and not allow_remote:
+        public_port = public_port or port
+        os.umask(0o077)
+        os.makedirs(data_dir, mode=0o700, exist_ok=True)
+        os.chmod(data_dir, 0o700)
+        allowed = {f"{n}:{public_port}" for n in LOOPBACK_NAMES} | {f"{n}:{port}" for n in LOOPBACK_NAMES}
+        srv = ThreadingHTTPServer((host, port), make_handler(os.path.abspath(data_dir), cfg, llm_cfg, max_upload,
+                                                             allowed_hosts=tuple(sorted(allowed))))
+        print(f"Upload page: http://127.0.0.1:{public_port}/  (container mode: listening on {host}:{port}; "
+              "publish the port on 127.0.0.1 only)", end="")
+        _serve_forever(srv, data_dir, llm_cfg)
+        return
     if remote and not allow_remote:
         raise SystemExit(f"Refusing to listen on {host}: the upload page can read any folder this account can. "
                          "Use the default 127.0.0.1, or pass --allow-remote to require an access token.")
@@ -1082,8 +1267,15 @@ def serve(host: str, port: int, data_dir: str, cfg: Config, llm_cfg: LLMConfig |
         print("Traffic is plain HTTP; use it only on a trusted network or through an SSH tunnel.")
     else:
         print(f"Upload page: http://{host}:{port}/", end="")
+    _serve_forever(srv, data_dir, llm_cfg)
+
+
+def _serve_forever(srv, data_dir, llm_cfg):
     print(f"  (results stored in {os.path.abspath(data_dir)})")
     print(f"Analyses: {resources.max_jobs()} at a time; " + resources.plan(workdir=data_dir).describe())
+    from . import pcap
+    zeek = pcap.find_zeek()
+    print(f"Packet captures: {'converted with ' + pcap.zeek_version(zeek) if zeek else 'Zeek not found; ' + pcap.INSTALL_HINT}")
     if llm_cfg is not None:
         print(f"Security Assistant: {llm_cfg.label() if llm_cfg.ready else 'built-in offline assistant (no AI)'}"
               "; choose an AI model at /settings")

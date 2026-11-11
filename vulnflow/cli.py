@@ -115,7 +115,7 @@ def main(argv=None) -> int:
     a.add_argument("files", nargs="+")
     a.add_argument("-o", "--out", default="vulnflow_out")
     a.add_argument("--format", action="append", default=[], metavar="FILE=FORMAT",
-                   help=f"force a file's format ({', '.join(FORMATS)})")
+                   help=f"force a file's format ({', '.join(FORMATS)}, pcap)")
     a.add_argument("--ioc-csv", dest="ioc_archive", action="append", default=[], metavar="CSV",
                    help="typed IOC CSV (repeatable; also detected inside input folders)")
     a.add_argument("--ioc-archive", dest="ioc_archive", action="append", help=argparse.SUPPRESS)
@@ -147,6 +147,11 @@ def main(argv=None) -> int:
     s.add_argument("--allow-remote", action="store_true",
                    help="allow a non-loopback --host; every visitor then needs the printed access-token link")
     s.add_argument("--port", type=int, default=8080)
+    s.add_argument("--container", action="store_true", default=bool(os.environ.get("VULNSCOPE_CONTAINER")),
+                   help="Docker image mode: listen on --host inside the container without a token; publish "
+                        "the port on the host's 127.0.0.1 only (env: VULNSCOPE_CONTAINER)")
+    s.add_argument("--public-port", type=int, default=int(os.environ.get("VULNSCOPE_PUBLIC_PORT") or 0) or None,
+                   help="with --container: the host port the browser uses, if not --port (env: VULNSCOPE_PUBLIC_PORT)")
     s.add_argument("--data-dir", default="vulnflow_runs")
     s.add_argument("--max-upload-mb", type=int, default=1024, help="largest accepted upload (default 1024)")
     common(s)
@@ -204,7 +209,8 @@ def main(argv=None) -> int:
                       "AI settings page instead.", file=sys.stderr)
                 llm_cfg = LLMConfig.offline()
         serve(args.host, args.port, args.data_dir, _cfg(args), llm_cfg=llm_cfg,
-              max_upload=args.max_upload_mb * 1024 * 1024, allow_remote=args.allow_remote)
+              max_upload=args.max_upload_mb * 1024 * 1024, allow_remote=args.allow_remote,
+              container=args.container, public_port=args.public_port)
         return 0
     if args.cmd in ("brief", "article-briefs", "ask"):
         from .llm import Analyst, LLMError, load_results, write_brief
