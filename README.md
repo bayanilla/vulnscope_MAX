@@ -210,6 +210,30 @@ You can also convert ahead of time and analyze the logs as usual:
 `mkdir out && cd out && zeek -C -r ../capture.pcap local`. For captures larger than the upload
 limit (1 GB by default), use **Analyze folder** or the command line, which read files in place.
 
+### Zeek logs from Filebeat
+
+Zeek data pulled back out of Elasticsearch looks nothing like a Zeek log: Filebeat's Zeek module
+renames each field to ECS (`id.orig_h` -> `source.ip`, `uid` -> `zeek.session_id`, `conn_state` ->
+`zeek.connection.state`, `ts` -> `@timestamp`, ...) and adds its own (`agent.*`, `host.*`, geo,
+`related.ip`, `tags`). VulnScope recognizes such an export (CSV with a `event.dataset`/`zeek.*`
+header, or NDJSON) in any folder or upload and reverses the renames per log type, using the
+rename table from the Filebeat module itself. When a row still holds the raw Zeek line
+(`event.original`, which Filebeat keeps for `dns`, `intel`, `ntp` and `signature`, or for every log
+with "preserve original event" on), that line is used as is.
+
+To just get clean Zeek logs back, for VulnScope or any other tool:
+
+```bash
+python3 -m vulnflow filebeat-to-zeek kibana_export.csv -o zeek_logs/
+# zeek_logs/conn.log, dns.log, http.log, ssl.log, ... (Zeek JSON, one record per line)
+```
+
+What cannot come back: Filebeat drops `orig_bytes`, `resp_bytes` and `tunnel_parents` from
+conn.log, so byte counts use `orig_ip_bytes`/`resp_ip_bytes` (which include IP/TCP headers), and
+`actions` from notice.log. A Kibana CSV keeps the formatting Kibana shows: times to the millisecond
+(read as UTC; set Kibana's `dateFormat:tz` to UTC before exporting) and byte fields such as
+`1.2KB` rounded. Export NDJSON instead when exact values matter.
+
 ### Upload page security
 
 - The upload page can read any folder your account can, so it listens on `127.0.0.1` only and
@@ -308,6 +332,7 @@ source-linked indicators.
 | Telemetry + alerts | Palo Alto TRAFFIC and THREAT logs | Web UI / Panorama CSV export (header row) or raw syslog CSV in PAN-OS field order. THREAT rows become alerts; blocked/reset ones count as mitigation, not evidence. Zones `untrust/outside/internet/external/wan` count as external. Timestamps are assumed UTC. |
 | Telemetry + alerts | Suricata EVE JSON | `flow` events become sessions, `alert` events become alerts. |
 | Telemetry | Generic flow CSV / TSV / space-delimited | nfdump CSV, AWS VPC flow logs, SIEM exports. Columns are matched by common names (`src_ip`, `sa`, `srcaddr`, ...). |
+| Telemetry + alerts + context | Zeek logs shipped by Filebeat / Elastic Agent, exported as a Kibana Discover CSV report or NDJSON (`elasticdump`, `_search` hits, Filebeat file output), plain or `.gz` | Rows with `event.dataset: zeek.*` are turned back into Zeek records and then read like the Zeek logs above; other modules' rows are skipped. See [Zeek logs from Filebeat](#zeek-logs-from-filebeat). |
 | Packets | `.pcap` / `.pcapng` (plain or `.gz`) | Converted with Zeek, then read as the Zeek logs above. Needs Zeek (bundled in the Docker image). See [Packet captures](#packet-captures-pcap). |
 | Scan | Nessus `.nessus` (v2 XML) | Preferred: carries exploit availability and Metasploit flags. |
 | Scan | Nessus CSV export | One row per CVE is merged per host/port/plugin. |

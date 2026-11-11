@@ -104,7 +104,7 @@ vulnerability status remains unknown.</p>
 <div class="hint">Choose one folder to include its files and subfolders in a single analysis. A Nessus scan is optional.</div>
 <label for="telemetry">Network telemetry</label>
 <input id="telemetry" type="file" name="telemetry" multiple>
-<div class="hint">Optional additional files: Zeek connection, DNS, SMTP and industrial protocol logs; Palo Alto traffic and threat logs; NetFlow / VPC flow / SIEM CSV; packet captures (.pcap/.pcapng, converted with Zeek).</div>
+<div class="hint">Optional additional files: Zeek connection, DNS, SMTP and industrial protocol logs; Palo Alto traffic and threat logs; NetFlow / VPC flow / SIEM CSV; Zeek logs exported from Elastic/Filebeat (Kibana CSV or NDJSON); packet captures (.pcap/.pcapng, converted with Zeek).</div>
 <label for="scans">Vulnerability scans</label>
 <input id="scans" type="file" name="scans" multiple>
 <div class="hint">Optional: Nessus .nessus (preferred) or Nessus CSV export. Without one, no vulnerability score or priority is assigned.</div>

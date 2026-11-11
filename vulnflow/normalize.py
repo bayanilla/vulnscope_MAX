@@ -51,7 +51,7 @@ class Dataset:
 
 
 def _sensor(fmt: str) -> str:
-    return "zeek" if fmt == "zeek" else fmt if fmt in SENSOR_RANK else "generic"
+    return "zeek" if fmt in ("zeek", "filebeat_zeek") else fmt if fmt in SENSOR_RANK else "generic"
 
 
 def load(paths: list[str], overrides: dict[str, str] | None = None, *,
