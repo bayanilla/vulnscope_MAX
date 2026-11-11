@@ -299,8 +299,8 @@ risky host paths are drawn (admin protocols, or completed sessions into P1 and f
 most significant outside addresses sit on an arc overhead with beams to the hosts they reached. Subnet
 totals count every host, including any beyond the drawing limit. The overview opens on the Low view and
 turns slowly to the left; the turn stops as soon as you move the camera, pick a view or open a host, and
-**Reset** (R) or **Spin** starts it again (it never runs with **Motion** off). Drag (or swipe sideways on
-a trackpad) to pan, right-drag or Shift-drag to rotate and tilt, scroll or pinch to zoom, and use the
+**Reset** (R) or **Spin** starts it again (it never runs with **Motion** off). Drag to rotate and tilt,
+right-drag or Shift-drag (or swipe sideways on a trackpad) to pan, scroll or pinch to zoom, and use the
 rotate / Top / Tilted / Low / Reset buttons (Q, E, T, Y, U, R) for set views. Coming back to the 3D
 overview, whether from Flat, Attack paths, Timeline or a host (**← All hosts**), always puts it back on
 the Low view, turning slowly to the left. Hover a subnet for its
