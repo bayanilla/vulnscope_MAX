@@ -9,7 +9,10 @@ from ..schema import Flow, OTEvent, ParseStats, ThreatEvent, ZeekEvent
 from ._util import clean_ip, clean_port, clean_proto, open_text, parse_ts, to_int
 
 ESTABLISHED_STATES = {"SF", "S1", "S2", "S3", "RSTO", "RSTR"}
-REJECTED_STATES = {"REJ", "RSTOS0", "RSTRH"}
+# REJ: the responder answered the SYN with a reset. Usually the host itself refused (closed port or
+# host firewall), so it is recorded as "reject", not as a network firewall "deny". RSTOS0/RSTRH are
+# aborted handshakes and count as plain attempts.
+REJECTED_STATES = {"REJ"}
 OT_PREFIXES = {"modbus": "Modbus", "dnp3": "DNP3", "bacnet": "BACnet",
                "s7comm": "S7", "cotp": "S7", "enip": "EtherNet/IP",
                "cip": "CIP", "opcua": "OPC UA"}
@@ -43,7 +46,7 @@ def _to_flow(rec: dict, stats: ParseStats) -> Flow | None:
         ts=ts, src_ip=src, dst_ip=dst,
         src_port=clean_port(rec.get("id.orig_p")), dst_port=clean_port(rec.get("id.resp_p")),
         proto=clean_proto(rec.get("proto")),
-        action="deny" if state in REJECTED_STATES else "allow",
+        action="reject" if state in REJECTED_STATES else "allow",
         established=state in ESTABLISHED_STATES or (b_out > 0 and b_in > 0),
         bytes_out=b_out, bytes_in=b_in, app=rec.get("service") or "",
     )

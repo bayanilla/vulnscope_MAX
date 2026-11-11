@@ -17,7 +17,7 @@ class Flow:
     dst_port: int | None
     proto: str                   # tcp | udp | icmp | other
     src_port: int | None = None
-    action: str = "allow"        # allow | deny
+    action: str = "allow"        # allow | deny (firewall/IPS) | reject (host refused, Zeek REJ)
     established: bool = True     # handshake completed / data flowed both ways
     bytes_out: int = 0           # originator -> responder
     bytes_in: int = 0            # responder -> originator
@@ -98,6 +98,10 @@ class Finding:
     source: str = ""
     scan_start: datetime | None = None   # when the scanner checked this host (HOST_START)
     scan_end: datetime | None = None
+    scanner_ip: str = ""                 # "Scanner IP" from plugin 19506 (Nessus Scan Information)
+    # (start, end) of every scan that reported this finding, when merged from several scans; each
+    # scan gets its own telemetry window. Empty: just scan_start/scan_end.
+    scan_times: list = field(default_factory=list)
 
     @property
     def severity_name(self) -> str:

@@ -15,9 +15,10 @@ import ipaddress
 import json
 import os
 from collections import defaultdict
+from datetime import datetime
 
 from .correlate import LATERAL_PORTS, Config, _Net
-from .store import utc
+from .store import naive, utc
 
 STATIC = os.path.join(os.path.dirname(__file__), "static")
 MAX_HOP2, MAX_NODES = 30, 2000
@@ -43,13 +44,15 @@ def _subnet(ip: str) -> str:
 
 
 class _Pair:
-    __slots__ = ("sessions", "established", "blocked", "ports", "tried", "bytes", "first", "last", "examples")
+    __slots__ = ("sessions", "established", "blocked", "ports", "tried", "bytes", "first", "last",
+                 "first_est", "last_est", "examples")
 
     def __init__(self):
         self.sessions = self.established = self.blocked = self.bytes = 0
         self.ports: set = set()       # ports with completed sessions
         self.tried: set = set()       # every port seen, including blocked attempts
         self.first = self.last = None
+        self.first_est = self.last_est = None     # completed sessions only
         self.examples: list[dict] = []
 
 
@@ -63,14 +66,16 @@ def _pairs(ds) -> dict[tuple, _Pair]:
                count(*) FILTER (action <> 'allow'),
                list(DISTINCT dst_port) FILTER (dst_port IS NOT NULL),
                list(DISTINCT dst_port) FILTER (dst_port IS NOT NULL AND action = 'allow' AND established),
-               coalesce(sum(bytes_out + bytes_in), 0), min(ts), max(ts)
+               coalesce(sum(bytes_out + bytes_in), 0), min(ts), max(ts),
+               min(ts) FILTER (action = 'allow' AND established), max(ts) FILTER (action = 'allow' AND established)
         FROM flows WHERE src_ip <> dst_ip GROUP BY src_ip, dst_ip ORDER BY min(seq)""")
     while rows := cur.fetchmany(10_000):
-        for src, dst, n, est, blocked, tried, ports, nbytes, first, last in rows:
+        for src, dst, n, est, blocked, tried, ports, nbytes, first, last, first_est, last_est in rows:
             p = _Pair()
             p.sessions, p.established, p.blocked, p.bytes = int(n), int(est), int(blocked), int(nbytes)
             p.tried, p.ports = set(tried or ()), set(ports or ())
             p.first, p.last = utc(first), utc(last)
+            p.first_est, p.last_est = utc(first_est), utc(last_est)
             pairs[(src, dst)] = p
     # Examples: the first distinct connections of each pair, in time order. A sorted scan
     # (which DuckDB spills to disk) keeps memory flat; a window function per pair does not.
@@ -97,6 +102,60 @@ def _iso(ts):
     return ts.strftime("%Y-%m-%dT%H:%M:%SZ") if ts else None
 
 
+def _parse_iso(s):
+    return datetime.fromisoformat(s.replace("Z", "+00:00")) if s else None
+
+
+def _vuln_services(res: dict) -> dict[str, list[tuple]]:
+    """host -> [(port, proto, window start, window end)] for each port-level finding.
+
+    The window is the scan window the correlator used for that finding (None = all telemetry), so
+    the explorer marks the same traffic as "reached a vulnerable service" that the report counts."""
+    out = defaultdict(list)
+    for r in res["findings"]:
+        if not r.get("port"):
+            continue
+        exp = r.get("exposure") or {}
+        for w in exp.get("windows") or [exp.get("window") or {}]:
+            out[r["host"]].append((r["port"], r.get("proto") or "tcp", _parse_iso(w.get("start")), _parse_iso(w.get("end"))))
+    return out
+
+
+def _hits_service(services, port, proto, ts) -> bool:
+    return any(port == p and proto == pr and (lo is None or ts is None or lo <= ts <= hi)
+               for p, pr, lo, hi in services)
+
+
+def _returned(inbound, outbound) -> bool:
+    """The host connected back out to an outside address after that address reached it, the same
+    ordering the report uses for return-connection leads (untimed sessions are not ruled out)."""
+    if not (inbound and inbound.established and outbound and outbound.established):
+        return False
+    return inbound.first_est is None or outbound.last_est is None or outbound.last_est >= inbound.first_est
+
+
+def _vuln_hits(ds, services: dict, scanners=()) -> dict[tuple, set]:
+    """(source, host) -> {(port, proto)}: completed sessions onto a vulnerable service, matched on
+    port, protocol and the finding's scan window exactly as the report does. Probes from the
+    vulnerability scanner itself are not counted, as in the report."""
+    rows = [(h, p, pr, naive(lo), naive(hi)) for h, svcs in services.items() for p, pr, lo, hi in svcs]
+    if not rows:
+        return {}
+    store = ds.flow_store()
+    store.insert_rows("explore_vkeys", {"host": "VARCHAR", "port": "INTEGER", "proto": "VARCHAR",
+                                        "lo": "TIMESTAMP", "hi": "TIMESTAMP"}, set(rows))
+    hits = defaultdict(set)
+    for src, dst, port, proto in store.con.execute("""
+            SELECT DISTINCT f.src_ip, f.dst_ip, f.dst_port, f.proto FROM flows f JOIN explore_vkeys k
+              ON f.dst_ip = k.host AND f.dst_port = k.port AND f.proto = k.proto
+             AND (k.lo IS NULL OR f.ts IS NULL OR f.ts BETWEEN k.lo AND k.hi)
+            WHERE f.action = 'allow' AND f.established AND f.src_ip <> f.dst_ip
+              AND NOT list_contains(?, f.src_ip)""", [list(scanners)]).fetchall():
+        hits[(src, dst)].add((port, proto))
+    store.con.execute("DROP TABLE explore_vkeys")
+    return hits
+
+
 def build(res: dict, ds, cfg: Config | None = None) -> dict:
     cfg = cfg or Config(internal_nets=res["config"]["internal_nets"])
     net = _Net(cfg.internal_nets)
@@ -110,10 +169,15 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     findings = defaultdict(list)
     for r in res["findings"]:
         findings[r["host"]].append(r)
+    services = _vuln_services(res)
+    scanners = set(res["summary"].get("scanner_ips") or ())
+    vhits = _vuln_hits(ds, services, scanners)
     hostinfo = {h["host"]: h for h in res["hosts"]}
     alerts = defaultdict(lambda: defaultdict(list))
     for t in ds.threats:
         alerts[t.dst_ip][t.src_ip].append(t)
+        if net.internal(t.src_ip) and not net.internal(t.dst_ip):
+            alerts[t.src_ip][t.dst_ip].append(t)     # internal host set off an alert going out (e.g. a beacon)
     ot_by_host = defaultdict(list)
     ot_counts = defaultdict(int)
     for event in ds.ot_events:
@@ -148,10 +212,11 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         else:
             return {"p": 0.0, "why": ["no completed sessions between them"]}
         used = fwd.ports if fwd else set()
+        hit = vhits.get((a, b), set())        # port, protocol and scan window all match
         best, v = None, 0.1
         for fd in findings.get(b, []):
             cv = (fd["cvss"] or 0) / 10
-            if fd["port"] and fd["port"] in used:
+            if fd["port"] and (fd["port"], fd["proto"]) in hit:
                 s = cv * (1.0 if fd["exploit_available"] else 0.55)
                 tag = f"vulnerable service {fd['port']}/{fd['proto']} is the one {a} already reaches"
             elif fd["severity"] >= 3:
@@ -187,7 +252,8 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         worst = max((r["severity"] for r in fl), default=-1)
         ev = ("likely" if any(i["confidence"] == "corroborated" for r in fl for i in r["indicators"])
               else "lead" if any(r["indicators"] for r in fl) else "")
-        nodes[ip] = {"id": ip, "name": (h or {}).get("hostname", "") or "", "scanned": ip in ds.scanned_hosts,
+        name = (h or {}).get("hostname", "") or ("Vulnerability scanner" if ip in scanners else "")
+        nodes[ip] = {"id": ip, "name": name, "scanned": ip in ds.scanned_hosts,
                      "observed": h is not None,
                      "subnet": _subnet(ip), "sev": SEV.get(worst, ""), "pri": (h or {}).get("priority", ""),
                      "score": (h or {}).get("max_score", 0), "ev": ev, "os": (h or {}).get("os", "") or ""}
@@ -199,7 +265,6 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     for ip in scanned:
         node(ip)
         # north/south: every outside address this host exchanged traffic with, in either direction
-        vuln_ports = {r["port"] for r in findings.get(ip, []) if r["port"]}
         atk = []
         for src in in_to.get(ip, set()) | out_of.get(ip, set()):
             if not ext(src):
@@ -207,7 +272,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
             p, back = pairs.get((src, ip)), pairs.get((ip, src))
             al = alerts[ip].get(src, [])
             open_al = [t for t in al if not t.blocked]
-            hit = sorted(p.ports & vuln_ports) if p else []
+            hit = sorted({port for port, _ in vhits.get((src, ip), ())}) if p else []
             if p:
                 kind = ("alert" if open_al else "vuln" if hit else "reached" if p.established
                         else "blocked" if p.blocked else "attempt")
@@ -229,13 +294,14 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                                             "dst_port": t.dst_port, "name": t.name,
                                             "blocked": t.blocked} for t in al[:MAX_CONNECTION_EXAMPLES]],
                         "signatures": sorted({t.name for t in al})[:3],
-                        "returned": bool(back and back.established),
+                        "returned": _returned(p, back),
                         "first": _iso(first), "last": _iso(last)})
         known_outside = {a["ip"] for a in atk}
         for src, al in alerts[ip].items():           # IPS-only sources with no flow in either direction
             if ext(src) and src not in known_outside:
                 open_al = [t for t in al if not t.blocked]
-                atk.append({"ip": src, "kind": "alert" if open_al else "blocked", "dir": "in", "sessions": 0,
+                atk.append({"ip": src, "kind": "alert" if open_al else "blocked",
+                            "dir": "out" if all(t.src_ip == ip for t in al) else "in", "sessions": 0,
                             "established": 0, "blocked": 0, "ports": sorted({t.dst_port for t in al if t.dst_port})[:8],
                             "vuln_ports": [], "out_sessions": 0, "out_established": 0, "out_ports": [],
                             "connection_examples": [],
@@ -325,7 +391,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         for host in match.get("hosts", []):
             if host in focus:
                 ioc_by_host[host].add(match["id"])
-    timeline = _timeline(ds, res, keep, ext, findings, pairs)
+    timeline = _timeline(ds, res, keep, ext, services, pairs, scanners)
     s = res["summary"]
     return {
         "vulnerability_data_available": not telemetry_only,
@@ -349,7 +415,7 @@ def _hours(ts, t0) -> float:
     return round((ts - t0).total_seconds() / 3600, 3)
 
 
-def _timeline(ds, res: dict, keep: list, ext, findings: dict, pairs: dict) -> dict | None:
+def _timeline(ds, res: dict, keep: list, ext, services: dict, pairs: dict, scanners=frozenset()) -> dict | None:
     """Flows, IPS alerts and IOC lookups in time order for the Timeline view.
 
     Hosts are referenced by their index in ``nodes`` (>= 0) or as -(index + 1) into ``ext`` for outside
@@ -374,8 +440,7 @@ def _timeline(ds, res: dict, keep: list, ext, findings: dict, pairs: dict) -> di
 
     flagged = {t.src_ip for t in ds.threats if ext(t.src_ip)}
     flagged |= {m["value"] for m in res.get("ioc_matches", []) if m.get("type") == "ip"}
-    vports = {h: {r["port"] for r in rows if r.get("port")} for h, rows in findings.items()}
-    cols = "ts, src_ip, dst_ip, dst_port, action, established"
+    cols = "ts, src_ip, dst_ip, dst_port, action, established, proto"
     base = "FROM flows WHERE ts IS NOT NULL AND src_ip <> dst_ip"
     prio = "(action <> 'allow' OR list_contains(?, src_ip) OR list_contains(?, dst_ip))"
     fl = sorted(flagged)
@@ -393,12 +458,12 @@ def _timeline(ds, res: dict, keep: list, ext, findings: dict, pairs: dict) -> di
     flows = []
     while rows := cur.fetchmany(10_000):
         for r in rows:
-            ts, src, dst, port, action, est = r[:6]
+            ts, src, dst, port, action, est, proto = r[:7]
             s, d = ref(src), ref(dst)
             if s is None or d is None:
                 continue
             f = (1 if action != "allow" or est is False else 0) | (2 if src in flagged or dst in flagged else 0) \
-                | (4 if port and port in vports.get(dst, ()) else 0)
+                | (4 if port and src not in scanners and _hits_service(services.get(dst, ()), port, proto, utc(ts)) else 0)
             flows.append([_hours(utc(ts), t0), s, d, port or 0, f])
     cur.close()
     # alerts without their own timestamp (Palo Alto rows in some exports) take the first session of the pair

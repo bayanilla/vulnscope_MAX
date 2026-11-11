@@ -30,12 +30,12 @@ SENSOR_RANK = {"paloalto": 0, "zeek": 1, "suricata": 2, "generic": 3}
 
 FLOW_COLUMNS = ["ord", "ts_us", "src_ip", "dst_ip", "src_port", "dst_port", "proto", "action",
                 "established", "bytes_out", "bytes_in", "app", "src_zone", "dst_zone", "source",
-                "sensor", "day"]
+                "sensor", "fid", "day"]
 _CSV_TYPES = {"ord": "BIGINT", "ts_us": "BIGINT", "src_ip": "VARCHAR", "dst_ip": "VARCHAR",
               "src_port": "INTEGER", "dst_port": "INTEGER", "proto": "VARCHAR", "action": "VARCHAR",
               "established": "BOOLEAN", "bytes_out": "BIGINT", "bytes_in": "BIGINT", "app": "VARCHAR",
               "src_zone": "VARCHAR", "dst_zone": "VARCHAR", "source": "VARCHAR", "sensor": "VARCHAR",
-              "day": "VARCHAR"}
+              "fid": "INTEGER", "day": "VARCHAR"}
 # Columns read back into Flow objects, in Flow field order.
 FLOW_SELECT = ("ts, src_ip, dst_ip, dst_port, proto, src_port, action, established, "
                "bytes_out, bytes_in, app, src_zone, dst_zone, source")
@@ -123,9 +123,12 @@ class Store:
     def finalize_flows(self, skew_seconds: float | None = DEFAULT_SKEW_SECONDS) -> tuple[int, int]:
         """Build the clean ``flows`` table from the Parquet partitions.
 
-        1. Exact duplicates (same time, 5-tuple and action) keep their first occurrence.
+        1. Exact duplicates (same time, 5-tuple and action) are kept once: the most complete copy
+           (preferred sensor, completed session, most bytes, then first read).
         2. The same session recorded by two different sensors (same 5-tuple, start times within
-           ``skew_seconds``) is kept once, from the higher-ranked sensor.
+           ``skew_seconds``) is kept once, from the higher-ranked sensor. Two sensors of the same
+           kind in different input files (e.g. two Zeek taps) count too: when they agree on the
+           action, the most complete record (completed session, then most bytes) is kept.
         Returns (exact duplicates removed, cross-sensor duplicates removed).
         """
         con = self.con
@@ -142,8 +145,11 @@ class Store:
             SELECT * EXCLUDE (ts_us, day), make_timestamp(ts_us) AS ts,
                    CASE sensor {rank} ELSE 9 END AS sensor_rank
             FROM read_parquet('{glob}', hive_partitioning = true, hive_types_autocast = false)
+            -- keep the most complete copy: preferred sensor, then a completed session (one tap may have
+            -- seen only the SYN at the same instant), then most bytes, then the one read first
             QUALIFY row_number() OVER (PARTITION BY ts_us, src_ip, src_port, dst_ip, dst_port, proto, action
-                                       ORDER BY ord) = 1""")
+                                       ORDER BY CASE sensor {rank} ELSE 9 END, established DESC,
+                                                bytes_out + bytes_in DESC, ord) = 1""")
         total = con.execute(f"SELECT count(*) FROM read_parquet('{glob}')").fetchone()[0]
         kept = con.execute("SELECT count(*) FROM flows_exact").fetchone()[0]
         exact = total - kept
@@ -153,7 +159,15 @@ class Store:
                 SELECT DISTINCT a.ord FROM flows_exact a JOIN flows_exact b
                   ON a.src_ip = b.src_ip AND a.dst_ip = b.dst_ip AND a.src_port = b.src_port
                  AND a.dst_port = b.dst_port AND a.proto = b.proto
-                WHERE b.sensor_rank < a.sensor_rank
+                WHERE (b.sensor_rank < a.sensor_rank
+                       OR (b.sensor_rank = a.sensor_rank AND b.fid <> a.fid AND b.action = a.action
+                           -- same kind of sensor: keep the most complete record (a tap that saw the
+                           -- whole session beats one that saw only the SYN), then the one read first
+                           AND (b.established AND NOT a.established
+                                OR (b.established = a.established
+                                    AND (b.bytes_out + b.bytes_in > a.bytes_out + a.bytes_in
+                                         OR (b.bytes_out + b.bytes_in = a.bytes_out + a.bytes_in
+                                             AND b.ord < a.ord))))))
                   AND abs(epoch_us(a.ts) - epoch_us(b.ts)) <= {int(skew_seconds * 1_000_000)}""")
         else:
             con.execute("CREATE OR REPLACE TEMP TABLE cross_dups (ord BIGINT)")
@@ -198,7 +212,9 @@ class FlowWriter:
         self.store, self.batch_size, self.rows, self.ord = store, batch_size, [], 0
         self._days: dict[int, str] = {}
 
-    def add(self, f: Flow, sensor: str):
+    def add(self, f: Flow, sensor: str, fid: int = 0):
+        """``fid`` numbers the input file, so sessions repeated by a second sensor of the same
+        kind (another Zeek tap) can be told apart from records inside one file."""
         us = _us(f.ts)
         if us is None:
             day = "untimed"
@@ -209,7 +225,7 @@ class FlowWriter:
                 day = self._days[d] = (EPOCH + timedelta(days=d)).strftime("%Y-%m-%d")
         self.rows.append((self.ord, us, f.src_ip, f.dst_ip, f.src_port, f.dst_port, f.proto, f.action,
                           f.established, f.bytes_out or 0, f.bytes_in or 0, f.app, f.src_zone,
-                          f.dst_zone, f.source, sensor, day))
+                          f.dst_zone, f.source, sensor, fid, day))
         self.ord += 1
         if len(self.rows) >= self.batch_size:
             self.flush()

@@ -77,9 +77,12 @@ PRIORITY_LABELS = {"P1": "P1 - act now", "P2": "P2 - this cycle", "P3": "P3 - sc
 # Flow lookups run as DuckDB SQL over the clean ``flows`` table (see store.py); the
 # correlator never holds per-host flow lists in memory. ``fx`` is that table plus the
 # internal/external classification for the current Config.
-_KEY_MATCH = ("f.dst_ip = k.host AND (k.host_level OR (f.dst_port = k.port AND f.proto = k.proto)) "
-              "AND {win}")
-_WIN = "(k.lo IS NULL OR f.ts IS NULL OR f.ts BETWEEN k.lo AND k.hi)"
+# A host talking to its own address is not exposure, so self-traffic never matches a finding.
+_KEY_MATCH = ("f.dst_ip = k.host AND f.src_ip <> f.dst_ip "
+              "AND (k.host_level OR (f.dst_port = k.port AND f.proto = k.proto)) AND {win}")
+# A finding can have several scan windows (one row per window in xkeys, never overlapping). An
+# untimed flow matches only the first row, so it is counted once.
+_WIN = "(k.lo IS NULL OR (f.ts IS NULL AND k.wi = 0) OR f.ts BETWEEN k.lo AND k.hi)"
 _LATERAL_SQL = ", ".join(str(p) for p in LATERAL_PORTS)
 
 
@@ -106,12 +109,20 @@ class Correlator:
         self.store.insert_rows("ipnet", {"ip": "VARCHAR", "internal": "BOOLEAN"},
                                ((ip, self.net.internal(ip)) for ip in ips))
         zones = ", ".join(f"'{z}'" for z in sorted(EXTERNAL_ZONES))
+        # The vulnerability scanner's own probes (address from Nessus plugin 19506) are not use of a
+        # service, so sessions it starts are left out of everything scored below. They still show
+        # that sensors cover a host ("seen"), which counts all flows.
+        self.scanner_ips = sorted(getattr(ds, "scanner_ips", ()) or ())
+        self.store.insert_rows("scanners", {"ip": "VARCHAR"}, ((ip,) for ip in self.scanner_ips))
         con.execute(f"""
             CREATE OR REPLACE TABLE fx AS
             SELECT f.*, s.internal AS src_int, d.internal AS dst_int,
                    (NOT s.internal OR f.src_zone IN ({zones})) AS ext_src,
                    (f.action = 'allow' AND f.established) AS est
-            FROM flows f JOIN ipnet s ON s.ip = f.src_ip JOIN ipnet d ON d.ip = f.dst_ip""")
+            FROM flows f JOIN ipnet s ON s.ip = f.src_ip JOIN ipnet d ON d.ip = f.dst_ip
+            WHERE f.src_ip NOT IN (SELECT ip FROM scanners)""")
+        self.scanner_sessions = con.execute(
+            "SELECT count(*) FROM flows WHERE src_ip IN (SELECT ip FROM scanners)").fetchone()[0]
         self.internal_ips = {r[0] for r in con.execute("SELECT ip FROM ipnet WHERE internal").fetchall()}
         del ips
         # per-host session counts, for internal hosts and scanned hosts
@@ -147,18 +158,32 @@ class Correlator:
         self._before, self._new_lat, self._exfil, self._spread = {}, {}, {}, {}
 
     # -- scan time window -------------------------------------------------
-    def window(self, fd: Finding):
+    def windows(self, fd: Finding) -> tuple:
+        """((start, end), ...): telemetry within scan_window_days of each scan that reported the
+        finding, overlapping windows merged. () means all telemetry (no scan time, or disabled)."""
         days = self.cfg.scan_window_days
-        if not days or fd.scan_start is None:
-            return None, None
-        end = fd.scan_end or fd.scan_start
-        return fd.scan_start - timedelta(days=days), max(end, fd.scan_start) + timedelta(days=days)
+        times = fd.scan_times or ([(fd.scan_start, fd.scan_end)] if fd.scan_start else [])
+        if not days or not times:
+            return ()
+        d = timedelta(days=days)
+        spans = sorted((s - d, max(e or s, s) + d) for s, e in times)
+        merged = [list(spans[0])]
+        for lo, hi in spans[1:]:
+            if lo <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], hi)
+            else:
+                merged.append([lo, hi])
+        return tuple((lo, hi) for lo, hi in merged)
+
+    @staticmethod
+    def _in_windows(windows: tuple, ts) -> bool:
+        return not windows or ts is None or any(lo <= ts <= hi for lo, hi in windows)
 
     def _key(self, fd: Finding) -> tuple:
-        lo, hi = self.window(fd)
+        w = self.windows(fd)
         if fd.port == 0:
-            return (fd.host_ip, None, None, True, lo, hi)
-        return (fd.host_ip, fd.port, fd.proto, False, lo, hi)
+            return (fd.host_ip, None, None, True, w)
+        return (fd.host_ip, fd.port, fd.proto, False, w)
 
     # -- batch SQL ----------------------------------------------------------
     def prepare(self, findings: list[Finding]):
@@ -168,11 +193,14 @@ class Correlator:
             self._kid.setdefault(self._key(fd), len(self._kid))
         self.store.insert_rows(
             "xkeys", {"kid": "BIGINT", "host": "VARCHAR", "port": "INTEGER", "proto": "VARCHAR",
-                      "host_level": "BOOLEAN", "lo": "TIMESTAMP", "hi": "TIMESTAMP"},
-            ((kid, h, p, pr, hl, naive(lo), naive(hi)) for (h, p, pr, hl, lo, hi), kid in self._kid.items()))
+                      "host_level": "BOOLEAN", "wi": "INTEGER", "lo": "TIMESTAMP", "hi": "TIMESTAMP"},
+            ((kid, h, p, pr, hl, wi, naive(lo), naive(hi))
+             for (h, p, pr, hl, w), kid in self._kid.items()
+             for wi, (lo, hi) in enumerate(w or ((None, None),))))
         m = _key_match()
         for row in con.execute(f"""
                 SELECT k.kid, count(*), count(*) FILTER (f.est), count(*) FILTER (f.action = 'deny'),
+                       count(*) FILTER (f.action = 'reject'),
                        count(DISTINCT f.src_ip) FILTER (f.est AND f.ext_src),
                        count(DISTINCT f.src_ip) FILTER (f.est AND NOT f.ext_src),
                        min(f.ts), max(f.ts), coalesce(sum(f.bytes_out + f.bytes_in) FILTER (f.est), 0)
@@ -213,13 +241,20 @@ class Correlator:
                 JOIN fx f ON f.src_ip = k.host
                 WHERE f.action = 'allow' AND f.ts < a.t0 AND {_win()}""").fetchall():
             self._before[kid] = True
+        # Written as joins, not a correlated NOT EXISTS: DuckDB 1.5 fails to bind that form
+        # ("Failed to bind column reference") when timed and untimed findings are mixed.
         for kid, ip, ports in con.execute(f"""
-                SELECT a.kid, f.dst_ip, list(DISTINCT f.dst_port)
-                FROM anchors a JOIN xkeys k USING (kid) JOIN fx f ON f.src_ip = k.host
-                WHERE f.est AND f.ts >= a.t0 AND f.dst_int AND f.dst_port IN ({_LATERAL_SQL}) AND {_win()}
-                  AND NOT EXISTS (SELECT 1 FROM fx g WHERE g.src_ip = k.host AND g.dst_ip = f.dst_ip
-                                  AND g.action = 'allow' AND g.ts < a.t0 AND {_win('g')})
-                GROUP BY a.kid, f.dst_ip""").fetchall():
+                WITH cand AS (
+                    SELECT a.kid, k.host, a.t0, k.wi, k.lo, k.hi, f.dst_ip, f.dst_port
+                    FROM anchors a JOIN xkeys k USING (kid) JOIN fx f ON f.src_ip = k.host
+                    WHERE f.est AND f.ts >= a.t0 AND f.dst_int AND f.dst_port IN ({_LATERAL_SQL}) AND {_win()}),
+                prior AS (
+                    SELECT DISTINCT c.kid, c.dst_ip
+                    FROM (SELECT DISTINCT kid, host, t0, wi, lo, hi, dst_ip FROM cand) c
+                    JOIN fx g ON g.src_ip = c.host AND g.dst_ip = c.dst_ip
+                    WHERE g.action = 'allow' AND g.ts < c.t0 AND {_win('g').replace('k.', 'c.')})
+                SELECT kid, dst_ip, list(DISTINCT dst_port) FROM cand ANTI JOIN prior USING (kid, dst_ip)
+                GROUP BY kid, dst_ip""").fetchall():
             self._new_lat.setdefault(kid, {})[ip] = set(ports)
         for kid, ip, n in con.execute(f"""
                 SELECT a.kid, f.dst_ip, sum(f.bytes_out) AS n
@@ -236,17 +271,19 @@ class Correlator:
             return
         self.store.insert_rows("suspects", {"ip": "VARCHAR", "t": "TIMESTAMP"},
                                ((ip, naive(t)) for ip, t in self.suspects.items()))
+        # joins instead of a correlated EXISTS, for the same DuckDB binder issue as in prepare()
         for kid, src, port, proto, ts in self.con.execute(f"""
+                WITH prior AS (       -- the suspect's normal pre-incident traffic to this host
+                    SELECT DISTINCT k.kid, s.ip FROM xkeys k JOIN suspects s ON s.t IS NOT NULL
+                    JOIN fx g ON g.src_ip = s.ip AND g.dst_ip = k.host
+                    WHERE g.ts < s.t AND {_win('g')})
                 SELECT kid, src_ip, dst_port, proto, ts FROM (
                     SELECT k.kid, f.src_ip, f.dst_port, f.proto, f.ts,
                            row_number() OVER (PARTITION BY k.kid ORDER BY f.seq) AS rn
                     FROM xkeys k JOIN fx f ON {_key_match()} JOIN suspects s ON s.ip = f.src_ip
+                    ANTI JOIN prior p ON p.kid = k.kid AND p.ip = f.src_ip
                     WHERE f.est AND f.src_ip <> k.host
-                      AND NOT (s.t IS NOT NULL AND f.ts IS NOT NULL AND f.ts < s.t)
-                      -- ignore the suspect's normal pre-incident traffic to this host
-                      AND NOT (s.t IS NOT NULL AND EXISTS (
-                          SELECT 1 FROM fx g WHERE g.src_ip = f.src_ip AND g.dst_ip = k.host
-                          AND g.ts < s.t AND {_win('g')})))
+                      AND NOT (s.t IS NOT NULL AND f.ts IS NOT NULL AND f.ts < s.t))
                 WHERE rn = 1""").fetchall():
             self._spread[kid] = (src, port, proto, utc(ts))
 
@@ -280,8 +317,8 @@ class Correlator:
     def exposure(self, fd: Finding) -> dict:
         host_level = fd.port == 0
         kid = self._kid[self._key(fd)]
-        total, n_est, denied, n_ext, n_int, first, last, nbytes = self._agg.get(
-            kid, (0, 0, 0, 0, 0, None, None, 0))
+        total, n_est, denied, refused, n_ext, n_int, first, last, nbytes = self._agg.get(
+            kid, (0, 0, 0, 0, 0, 0, None, None, 0))
         seen = fd.host_ip in self.in_count or fd.host_ip in self.out_count
         alerts, blocked = self._threats_to(fd)
 
@@ -303,6 +340,9 @@ class Correlator:
             label, factor = "Vulnerable service reached internally", 0.75
         elif denied and not n_est:
             label, factor = "Connections to service blocked by firewall", 0.35
+        elif refused and not n_est:
+            # Zeek REJ: the host answered with a reset (closed port or host firewall), not a network block
+            label, factor = "Connections to service refused by the host", 0.35
         elif total:
             label, factor = "Connection attempts only (no completed sessions)", 0.45
         else:
@@ -310,7 +350,7 @@ class Correlator:
         exp = {
             "label": label, "factor": factor, "scope": "host" if host_level else "port",
             "telemetry_seen": seen, "inbound_total": total, "established": n_est,
-            "denied": denied, "attempts": total - n_est - denied,
+            "denied": denied, "refused": refused, "attempts": total - n_est - denied - refused,
             "internal_sources": n_int, "external_sources": n_ext,
             "top_sources": self._top.get(kid, []),
             "first_seen": _iso(utc(first)), "last_seen": _iso(utc(last)),
@@ -320,9 +360,11 @@ class Correlator:
                                        Counter(t.src_ip for t in blocked).most_common(8)],
             "_kid": kid,
         }
-        lo, hi = self.window(fd)
-        if lo is not None:
-            exp["window"] = {"start": _iso(lo), "end": _iso(hi), "days": self.cfg.scan_window_days}
+        windows = self.windows(fd)
+        if windows:
+            spans = [{"start": _iso(lo), "end": _iso(hi), "days": self.cfg.scan_window_days} for lo, hi in windows]
+            exp["window"] = spans[-1]            # around the latest scan
+            exp["windows"] = spans               # one per scan (merged where they overlap)
         return exp
 
     # -- blast radius -----------------------------------------------------
@@ -367,10 +409,9 @@ class Correlator:
     # A finding is "corroborated" only when an IPS/IDS alert and post-contact host
     # behaviour agree. Even then only host forensics can confirm a compromise.
     def _threats_to(self, fd: Finding) -> tuple[list, list]:
-        lo, hi = self.window(fd)
+        windows = self.windows(fd)
         hits = [t for t in self.threats_by_dst.get(fd.host_ip, [])
-                if (fd.port == 0 or t.dst_port in (None, fd.port))
-                and (lo is None or t.ts is None or lo <= t.ts <= hi)]
+                if (fd.port == 0 or t.dst_port in (None, fd.port)) and self._in_windows(windows, t.ts)]
         return [t for t in hits if not t.blocked], [t for t in hits if t.blocked]
 
     def _return_peers(self, kid: int) -> list[tuple]:
@@ -486,6 +527,8 @@ class Correlator:
                       f"external and {exp['internal_sources']} internal sources." if exp["established"] else "."))
         if exp["denied"]:
             why.append(f"{exp['denied']} connection(s) to it were blocked by a firewall.")
+        if exp["refused"]:
+            why.append(f"{exp['refused']} connection(s) to it were refused by the host (reset, as Zeek logs REJ).")
         if bl["reachable_count"]:
             why.append(f"Blast radius: the host talks to {bl['direct_count']} internal host(s) directly and "
                        f"{bl['reachable_count']} within {self.cfg.hops} hops"
@@ -565,6 +608,9 @@ class Correlator:
             h["by_severity"] = dict(h["by_severity"])
 
         internal_seen = set(self.internal_ips)
+        # a scanned host counts as seen whenever it is in the telemetry, internal address or not
+        # (DMZ hosts on public addresses are scanned too)
+        seen_scanned = set(self.in_count) | set(self.out_count)
         if not vulnerability_data_available:
             internal_seen |= {ip for t in ds.threats for ip in (t.src_ip, t.dst_ip)
                               if self.net.internal(ip)}
@@ -579,8 +625,8 @@ class Correlator:
         not_scanned = sorted(set(servers) - scanned, key=lambda ip: (-sessions[ip], ip))
         coverage = {
             "scanned_hosts": len(scanned), "telemetry_internal_hosts": len(internal_seen),
-            "scanned_and_seen": len(scanned & internal_seen),
-            "scanned_not_seen": sorted(scanned - internal_seen),
+            "scanned_and_seen": len(scanned & (internal_seen | seen_scanned)),
+            "scanned_not_seen": sorted(scanned - internal_seen - seen_scanned),
             "active_servers_not_scanned": [
                 {"ip": ip, "services": [p for p, _ in servers[ip][:6]],
                  "sessions": sessions[ip]} for ip in not_scanned],
@@ -619,6 +665,8 @@ class Correlator:
             "duplicate_flows_removed": ds.duplicate_flows,
             "cross_sensor_duplicates_removed": ds.cross_sensor_duplicates,
             "duplicate_findings_merged": ds.duplicate_findings,
+            "scanner_ips": self.scanner_ips,
+            "scanner_sessions_excluded": int(self.scanner_sessions),
         }
         network_leads = []
         if not vulnerability_data_available:
@@ -638,14 +686,27 @@ class Correlator:
             "inputs": [{"file": s.file, "format": s.fmt, "read": s.read, "kept": s.kept,
                         "dropped": dict(s.dropped), "notes": s.notes} for s in ds.stats],
             "summary": summary, "coverage": coverage, "hosts": host_list, "findings": scored,
-            "telemetry_leads": [
-                {"host": ip, "alerts": len(alerts), "unblocked": sum(not t.blocked for t in alerts),
-                 "blocked": sum(t.blocked for t in alerts),
-                 "signatures": sorted({t.name for t in alerts}),
-                 "note": "IPS/IDS alerts are investigation leads, not verified exploitation."}
-                for ip, alerts in sorted(self.threats_by_dst.items())] if not vulnerability_data_available else [],
+            "telemetry_leads": self._telemetry_leads() if not vulnerability_data_available else [],
             "network_leads": network_leads,
         }
+
+    def _telemetry_leads(self) -> list[dict]:
+        """IPS/IDS alerts grouped by the internal host involved: the target, or the source when
+        an internal host set off an alert towards an outside address (e.g. a beacon)."""
+        by_host: dict[str, list] = defaultdict(list)
+        role: dict[str, set] = defaultdict(set)
+        for t in self.ds.threats:
+            if self.net.internal(t.dst_ip):
+                by_host[t.dst_ip].append(t)
+                role[t.dst_ip].add("target")
+            elif self.net.internal(t.src_ip):
+                by_host[t.src_ip].append(t)
+                role[t.src_ip].add("source")
+        return [{"host": ip, "alerts": len(alerts), "unblocked": sum(not t.blocked for t in alerts),
+                 "blocked": sum(t.blocked for t in alerts), "role": sorted(role[ip]),
+                 "signatures": sorted({t.name for t in alerts}),
+                 "note": "IPS/IDS alerts are investigation leads, not verified exploitation."}
+                for ip, alerts in sorted(by_host.items())]
 
 
 def correlate(ds: Dataset, cfg: Config | None = None) -> dict:

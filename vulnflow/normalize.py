@@ -25,6 +25,7 @@ class Dataset:
     zeek_events: list[ZeekEvent] | EventSpool = field(default_factory=list)
     ot_events: list[OTEvent] | EventSpool = field(default_factory=list)
     scanned_hosts: dict[str, dict] = field(default_factory=dict)   # ip -> {hostname, os}
+    scanner_ips: set[str] = field(default_factory=set)   # the vulnerability scanner(s), from plugin 19506
     stats: list[ParseStats] = field(default_factory=list)
     duplicate_flows: int = 0
     duplicate_findings: int = 0
@@ -48,6 +49,10 @@ class Dataset:
         """Delete the working directory (Parquet, DuckDB file, event spools)."""
         if self.store is not None:
             self.store.close()
+
+
+def _scan_times(f: Finding) -> list[tuple]:
+    return list(f.scan_times) or ([(f.scan_start, f.scan_end)] if f.scan_start else [])
 
 
 def _sensor(fmt: str) -> str:
@@ -83,7 +88,7 @@ def _load(store, paths, overrides, skew_seconds, batch_size) -> Dataset:
     ot_spool = EventSpool(store, "ot_events", ot=True)
     raw_findings: list[Finding] = []
     threats: dict[tuple, ThreatEvent] = {}
-    for path in paths:
+    for fid, path in enumerate(paths):
         name = os.path.basename(path)
         fmt = overrides.get(path) or overrides.get(name) or detect(path)
         if fmt not in FORMATS:
@@ -99,7 +104,7 @@ def _load(store, paths, overrides, skew_seconds, batch_size) -> Dataset:
                 if kind == "findings":
                     raw_findings.append(r)
                 elif isinstance(r, Flow):
-                    writer.add(r, sensor)
+                    writer.add(r, sensor, fid)
                 elif isinstance(r, ThreatEvent):
                     n_threats += 1
                     threats[r.key()] = r      # first position, last record wins (as before)
@@ -135,13 +140,20 @@ def _load(store, paths, overrides, skew_seconds, batch_size) -> Dataset:
         h = ds.scanned_hosts[f.host_ip]
         h["hostname"] = h["hostname"] or f.hostname
         h["os"] = h["os"] or f.os
+        if f.scanner_ip:
+            ds.scanner_ips.add(f.scanner_ip)
         cur = best.get(f.key())
         if cur is None:
             best[f.key()] = f
         else:
             ds.duplicate_findings += 1
+            # Keep every scan's time: each scan gets its own window (not one span over the gap between them).
+            times = sorted(set(_scan_times(cur) + _scan_times(f)), key=lambda t: t[0])
             if (f.exploit_available, f.cvss or 0) > (cur.exploit_available, cur.cvss or 0):
-                best[f.key()] = f
+                best[f.key()] = cur = f
+            cur.scan_times = times
+            if times:
+                cur.scan_start, cur.scan_end = times[-1]          # the latest scan, for display
     for f in best.values():
         f.hostname = f.hostname or ds.scanned_hosts[f.host_ip]["hostname"]
         f.os = f.os or ds.scanned_hosts[f.host_ip]["os"]

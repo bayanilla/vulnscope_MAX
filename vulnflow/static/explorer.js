@@ -43,7 +43,7 @@ const netTag = n => n ? (n.cloud ? '☁ ' : '') + n.name : '';
 const KIND = {alert: '#ff3b5c', vuln: '#ff8a3d', reached: '#ffc857', outbound: RETURN, attempt: '#8892a6', blocked: '#5b6b82'};
 const KIND_RANK = {alert: 0, vuln: 1, reached: 2, outbound: 3, attempt: 4, blocked: 5};
 const KIND_TXT = {alert: 'IPS alert, not blocked', vuln: 'Reached a vulnerable service', reached: 'Reached the host',
-  outbound: 'Host connected out to it', attempt: 'Tried, no completed session', blocked: 'Blocked by firewall or IPS'};
+  outbound: 'Host connected out to it', attempt: 'Tried, no completed session', blocked: 'Blocked by firewall/IPS or refused by the host'};
 const BAND = {High: '#ff2e88', Medium: '#ffb020', Low: '#2ee6d6', None: '#5b6b82', Unknown: '#8da2b5'};
 
 let W = 0, H = 0, DPR = 1;
@@ -978,7 +978,7 @@ function tip(n, x, y) {
   } else if (n.ext) {
     const a = n.info;
     h = `<b>${esc(a.ip)}</b> <span class="m">outside address · north/south</span><br>${esc(KIND_TXT[a.kind])}` +
-      (a.dir !== 'out' ? `<br><span class="m">Inbound: ${a.sessions} session(s), ${a.established} completed, ${a.blocked} blocked` +
+      (a.dir !== 'out' ? `<br><span class="m">Inbound: ${a.sessions} session(s), ${a.established} completed, ${a.blocked} blocked or refused` +
         (a.ports.length ? `; ports ${esc(a.ports.join(', '))}` : '') + '</span>' : '') +
       (a.out_sessions ? `<br><span class="m">Outbound from the host: ${a.out_sessions} session(s), ${a.out_established} completed` +
         (a.out_ports.length ? `; ports ${esc(a.out_ports.join(', '))}` : '') + '</span>' : '') +
@@ -1166,7 +1166,7 @@ function ipRow(kind, item) {
     return `<details class="ip-entry" data-k="atk" data-ip="${esc(a.ip)}"><summary class="row"><span class="kind k-${a.kind}" title="${esc(KIND_TXT[a.kind])}"></span>` +
       `<span class="ip">${esc(a.ip)}</span><span class="lk">${a.sessions ? '← ' + a.sessions : ''}${a.sessions && a.out_sessions ? '  ' : ''}${a.out_sessions ? '→ ' + a.out_sessions : ''}${a.alerts ? ' · ' + a.alerts + ' IPS' : ''}</span></summary>` +
       `<div class="ip-detail">${esc(KIND_TXT[a.kind])}${iocIds.has('ip:' + a.ip) ? ' · ' + iocButton('ip', a.ip, 'Report overview') : ''}` +
-      `${a.established ? ' · ' + a.established + ' inbound completed' : ''}${a.blocked ? ' · ' + a.blocked + ' firewall blocked' : ''}` +
+      `${a.established ? ' · ' + a.established + ' inbound completed' : ''}${a.blocked ? ' · ' + a.blocked + ' blocked or refused' : ''}` +
       `${a.ports.length ? ' · ports ' + esc(a.ports.join(', ')) : ''}${a.alerts_blocked ? ' · ' + a.alerts_blocked + ' IPS blocked' : ''}` +
       `${a.dir === 'both' && a.out_sessions ? ' · host also connected out' + (a.out_ports.length ? ' on ' + esc(a.out_ports.join(', ')) : '') : ''}` +
       `${a.dir === 'out' && a.out_ports.length ? ' · ports ' + esc(a.out_ports.join(', ')) : ''}` +
