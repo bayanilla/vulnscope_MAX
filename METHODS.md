@@ -27,7 +27,7 @@ skipped. Zeek and Palo Alto files can be plain or `.gz`.
 
 | Kind | Format | Notes |
 | --- | --- | --- |
-| Telemetry | Zeek `conn.log` (TSV or JSON) | `conn_state` decides completed vs. rejected sessions. |
+| Telemetry | Zeek `conn.log` (TSV or JSON) | `conn_state` decides completed vs. failed sessions. `REJ` (the host answered with a reset) is reported as *refused by the host*, not as a firewall block; only firewall/IPS logs report blocks. |
 | Alerts | Zeek `notice.log` (TSV or JSON) | Notices become IPS/IDS alerts used as exploitation evidence. |
 | Context | Other Zeek streams (TSV or JSON, including `.log.gz`) | `#path` identifies TSV streams; JSON uses `_path` or the filename. DNS, HTTP, SMTP, files, custom streams and others are preserved in `normalized/zeek_events.jsonl` with typed fields and per-stream counts. They do not create extra sessions. |
 | Industrial telemetry | Zeek Modbus, DNP3, BACnet, S7, EtherNet/IP, CIP, OPC UA logs | Preserved in `normalized/ot_events.jsonl` with protocol, operation, endpoints and direction when available. Observed operations do not become alerts automatically. |
@@ -46,8 +46,10 @@ its counts.
 
 **Cross-sensor de-duplication.** The same session recorded by two sensors (for example Zeek and the
 firewall) is counted once: records with the same 5-tuple whose start times are within
-`--dedup-skew` seconds (default 2) are merged, keeping the firewall record. `--dedup-skew -1` turns
-this off.
+`--dedup-skew` seconds (default 2) are merged, keeping the firewall record. The same applies to two
+sensors of the same kind in different files (for example two Zeek taps that both see a session):
+records with the same 5-tuple and outcome are kept once, from the file read first. `--dedup-skew -1`
+turns this off.
 
 **Scan window.** Each host's findings are compared with telemetry from `--scan-window-days`
 (default 7) before the host's Nessus scan start to the same number of days after it ends. `0` uses
@@ -122,7 +124,7 @@ the file, output is unchanged.
 For each vulnerability:
 
 - **Exposure:** completed sessions to the vulnerable port, split by internet and internal sources,
-  plus blocked and attempted connections. Host-level (port 0) findings use overall host activity.
+  plus blocked (firewall/IPS), refused (host reset) and attempted connections. Host-level (port 0) findings use overall host activity.
 - **Blast radius:** a graph walk (default 2 hops, `--hops`) over completed internal sessions from
   the host, flagging reachable hosts that themselves have High/Critical findings and use of
   SMB/RDP/SSH/WinRM/database ports.

@@ -276,7 +276,7 @@ def technical_report(res: dict) -> str:
           "then multiplied by 1.25 with corroborated exploitation evidence or 1.1 with investigation leads.", "",
           "- **Exploit**: 1.0 if a public exploit exists (1.1 if in Metasploit/CANVAS/Core), otherwise 0.65.",
           "- **Exposure** (from telemetry): 1.0 service reached from the internet; 0.85 reached internally by 5+ hosts; "
-          "0.75 reached internally; 0.45 attempts only; 0.35 blocked by firewall; 0.3 service not observed in use; "
+          "0.75 reached internally; 0.45 attempts only; 0.35 blocked by firewall or refused by the host; 0.3 service not observed in use; "
           "0.5 host absent from telemetry (unknown). Host-level findings (port 0, e.g. missing patches or client "
           "software) use 0.7 / 0.5 / 0.35 for internet-facing / active / quiet hosts.",
           f"- **Blast radius**: 1.0 to 1.5 from the number of internal hosts this host has completed sessions with "
@@ -330,7 +330,9 @@ def technical_report(res: dict) -> str:
             if e["inbound_total"]:
                 srcs = ", ".join(f"{ip}{' (ext)' if ext else ''} x{n}" for ip, n, ext in e["top_sources"])
                 L.append(f"- Traffic to {'host' if e['scope'] == 'host' else 'service'}: {e['established']} completed, "
-                         f"{e['attempts']} attempts, {e['denied']} blocked; first {e['first_seen']}, last {e['last_seen']}"
+                         f"{e['attempts']} attempts, {e['denied']} blocked"
+                         + (f", {e['refused']} refused by the host" if e.get('refused') else "")
+                         + f"; first {e['first_seen']}, last {e['last_seen']}"
                          + (f"; top sources: {srcs}" if srcs else ""))
             if r["synopsis"]:
                 L.append(f"- Synopsis: {_short(r['synopsis'], 300)}")
@@ -540,7 +542,7 @@ FINDING_COLUMNS = ["priority", "score", "likelihood", "host", "hostname", "port"
                    "plugin_id", "plugin_name", "severity_name", "cvss", "cves", "exploit_available",
                    "exposure", "external_sources", "internal_sources", "established_sessions",
                    "blocked_sessions", "blast_factor", "reachable_hosts", "vulnerable_pivots",
-                   "indicators", "solution"]
+                   "indicators", "solution", "refused_sessions"]
 
 
 _FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
@@ -596,7 +598,8 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
                          r["cvss"], " ".join(r["cves"]), r["exploit_available"], e["label"],
                          e["external_sources"], e["internal_sources"], e["established"], e["denied"],
                          r["blast_factor"], b["reachable_count"], " ".join(b["vulnerable_pivots"]),
-                         " | ".join(i["text"] for i in r["indicators"]), _short(r["solution"], 500)]))
+                         " | ".join(i["text"] for i in r["indicators"]), _short(r["solution"], 500),
+                         e.get("refused", 0)]))
     paths["correlated_findings.csv"] = p
 
     p = os.path.join(outdir, "normalized", "flows.csv")

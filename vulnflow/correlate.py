@@ -173,6 +173,7 @@ class Correlator:
         m = _key_match()
         for row in con.execute(f"""
                 SELECT k.kid, count(*), count(*) FILTER (f.est), count(*) FILTER (f.action = 'deny'),
+                       count(*) FILTER (f.action = 'reject'),
                        count(DISTINCT f.src_ip) FILTER (f.est AND f.ext_src),
                        count(DISTINCT f.src_ip) FILTER (f.est AND NOT f.ext_src),
                        min(f.ts), max(f.ts), coalesce(sum(f.bytes_out + f.bytes_in) FILTER (f.est), 0)
@@ -280,8 +281,8 @@ class Correlator:
     def exposure(self, fd: Finding) -> dict:
         host_level = fd.port == 0
         kid = self._kid[self._key(fd)]
-        total, n_est, denied, n_ext, n_int, first, last, nbytes = self._agg.get(
-            kid, (0, 0, 0, 0, 0, None, None, 0))
+        total, n_est, denied, refused, n_ext, n_int, first, last, nbytes = self._agg.get(
+            kid, (0, 0, 0, 0, 0, 0, None, None, 0))
         seen = fd.host_ip in self.in_count or fd.host_ip in self.out_count
         alerts, blocked = self._threats_to(fd)
 
@@ -303,6 +304,9 @@ class Correlator:
             label, factor = "Vulnerable service reached internally", 0.75
         elif denied and not n_est:
             label, factor = "Connections to service blocked by firewall", 0.35
+        elif refused and not n_est:
+            # Zeek REJ: the host answered with a reset (closed port or host firewall), not a network block
+            label, factor = "Connections to service refused by the host", 0.35
         elif total:
             label, factor = "Connection attempts only (no completed sessions)", 0.45
         else:
@@ -310,7 +314,7 @@ class Correlator:
         exp = {
             "label": label, "factor": factor, "scope": "host" if host_level else "port",
             "telemetry_seen": seen, "inbound_total": total, "established": n_est,
-            "denied": denied, "attempts": total - n_est - denied,
+            "denied": denied, "refused": refused, "attempts": total - n_est - denied - refused,
             "internal_sources": n_int, "external_sources": n_ext,
             "top_sources": self._top.get(kid, []),
             "first_seen": _iso(utc(first)), "last_seen": _iso(utc(last)),
@@ -486,6 +490,8 @@ class Correlator:
                       f"external and {exp['internal_sources']} internal sources." if exp["established"] else "."))
         if exp["denied"]:
             why.append(f"{exp['denied']} connection(s) to it were blocked by a firewall.")
+        if exp["refused"]:
+            why.append(f"{exp['refused']} connection(s) to it were refused by the host (reset, as Zeek logs REJ).")
         if bl["reachable_count"]:
             why.append(f"Blast radius: the host talks to {bl['direct_count']} internal host(s) directly and "
                        f"{bl['reachable_count']} within {self.cfg.hops} hops"
@@ -565,6 +571,9 @@ class Correlator:
             h["by_severity"] = dict(h["by_severity"])
 
         internal_seen = set(self.internal_ips)
+        # a scanned host counts as seen whenever it is in the telemetry, internal address or not
+        # (DMZ hosts on public addresses are scanned too)
+        seen_scanned = set(self.in_count) | set(self.out_count)
         if not vulnerability_data_available:
             internal_seen |= {ip for t in ds.threats for ip in (t.src_ip, t.dst_ip)
                               if self.net.internal(ip)}
@@ -579,8 +588,8 @@ class Correlator:
         not_scanned = sorted(set(servers) - scanned, key=lambda ip: (-sessions[ip], ip))
         coverage = {
             "scanned_hosts": len(scanned), "telemetry_internal_hosts": len(internal_seen),
-            "scanned_and_seen": len(scanned & internal_seen),
-            "scanned_not_seen": sorted(scanned - internal_seen),
+            "scanned_and_seen": len(scanned & (internal_seen | seen_scanned)),
+            "scanned_not_seen": sorted(scanned - internal_seen - seen_scanned),
             "active_servers_not_scanned": [
                 {"ip": ip, "services": [p for p, _ in servers[ip][:6]],
                  "sessions": sessions[ip]} for ip in not_scanned],

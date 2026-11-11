@@ -216,7 +216,7 @@ def _compact_finding(r: dict) -> dict:
         "port": r["port"], "proto": r["proto"], "service": r["service"], "cvss": r["cvss"],
         "cves": r["cves"][:8], "exploit_available": r["exploit_available"],
         "exploit_frameworks": r["exploit_frameworks"],
-        "exposure": {k: e[k] for k in ("label", "established", "denied", "attempts", "internal_sources",
+        "exposure": {k: e.get(k, 0) for k in ("label", "established", "denied", "refused", "attempts", "internal_sources",
                                         "external_sources", "top_sources", "first_seen", "last_seen")},
         "exploit_factor": r["exploit_factor"], "blast_factor": r["blast_factor"],
         "rationale": r["rationale"], "indicators": [i["text"] for i in r["indicators"]],

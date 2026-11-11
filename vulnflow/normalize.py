@@ -83,7 +83,7 @@ def _load(store, paths, overrides, skew_seconds, batch_size) -> Dataset:
     ot_spool = EventSpool(store, "ot_events", ot=True)
     raw_findings: list[Finding] = []
     threats: dict[tuple, ThreatEvent] = {}
-    for path in paths:
+    for fid, path in enumerate(paths):
         name = os.path.basename(path)
         fmt = overrides.get(path) or overrides.get(name) or detect(path)
         if fmt not in FORMATS:
@@ -99,7 +99,7 @@ def _load(store, paths, overrides, skew_seconds, batch_size) -> Dataset:
                 if kind == "findings":
                     raw_findings.append(r)
                 elif isinstance(r, Flow):
-                    writer.add(r, sensor)
+                    writer.add(r, sensor, fid)
                 elif isinstance(r, ThreatEvent):
                     n_threats += 1
                     threats[r.key()] = r      # first position, last record wins (as before)

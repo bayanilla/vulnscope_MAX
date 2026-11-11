@@ -17,7 +17,7 @@ class Flow:
     dst_port: int | None
     proto: str                   # tcp | udp | icmp | other
     src_port: int | None = None
-    action: str = "allow"        # allow | deny
+    action: str = "allow"        # allow | deny (firewall/IPS) | reject (host refused, Zeek REJ)
     established: bool = True     # handshake completed / data flowed both ways
     bytes_out: int = 0           # originator -> responder
     bytes_in: int = 0            # responder -> originator

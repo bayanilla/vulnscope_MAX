@@ -133,7 +133,7 @@ class ParserTests(Base):
         p = self.write("conn.json", '{"ts":1760000000.1,"id.orig_h":"10.0.0.1","id.orig_p":5000,'
                        '"id.resp_h":"10.0.0.2","id.resp_p":445,"proto":"tcp","conn_state":"REJ"}\n')
         f = load([p]).flows[0]
-        self.assertEqual((f.action, f.established, f.dst_port), ("deny", False, 445))
+        self.assertEqual((f.action, f.established, f.dst_port), ("reject", False, 445))   # host refused, not a firewall
 
     def test_zeek_streams_do_not_become_connections(self):
         dns = self.write("00_dns.log", '{"ts":1760000001,"uid":"D1","id.orig_h":"10.0.0.1",'
