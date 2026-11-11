@@ -164,6 +164,11 @@ body:not(.gl3d) #viewctl,body.focused #viewctl{display:none}
 .railtop:has(#net-filter:not([hidden])){flex-wrap:wrap}
 /* host list grouped by subnet */
 .railtop{flex-wrap:wrap}.railtop #search{flex:1 1 130px;min-width:130px}
+/* with the IOC pill: search, By subnet, IOC hosts all on one row (rail a bit wider, pills compact) */
+#rail:has(#ioc-filter:not([hidden])){width:322px}
+.railtop:has(#ioc-filter:not([hidden])){flex-wrap:nowrap;gap:6px}
+.railtop:has(#ioc-filter:not([hidden])) #search{flex:1 1 0;min-width:0;padding:8px 7px;font-size:12px}
+.railtop:has(#ioc-filter:not([hidden])) #group-toggle,.railtop:has(#ioc-filter:not([hidden])) #ioc-filter{padding:4px 7px}
 #group-toggle{flex:none;white-space:nowrap;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--glass);color:var(--muted);font:700 11px var(--mono);cursor:pointer}
 #group-toggle[aria-pressed="true"]{border-color:var(--cyan);color:var(--cyan);background:rgba(46,230,214,.1)}
 .hgroup+.hgroup{border-top:1px solid var(--line)}
