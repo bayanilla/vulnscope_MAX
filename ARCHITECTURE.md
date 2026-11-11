@@ -6,6 +6,63 @@ standard.
 
 ## Responsibilities
 
+```mermaid
+flowchart LR
+    subgraph INPUTS["Your files, read-only"]
+        PCAP["Packet captures<br/>.pcap / .pcapng"]
+        ZLOGS["Zeek logs<br/>TSV / JSON"]
+        FB["Filebeat exports<br/>Kibana CSV / NDJSON"]
+        FW["Palo Alto, Suricata,<br/>flow CSVs, VPC Flow Logs"]
+        SCAN["Nessus scans"]
+        IOC["IOC CSV,<br/>network_map.csv"]
+    end
+
+    subgraph APP["VulnScope"]
+        ZEEK["Zeek<br/>runs offline"]
+        PARSE["Format detection,<br/>streaming parsers,<br/>Filebeat fields reversed"]
+        PARQ[("Parquet<br/>by sensor, day")]
+        DUCK[("DuckDB<br/>de-duplicate, join")]
+        CORR["Correlation, scoring<br/>exposure, blast radius,<br/>indicators, P1 to P4"]
+        REPORT["Report writer"]
+        ASSIST["Security Assistant<br/>built-in offline<br/>by default"]
+        WEB["Upload page<br/>127.0.0.1 only"]
+    end
+
+    subgraph OUTPUTS["Run folder"]
+        DOCS["Executive summary,<br/>technical report"]
+        EXPL["explorer.html<br/>3D, Flat, Attack paths,<br/>Timeline"]
+        DATA["results.json, CSV,<br/>normalized inputs"]
+    end
+
+    subgraph OUTBOUND["Optional outbound"]
+        ART["IOC article previews<br/>on by default;<br/>VULNSCOPE_OFFLINE=1<br/>stops them"]
+        AI["Anthropic, OpenAI or<br/>your model server,<br/>only if chosen"]
+        RADAR["Cloudflare Radar<br/>token set, per click"]
+        BRIEF["OpenAI article briefs<br/>per click"]
+    end
+
+    PCAP --> ZEEK --> PARSE
+    ZLOGS & FB & FW & SCAN & IOC --> PARSE
+    PARSE --> PARQ --> DUCK --> CORR --> REPORT
+    REPORT --> DOCS & EXPL & DATA
+    CORR -- "results only,<br/>never raw logs" --> ASSIST
+    WEB -- "starts runs,<br/>serves results" --> REPORT
+    REPORT -.-> ART
+    ASSIST -.-> AI
+    WEB -.-> RADAR & BRIEF
+
+    classDef opt stroke-dasharray: 5 5
+    class IOC,ART,AI,RADAR,BRIEF opt
+```
+
+Solid arrows are the analysis path, which never contacts the hosts or addresses in your data.
+Dashed arrows are the only outbound connections, each tied to a feature you turn on or click;
+see [outbound network use](METHODS.md#privacy-and-outbound-network-use). In Docker, everything
+inside the VulnScope box runs in the container: inputs are mounted read-only, the run folder is
+`/runs`, and the page is published on `127.0.0.1` only.
+
+The same path in text:
+
 ```text
 Folder path, Browse, upload, or command line
   → format detection by content (PCAP → Zeek logs; Filebeat export → Zeek records)
