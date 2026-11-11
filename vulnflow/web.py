@@ -142,17 +142,18 @@ vulnerability status remains unknown.</p>
   // In the container the browser's own folder window is used. Browsers never reveal where the
   // chosen folder is, so the page sends its name plus a few file names and sizes (no contents),
   // and the server finds that folder among the folders shared with the container.
-  const msg = t => {{ $("pick-msg").textContent = t || ""; }};
+  const msg = (t, bad) => {{ const m = $("pick-msg"); m.textContent = t || "";
+    m.style.color = bad ? "#c0392b" : ""; m.style.fontWeight = bad ? "600" : ""; }};
   if (dialog) $("pick-dir").onchange = async () => {{
     const files = Array.from($("pick-dir").files || []); $("pick-dir").value = "";
-    if (!files.length) {{ msg("That folder looks empty, or the browser didn't list its files. Type the path instead."); return; }}
+    if (!files.length) {{ msg("That folder looks empty, or the browser didn't list its files. Type the path instead.", true); return; }}
     const name = files[0].webkitRelativePath.split("/")[0];
     const step = Math.max(1, Math.floor(files.length / 12));
     const samples = files.filter((f, i) => i % step === 0).slice(0, 12)
       .map(f => [f.webkitRelativePath.split("/").slice(1).join("/"), f.size]);
     msg("Finding " + name + " ...");
     const d = await call("/locate-folder", {{name, samples, count: files.length}});
-    if (d.error) {{ msg(d.error); return; }}
+    if (d.error) {{ msg(d.error, true); return; }}
     if (d.matches.length === 1) {{ $("path").value = d.matches[0]; box.hidden = true; msg(""); $("path").focus(); return; }}
     msg("Found " + d.matches.length + " folders named " + name + ". Pick one:");
     cur = null; $("pk-where").textContent = name; $("pk-up").disabled = true; $("pk-roots").innerHTML = "";
@@ -178,6 +179,9 @@ vulnerability status remains unknown.</p>
     show($("path").value);
   }};
   $("pk-up").onclick = () => parent && show(parent);
+  $("path").form.addEventListener("submit", e => {{
+    if (!$("path").value.trim()) {{ e.preventDefault(); msg("Choose a folder first: click Browse… and pick one, or type its full path.", true); $("path").focus(); }}
+  }});
   $("pk-use").onclick = () => {{ if (cur) $("path").value = cur; box.hidden = true; $("path").focus(); }};
   if ($("browse-shared")) $("browse-shared").onclick = e => {{ e.preventDefault(); msg(""); show($("path").value); }};
   $("pk-cancel").onclick = () => {{ box.hidden = true; }};
@@ -673,6 +677,8 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             if resources.busy():
                 return self._form("Another analysis is already running on this machine. "
                                   "Wait for it to finish and try again.")
+            if not raw:
+                return self._form("Choose a folder first: click Browse… and pick one, or type its full path.")
             if not folder or not os.path.isdir(folder):
                 return self._form(f"Folder not found: {raw or '(empty)'}. Use the full path, for example "
                                   f"{browse_root() + '/case-logs' if CONTAINER_DATA else '~/Documents/case-logs'}.")
