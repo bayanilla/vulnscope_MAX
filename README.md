@@ -78,6 +78,9 @@ python3 -m vulnflow analyze samples/telemetry_only -o telemetry_output
 # Or a larger 4,324-host company whose network extends into AWS (scan, firewall, Zeek, VPC Flow Logs)
 python3 -m vulnflow analyze samples/hosts_onprem_and_aws -o hosts_output
 
+# Or replay a published Gootloader intrusion: poisoned download, Cobalt Strike, SystemBC, domain controllers
+python3 -m vulnflow analyze samples/gootloader_seo_poisoning -o gootloader_output
+
 # 2. Run on real data (files or recursively scanned folders, any mix of formats)
 python3 -m vulnflow analyze /path/to/log-bundle -o out \
     --internal-net 10.0.0.0/8 --internal-net 172.16.0.0/12
@@ -118,8 +121,9 @@ Múcaro VulnScope** and click **Analyze folder**. Select `samples/telemetry_only
 network records without a vulnerability scan. The latter includes flow, firewall, NetFlow, Zeek
 connection, DNS, notice, and Modbus records from a small synthetic OT segment. Select
 `samples/hosts_onprem_and_aws` for a larger 4,324-host estate: an on-prem site plus two AWS VPCs,
-with a Nessus scan of every host, Palo Alto and Zeek traffic, and AWS VPC Flow Logs. See
-[the sample guide](samples/README.md).
+with a Nessus scan of every host, Palo Alto and Zeek traffic, and AWS VPC Flow Logs. Select
+`samples/gootloader_seo_poisoning` to replay a published Gootloader intrusion, from an SEO-poisoned
+download to the domain controllers. See [the sample guide](samples/README.md).
 
 ### IOC CSV matches
 

@@ -1,0 +1,6 @@
+{
+  "https://thedfirreport.com/2024/02/26/seo-poisoning-to-domain-control-the-gootloader-saga-continues/": {
+    "title": "SEO Poisoning to Domain Control: The Gootloader Saga Continues",
+    "overview": "The DFIR Report follows an intrusion that began when a user downloaded a poisoned search result: Gootloader JavaScript fetched a Cobalt Strike payload about nine hours later, and the attacker moved over SMB, WinRM and RDP, used SystemBC as a SOCKS5 tunnel and reached the domain controllers, file shares and backup server."
+  }
+}

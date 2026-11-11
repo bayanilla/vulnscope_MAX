@@ -501,12 +501,12 @@ class EndToEndTests(Base):
 
 
 class BundledSamplesTests(unittest.TestCase):
-    def test_generator_writes_three_distinct_input_folders(self):
+    def test_generator_writes_four_distinct_input_folders(self):
         with tempfile.TemporaryDirectory() as root:
             paths = generate_bundles(root)
             self.assertEqual(sorted(os.listdir(root)),
-                             ["hosts_onprem_and_aws", "scan_and_telemetry", "telemetry_only"])
-            self.assertEqual(len(paths), 15)
+                             ["gootloader_seo_poisoning", "hosts_onprem_and_aws", "scan_and_telemetry", "telemetry_only"])
+            self.assertEqual(len(paths), 25)
             self.assertTrue(os.path.isfile(os.path.join(root, "scan_and_telemetry", "quarterly_scan.nessus")))
             self.assertFalse(any(name.endswith((".nessus", "scan.csv"))
                                  for name in os.listdir(os.path.join(root, "telemetry_only"))))
@@ -516,7 +516,7 @@ class BundledSamplesTests(unittest.TestCase):
         from vulnflow.cli import _input_files
         root = os.path.join(os.path.dirname(__file__), "..", "samples")
         self.assertEqual(sorted(name for name in os.listdir(root) if os.path.isdir(os.path.join(root, name))),
-                         ["hosts_onprem_and_aws", "scan_and_telemetry", "telemetry_only"])
+                         ["gootloader_seo_poisoning", "hosts_onprem_and_aws", "scan_and_telemetry", "telemetry_only"])
         with tempfile.TemporaryDirectory() as output:
             full_files = _input_files([os.path.join(root, "scan_and_telemetry")], output)
             network_files = _input_files([os.path.join(root, "telemetry_only")], output)
@@ -599,6 +599,53 @@ class BundledSamplesTests(unittest.TestCase):
         self.assertEqual(next(h for h in res["hosts"] if h["host"] == "10.60.1.16")["network"], "AWS prod (us-east-2)")
         self.assertEqual(data["networks"][1]["type"], "aws")
         self.assertEqual(next(n for n in data["nodes"] if n["id"] == "10.60.1.16")["net"], 1)
+
+    def test_gootloader_sample_replays_the_intrusion_with_timed_alerts(self):
+        import ipaddress
+        from datetime import datetime, timezone
+        from vulnflow import sample_gootloader as g
+        from vulnflow.cli import _input_files
+        root = os.path.join(os.path.dirname(__file__), "..", "samples", g.FOLDER)
+        with tempfile.TemporaryDirectory() as tmp:
+            fresh = os.path.join(tmp, "fresh")
+            for path in g.generate(fresh):                     # checked-in folder matches the generator
+                with open(path, "rb") as a, open(os.path.join(root, os.path.basename(path)), "rb") as b:
+                    self.assertEqual(a.read(), b.read(), os.path.basename(path))
+            files = _input_files([root], tmp)
+            fmts = {os.path.basename(p): detect(p) for p in files}
+            self.assertEqual((fmts["conn.log"], fmts["dns.log"], fmts["files.log"], fmts["suricata_eve.json"],
+                              fmts["paloalto_traffic.csv"], fmts["domain_scan.nessus"]),
+                             ("zeek", "zeek", "zeek", "suricata", "paloalto", "nessus"))
+            ds = load([p for p in files if not p.endswith(("ioc_indicators.csv", "article_previews.json"))])
+            res, paths = run(files, os.path.join(tmp, "out"), article_previews=False)
+            with open(paths["explorer.html"], encoding="utf-8") as fh:
+                page = fh.read()
+        # every address is valid (no 2-octet prefixes), and every alert keeps its own time
+        for f in ds.flows:
+            ipaddress.ip_address(f.src_ip), ipaddress.ip_address(f.dst_ip)
+        self.assertEqual(res["summary"]["threat_alerts"], len(ds.threats))
+        self.assertTrue(all(t.ts is not None for t in ds.threats))
+        first = {t.name: t.ts for t in sorted(ds.threats, key=lambda t: t.ts, reverse=True)}
+        self.assertEqual(first["Gootloader JavaScript Downloader Payload Retrieval"],
+                         datetime(2026, 10, 26, 23, 2, 12, tzinfo=timezone.utc))      # T0 + 9 h, the firewall row
+        self.assertLess(first["Gootloader JavaScript Downloader Payload Retrieval"],
+                        first["ET RPC DCERPC SVCCTL - Remote Service Control Manager Access"])
+        self.assertLess(first["ET RPC DCERPC SVCCTL - Remote Service Control Manager Access"],
+                        first["ET MALWARE SystemBC Powershell bot registration"])
+        self.assertEqual(res["coverage"]["scanned_hosts"], 115)
+        self.assertIn(g.PATIENT0, {h for m in res["ioc_matches"] for h in m["hosts"]})
+        matched = {(m["type"], m["value"]) for m in res["ioc_matches"]}
+        self.assertTrue({("ip", g.CS_C2), ("ip", g.SYSTEMBC_C2), ("ip", g.GOOT_SERVER),
+                         ("domain", "blog.lilianpraskova.cz")} <= matched)
+        self.assertEqual(sum(t == "hash" for t, _ in matched), 12)                    # 4 beacons x md5/sha1/sha256
+        self.assertIn(g.DC1, res["summary"]["hosts_to_investigate"])
+        data = json.loads(re.search(r'<script id="vf-data" type="application/json">(.*?)</script>', page, re.S)[1])
+        tl = data["timeline"]
+        self.assertEqual(len(tl["alerts"]), len(ds.threats))                       # none dropped for lack of time
+        t0 = datetime.fromisoformat(tl["t0"].replace("Z", "+00:00"))
+        payload = next(a for a in tl["alerts"] if a[3].startswith("Gootloader"))
+        self.assertAlmostEqual(payload[0], (first[payload[3]] - t0).total_seconds() / 3600, places=3)
+        self.assertTrue(tl["ioc_lookups"])
 
     def test_network_map_is_optional(self):
         """Without a network map, results, reports and the Explorer carry no network fields."""
