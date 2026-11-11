@@ -28,10 +28,13 @@ const hub = N.map(n => (deg.get(n.id) || 0) > 25);
 
 // ---------------------------------------------------------------- page chrome
 const BRAND = (document.querySelector('meta[name="application-name"]') || {}).content || 'VulnScope';
+const BRAND_IMG = document.querySelector('#hud .brand-logo');           // the analyst's logo, as the other views show it
+const BRAND_LOGO = (BRAND_IMG || {}).src || '';
+const BRAND_SMALL = !!(BRAND_IMG && BRAND_IMG.classList.contains('logo-small'));
 const WINS = HRS > 72 ? [6, 12, 24] : HRS > 12 ? [2, 6, 12] : [0.5, 1, 3];
 let WIN = WINS[1];
 root.innerHTML = `<canvas id="tl-canvas" aria-label="Flows over time"></canvas><div id="tl-labels"></div>
-<header class="tl-top"><div class="tl-title"><div class="t">${esc(BRAND)} · Timeline</div><div class="s" id="tl-sub"></div></div>
+<header class="tl-top">${BRAND_LOGO.startsWith('data:image/') ? `<img class="tl-logo${BRAND_SMALL ? ' logo-small' : ''}" src="${esc(BRAND_LOGO)}" alt="" aria-hidden="true">` : ''}<div class="tl-title"><div class="t">${esc(BRAND)} · Timeline</div><div class="s" id="tl-sub"></div></div>
   <div class="seg" role="group" aria-label="View"><button type="button" data-view="flat" title="Flat network view (2)">Flat</button><button type="button" data-view="3d" title="3D network view (3)">3D</button><button type="button" data-view="paths" title="Attack paths (P)">Attack paths</button><button type="button" class="on" aria-current="true" title="Timeline (Esc to go back)">Timeline</button></div>
   <span class="tl-qwrap"><button type="button" id="tl-about-toggle" aria-controls="tl-about" aria-expanded="false" aria-label="What am I looking at?" title="What am I looking at? (?)">?</button>
   <p id="tl-about" hidden>Time runs <b>left to right</b> along the tunnel. Each lane on the wall is a subnet and the <b>internet</b> is the outer band on top. Every flow is a <b>chord</b> drawn at the moment it happened, so you can read the order of events: first contact, the exploit alert, the callback out, and anything that repeats on a schedule. <b>Rings</b> are IPS alerts. Drag the window in the side panel to light up one stretch of time.</p></span></header>
