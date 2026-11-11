@@ -186,7 +186,7 @@ vulnerability status remains unknown.</p>
     const name = files[0].webkitRelativePath.split("/")[0];
     const step = Math.max(1, Math.floor(files.length / 12));
     const samples = files.filter((f, i) => i % step === 0).slice(0, 12)
-      .map(f => [f.webkitRelativePath.split("/").slice(1).join("/"), f.size]);
+      .map(f => [f.webkitRelativePath.split("/").slice(1).join("/"), f.size, f.lastModified]);
     msg("Finding " + name + " ...");
     const d = await call("/locate-folder", {{name, samples, count: files.length}});
     if (d.error) {{ msg(d.error, true); return; }}
@@ -471,20 +471,26 @@ _LOCATE_SKIP = {"Library", "AppData", "node_modules", "$RECYCLE.BIN", "System Vo
                 "Applications", "Pictures", "Music", "Movies"}
 
 
-def _matches(folder: str, samples: list) -> bool:
-    hits = 0
+def _match_score(folder: str, samples: list) -> int | None:
+    """None unless most sample files exist in ``folder`` with the same size; otherwise how many
+    also have the same modification time (within 2 s), which tells copies of a folder apart."""
+    hits = same_time = 0
     for item in samples:
         try:
             rel, size = str(item[0]), int(item[1])
+            mtime = float(item[2]) / 1000 if len(item) > 2 and item[2] is not None else None
         except (TypeError, ValueError, IndexError):
             continue
         p = os.path.join(folder, *[part for part in rel.split("/") if part not in ("", ".", "..")])
         try:
-            if os.path.getsize(p) == size:
-                hits += 1
+            st = os.stat(p)
         except OSError:
-            pass
-    return bool(samples) and hits >= max(1, (len(samples) * 4) // 5)
+            continue
+        if st.st_size == size:
+            hits += 1
+            if mtime is not None and abs(st.st_mtime - mtime) <= 2:
+                same_time += 1
+    return same_time if samples and hits >= max(1, (len(samples) * 4) // 5) else None
 
 
 def locate_folder(name: str, samples: list, budget_s: float = 8.0, max_depth: int = 8) -> dict:
@@ -495,12 +501,13 @@ def locate_folder(name: str, samples: list, budget_s: float = 8.0, max_depth: in
     samples = samples[:20]
     if not BROWSE_ROOTS:
         return {"error": "Folder search is only available in the container."}
-    deadline, found, queue = time.monotonic() + budget_s, [], [(r, 0) for r in BROWSE_ROOTS]
+    deadline, found, queue = time.monotonic() + budget_s, {}, [(r, 0) for r in BROWSE_ROOTS]
     for root in BROWSE_ROOTS:                      # the shared folder itself (e.g. the inbox)
-        if _matches(root, samples):
-            found.append(root)
+        score = _match_score(root, samples)
+        if score is not None:
+            found[root] = score
     timed_out = False
-    while queue and len(found) < 10:
+    while queue and len(found) < 50:
         if time.monotonic() > deadline:
             timed_out = True
             break
@@ -517,12 +524,17 @@ def locate_folder(name: str, samples: list, budget_s: float = 8.0, max_depth: in
                     continue
             except OSError:
                 continue
-            if e.name == name and e.path not in found and _matches(e.path, samples):
-                found.append(e.path)
+            if e.name == name and e.path not in found:
+                score = _match_score(e.path, samples)
+                if score is not None:
+                    found[e.path] = score
             if depth + 1 < max_depth:
                 queue.append((e.path, depth + 1))
     if found:
-        return {"matches": found}
+        # Copies of the same folder (same names and sizes) are told apart by file times: keep
+        # only the folders whose files have the picked folder's modification times.
+        best = max(found.values())
+        return {"matches": [p for p, score in found.items() if score == best]}
     shared = ", ".join(BROWSE_ROOTS)
     return {"error": (f"VulnScope can't find {name}"
                       + (" in time; type its full path instead." if timed_out else
@@ -693,8 +705,9 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                                         path_example=html.escape(browse_root() + "/case-logs" if CONTAINER_DATA
                                                                  else "~/Documents/case-logs"),
                                         folder_hint=("Click Browse&hellip;, choose the folder and confirm; its path fills in here. "
-                                                     "If your browser asks to upload the files, click Upload: nothing is "
-                                                     "sent, VulnScope only uses it to find the folder. ")
+                                                     "Your browser may ask twice to upload (the folder window's Upload button, "
+                                                     "then &ldquo;Upload files to this site?&rdquo;): click Upload both times. "
+                                                     "Nothing is sent; VulnScope only uses it to find the folder. ")
                                                     if CONTAINER_DATA else ""))
 
         def _analyze_folder(self):
