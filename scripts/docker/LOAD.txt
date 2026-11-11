@@ -15,7 +15,8 @@ Nothing in this bundle reaches the internet, and the container needs no internet
      mkdir vulnscope && tar -xzf vulnscope-max-source.tar.gz -C vulnscope && cd vulnscope
      cp .env.example .env
    Edit .env: VULNSCOPE_DATA = your logs/scans/PCAP folder, VULNSCOPE_RUNS = where results go,
-   and set VULNSCOPE_OFFLINE=1.
+   and set VULNSCOPE_OFFLINE=1 (skips IOC article previews). Keep the Security Assistant on
+   the built-in offline provider and leave CLOUDFLARE_RADAR_API_TOKEN unset.
 
 4. Start it without building or pulling anything:
      docker compose up -d --no-build

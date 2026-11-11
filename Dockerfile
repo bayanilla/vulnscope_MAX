@@ -4,7 +4,7 @@
 #   docker compose run --rm vulnscope analyze /data/case1 -o /runs/case1
 #
 # Multi-arch (linux/amd64, linux/arm64): the Zeek base image and DuckDB wheels exist for both.
-# Nothing is downloaded at run time; see "Docker" in README.md for air-gapped use.
+# Nothing is downloaded at run time; see "Air-gapped networks and enclaves" in ARCHITECTURE.md.
 ARG ZEEK_IMAGE=zeek/zeek:9.0.1
 # Must match the Python in the Zeek image (Debian trixie: 3.13), since DuckDB is a compiled wheel.
 ARG PYTHON_IMAGE=python:3.13-slim-trixie
@@ -33,7 +33,8 @@ RUN python3 -c "import sys; sys.path.insert(0, '/opt/vulnscope/deps'); import du
 COPY vulnflow /opt/vulnscope/vulnflow
 COPY samples /opt/vulnscope/samples
 COPY docker/entrypoint.py /opt/vulnscope/entrypoint.py
-COPY README.md LICENSE THIRD_PARTY_NOTICES.md /opt/vulnscope/
+COPY README.md METHODS.md ARCHITECTURE.md DEVELOPMENT.md API.md UPGRADE.md LICENSE THIRD_PARTY_NOTICES.md /opt/vulnscope/
+COPY docs /opt/vulnscope/docs
 RUN python3 -m compileall -q /opt/vulnscope/vulnflow
 
 # /data  your logs, scans and captures (mount read-only)
