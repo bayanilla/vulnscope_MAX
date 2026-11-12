@@ -395,7 +395,8 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     s = res["summary"]
     return {
         "vulnerability_data_available": not telemetry_only,
-        "generated": res["generated"], "window": [s.get("window_start"), s.get("window_end")],
+        "generated": res["generated"], "report": res.get("report") or {"name": "", "description": ""},
+        "window": [s.get("window_start"), s.get("window_end")],
         "counts": {"hosts": len(scanned) if telemetry_only else res["coverage"]["scanned_hosts"], "flows": s["flows"], "p1": s["priority_counts"]["P1"],
                    "alerts": s.get("threat_alerts", 0)},
         "nodes": [nodes[n] for n in keep],
@@ -614,10 +615,14 @@ def html(data: dict) -> str:
     logo = brand.logo_data_uri()
     brand_markup = ((f'<img class="brand-logo{brand.logo_class}" src="{logo}" alt="" aria-hidden="true">' if logo else "")
                     + (f'{escape(brand.prefix)} ' if brand.prefix else "") + "<b>VULNSCOPE</b>")
+    report = data.get("report") or {}
+    name = report.get("name") or ""
+    report_markup = (f'<span id="report-name" title="{escape(report.get("description") or name)}">{escape(name)}</span>'
+                     if name else "")
     return ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-            f"<title>{EXPLORER_NAME} · {escape(brand.name)}</title><meta name=\"application-name\" content=\"{escape(brand.name)}\"><link rel=\"icon\" href=\"{icon_data_uri()}\"><style>" + _read("analyst_chat.css") + _read("explorer.css") + _read("attackpaths.css") + _read("timeline3d.css") + explorer_background_css() + ioc_archive.CSS + "</style></head><body>"
-            + _read("explorer.html").replace("<!--BRAND-->", brand_markup, 1)
+            f"<title>{escape(name) + ' · ' if name else ''}{EXPLORER_NAME} · {escape(brand.name)}</title><meta name=\"application-name\" content=\"{escape(brand.name)}\"><link rel=\"icon\" href=\"{icon_data_uri()}\"><style>" + _read("analyst_chat.css") + _read("explorer.css") + _read("attackpaths.css") + _read("timeline3d.css") + explorer_background_css() + ioc_archive.CSS + "</style></head><body>"
+            + _read("explorer.html").replace("<!--BRAND-->", brand_markup, 1).replace("<!--REPORT-->", report_markup, 1)
             + f'<script id="vf-data" type="application/json">{blob}</script>'
             # Three.js (MIT, vendored so the page works offline) and the 3D renderer; the Explorer
             # falls back to its 2D canvas when WebGL is unavailable

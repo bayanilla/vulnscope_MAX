@@ -48,6 +48,8 @@ from .pipeline import run
 from .radar import RadarError, lookup as radar_lookup
 from .report import CSS, THEME_INIT, md_body, save_article_briefs, theme_control
 from .cli import _input_files
+from . import runname
+from .runname import RUN_ID
 
 MAX_UPLOAD = 1024 * 1024 * 1024   # default cap; uploads stream to disk, so this is about disk and run time
 TYPES = {".html": "text/html; charset=utf-8", ".md": "text/markdown; charset=utf-8",
@@ -60,6 +62,8 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 label{{display:block;font-weight:600;margin:14px 0 4px}} .hint{{color:var(--muted);font-size:.9rem}}
 button{{margin-top:18px;padding:8px 18px;font-size:1rem}}
 input[type=text]{{width:100%;max-width:520px;padding:6px}}
+#report-details{{margin:16px 0}} #report-details h2{{margin-top:1rem}} #report-details h2 .hint{{font-weight:400}}
+#report-details textarea{{width:100%;max-width:640px;padding:6px;font:inherit;resize:vertical}}
 .pathrow{{display:flex;gap:8px;max-width:640px;align-items:center}} .pathrow input{{flex:1}} .pathrow button{{margin-top:0;white-space:nowrap}}
 button.secondary{{background:transparent;color:var(--fg);border:1px solid var(--line)}}
 .btnrow{{display:flex;gap:10px;flex-wrap:wrap;align-items:center}}
@@ -84,6 +88,14 @@ button.secondary{{background:transparent;color:var(--fg);border:1px solid var(--
 normalizes the data and produces an executive summary and a technical report. Without scan data,
 vulnerability status remains unknown.</p>
 {error}
+<section id="report-details" aria-labelledby="rd-title"><h2 id="rd-title">Report details <span class="hint">(optional)</span></h2>
+<label for="report_name">Report name</label>
+<input id="report_name" type="text" name="report_name" value="{report_name}" maxlength="100" placeholder="e.g. Plant 3 network review, November" autocomplete="off">
+<label for="report_description">Description</label>
+<textarea id="report_description" name="report_description" maxlength="2000" rows="3" placeholder="Scope, case number, who asked for it&hellip;">{report_description}</textarea>
+<div class="hint">Shown at the top of the reports and in the Explorer. Results are saved in a folder named after the report
+plus the date and time (for example <code>Plant-3-network-review_2026-11-12_10-19-14</code>); without a name, the usual
+folder name plus the date and time.</div></section>
 <form method="post" action="/analyze-folder">
 <input type="hidden" name="csrf" value="{csrf}">
 <label for="path">Folder on this computer</label>
@@ -139,6 +151,12 @@ and <code>explorer.html</code>): the button changes to Open report, and nothing 
     document.getElementById("busy-hint").hidden = opening;
     const p = f.querySelector("#path");
     if (p && !p.value.trim()) return;  // no folder chosen: the folder form shows its own message
+    // the report details sit outside both forms: send them with whichever form is submitted
+    ["report_name", "report_description"].forEach(n => {{
+      let h = f.querySelector('input[type=hidden][name="' + n + '"]');
+      if (!h) {{ h = document.createElement("input"); h.type = "hidden"; h.name = n; f.prepend(h); }}
+      h.value = document.getElementById(n).value;
+    }});
     busy.dataset.running = "1";
     const start = Date.now(), tick = () => {{
       const s = Math.floor((Date.now() - start) / 1000);
@@ -727,6 +745,8 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                                         csrf_js=json.dumps(csrf), native_js="true" if NATIVE_PICKER else "false",
                                         dialog_js="true" if BROWSE_ROOTS else "false",
                                         path=html.escape(state.get("last_path", "")),
+                                        report_name=html.escape(state.get("last_report", {}).get("name", "")),
+                                        report_description=html.escape(state.get("last_report", {}).get("description", "")),
                                         path_example=html.escape(browse_root() + "/case-logs" if CONTAINER_DATA
                                                                  else "~/Documents/case-logs"),
                                         folder_hint=("Click Browse&hellip;, choose the folder and confirm; its path fills in here. "
@@ -745,6 +765,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             raw = form.get("path", "").strip().strip('"').strip("'")
             folder = os.path.realpath(os.path.expanduser(host_to_container(raw))) if raw else ""
             state["last_path"] = raw
+            state["last_report"] = runname.clean(form.get("report_name"), form.get("report_description"))
             if not raw:
                 return None, None, self._form("Choose a folder first: click Browse… and pick one, or type its full path.")
             if not folder or not os.path.isdir(folder):
@@ -764,18 +785,20 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
 
         def _open_report(self, folder):
             """Rebuild a completed report's pages from its output folder, without reanalyzing."""
-            run_id = secrets.token_hex(8)
-            run_root = os.path.join(data_dir, run_id)
+            run_root = None
             try:
                 res, data = saved.load_folder(folder)
-                os.makedirs(run_root)
+                run_id = runname.new_run(data_dir, (res.get("report") or {}).get("name", ""))
+                run_root = os.path.join(data_dir, run_id)
                 saved.write(res, data, os.path.join(run_root, "out"), folder, state.get("last_path", ""))
             except saved.SavedRunError as exc:
-                shutil.rmtree(run_root, ignore_errors=True)
+                if run_root:
+                    shutil.rmtree(run_root, ignore_errors=True)
                 return self._form(str(exc))
             except Exception:
                 traceback.print_exc()
-                shutil.rmtree(run_root, ignore_errors=True)
+                if run_root:
+                    shutil.rmtree(run_root, ignore_errors=True)
                 return self._form("The saved report could not be opened; see the server console for details.")
             self._send(303, "", headers={"Location": f"/runs/{run_id}/"})
 
@@ -786,16 +809,16 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return refused
             if saved.is_report_folder(folder):            # a completed report: reopen it, don't analyze it
                 return self._open_report(folder)
-            raw = form.get("path", "").strip().strip('"').strip("'")
+            report = state["last_report"]
             if resources.busy():
                 return self._form("Another analysis is already running on this machine. "
                                   "Wait for it to finish and try again.")
-            run_id = secrets.token_hex(8)
-            out_dir = os.path.join(data_dir, run_id, "out")
-            files = _input_files([folder], out_dir)
+            files = _input_files([folder], data_dir)
             files = [f for f in files if not os.path.realpath(f).startswith(os.path.realpath(data_dir) + os.sep)]
             if not files:
                 return self._form(f"No files found in {folder}.")
+            run_id = runname.new_run(data_dir, report["name"])
+            out_dir = os.path.join(data_dir, run_id, "out")
             cfg = dataclasses.replace(base_cfg, internal_nets=list(base_cfg.internal_nets))
             nets = form.get("internal_nets", "").strip()
             if nets:
@@ -804,13 +827,14 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             with open(os.path.join(data_dir, run_id, "in", "SOURCE.txt"), "w", encoding="utf-8") as fh:
                 fh.write(f"Read in place from {folder}\n" + "\n".join(files) + "\n")
             try:
-                run(files, out_dir, cfg, workdir=os.path.join(data_dir, run_id))
+                run(files, out_dir, cfg, workdir=os.path.join(data_dir, run_id), report=report)
             except ValueError as exc:
                 shutil.rmtree(os.path.join(data_dir, run_id), ignore_errors=True)
                 return self._form(str(exc))
             except Exception:
                 traceback.print_exc()
                 return self._form("The analysis failed; see the server console for details.")
+            state.pop("last_report", None)     # a new analysis starts with empty report details
             self._send(303, "", headers={"Location": f"/runs/{run_id}/"})
 
         def _read_json(self):
@@ -862,7 +886,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             if path == "/settings":
                 nxt = parse_qs(self.path.split("?", 1)[1]).get("next", ["/"])[0] if "?" in self.path else "/"
                 return self._settings(nxt)
-            m = re.fullmatch(r"/runs/([a-f0-9]{16})/(.*)", path)
+            m = re.fullmatch(rf"/runs/({RUN_ID})/(.*)", path)
             if not m:
                 return self._send(404, "Not found", "text/plain")
             run_dir = os.path.realpath(os.path.join(data_dir, m[1], "out"))
@@ -904,9 +928,11 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             if not os.path.isdir(run_dir):
                 return self._send(404, "Not found", "text/plain")
             try:
-                telemetry_only = not load_results(run_dir)["summary"].get("vulnerability_data_available", True)
+                results = load_results(run_dir)
+                telemetry_only = not results["summary"].get("vulnerability_data_available", True)
+                report = results.get("report") or {}
             except (OSError, ValueError, LLMError):
-                telemetry_only = False
+                telemetry_only, report = False, {}
             links = [("Executive summary", "executive_summary.html"),
                      ("Technical report", "technical_report.html"),
                      (("Vulnerability findings (CSV; unavailable)" if telemetry_only else "Correlated findings (CSV)"), "correlated_findings.csv"),
@@ -987,9 +1013,14 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                          + "</p>" + items)
             status = ('<p role="status"><strong>No vulnerability data available; vulnerability status unknown.</strong> '
                       'Network observations and IOC matches are leads for review.</p>' if telemetry_only else '')
-            body = (f"{chat_style}<h1>Results</h1>{status}{trigger}{items}{article_ui}{ai}"
+            name, about = report.get("name") or "", report.get("description") or ""
+            heading = f"<h1>{html.escape(name)}</h1>" if name else "<h1>Results</h1>"
+            about_html = "".join(f'<p class="report-about">{html.escape(p).replace(chr(10), "<br>")}</p>'
+                                 for p in about.split("\n\n") if p.strip())
+            saved_as = f'<p class="hint">Saved as <code>{html.escape(run_id)}</code></p>'
+            body = (f"{chat_style}{heading}{about_html}{saved_as}{status}{trigger}{items}{article_ui}{ai}"
                     f"<p><a href=\"/\">New analysis</a></p>{chat_script}{ARTICLE_PROGRESS_SCRIPT}")
-            self._send(200, _page("Results", body))
+            self._send(200, _page(f"{name} · Results" if name else "Results", body))
 
         def _json(self, code, obj):
             self._send(code, json.dumps(obj), "application/json")
@@ -1079,7 +1110,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
         def _settings(self, nxt, error="", code=200):
             if state["llm"] is None:
                 return self._send(404, "The Security Assistant is turned off on this server.", "text/plain")
-            if not re.fullmatch(r"/(runs/[a-f0-9]{16}/)?", nxt):
+            if not re.fullmatch(rf"/(runs/{RUN_ID}/)?", nxt):
                 nxt = "/"
             cfg = state["llm"]
             options = "".join(f'<option value="{p}"{" selected" if p == cfg.provider else ""}>{n}</option>'
@@ -1222,7 +1253,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return self._send(404, "Not found", "text/plain")
             if form.get("action") == "clear":
                 state["llm"] = LLMConfig.offline()
-                return self._send(303, "", headers={"Location": nxt if re.fullmatch(r"/(runs/[a-f0-9]{16}/)?", nxt) else "/"})
+                return self._send(303, "", headers={"Location": nxt if re.fullmatch(rf"/(runs/{RUN_ID}/)?", nxt) else "/"})
             cur = state["llm"]
             provider = PROVIDER_ALIASES.get(form.get("provider", ""), form.get("provider", ""))
             base_url = form.get("base_url", "").strip()
@@ -1246,7 +1277,7 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             except LLMError as exc:
                 return self._settings(nxt, str(exc), 400)
             state["llm"] = new
-            self._send(303, "", headers={"Location": nxt if re.fullmatch(r"/(runs/[a-f0-9]{16}/)?", nxt) else "/"})
+            self._send(303, "", headers={"Location": nxt if re.fullmatch(rf"/(runs/{RUN_ID}/)?", nxt) else "/"})
 
         def do_POST(self):
             if not self._gate():
@@ -1261,10 +1292,10 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return self._unlock_branding()
             if self.path == "/branding/lock":
                 return self._lock_branding()
-            m = re.fullmatch(r"/runs/([a-f0-9]{16})/radar", self.path)
+            m = re.fullmatch(rf"/runs/({RUN_ID})/radar", self.path)
             if m:
                 return self._radar(m[1])
-            m = re.fullmatch(r"/runs/([a-f0-9]{16})/(brief|article-briefs|ask)", self.path)
+            m = re.fullmatch(rf"/runs/({RUN_ID})/(brief|article-briefs|ask)", self.path)
             if m:
                 return self._ai(m[1], m[2])
             if self.path == "/analyze-folder":
@@ -1287,9 +1318,12 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             if length <= 0 or length > max_upload:
                 self.close_connection = True              # don't read an oversized body at all
                 return self._form(f"Upload must be between 1 byte and {max_upload // 1048576} MB.")
-            run_id = secrets.token_hex(8)
-            in_dir = os.path.join(data_dir, run_id, "in")
+            # The name arrives inside the upload, after the files, so the run starts in a temporary
+            # folder and is renamed "<name>_<timestamp>" once the form has been read.
+            tmp_id = runname.new_run(data_dir, "upload")
+            in_dir = os.path.join(data_dir, tmp_id, "in")
             os.makedirs(in_dir)
+            run_id = tmp_id
 
             def safe_name(i, fname):
                 safe = re.sub(r"[^A-Za-z0-9._-]", "_", os.path.basename(fname.replace("\\", "/")))[:120] or "upload"
@@ -1304,22 +1338,29 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             if not secrets.compare_digest(fields.get("csrf", ""), csrf):
                 shutil.rmtree(os.path.join(data_dir, run_id), ignore_errors=True)
                 return self._send(403, "Forbidden", "text/plain")
-            files = [path for _, path in parts]
             nets = fields.get("internal_nets", "").strip()
-            if not files:
+            report = state["last_report"] = runname.clean(fields.get("report_name"), fields.get("report_description"))
+            if not parts:
                 shutil.rmtree(os.path.join(data_dir, run_id), ignore_errors=True)
                 return self._form("Please choose at least one telemetry file and one scan file.")
+            run_id = runname.new_run(data_dir, report["name"])
+            os.rmdir(os.path.join(data_dir, run_id))
+            os.rename(os.path.join(data_dir, tmp_id), os.path.join(data_dir, run_id))
+            files = [os.path.join(data_dir, run_id, os.path.relpath(path, os.path.join(data_dir, tmp_id)))
+                     for _, path in parts]
             cfg = dataclasses.replace(base_cfg, internal_nets=list(base_cfg.internal_nets))
             if nets:
                 cfg.internal_nets = [n.strip() for n in re.split(r"[,\s]+", nets) if n.strip()]
             try:
-                run(files, os.path.join(data_dir, run_id, "out"), cfg, workdir=os.path.join(data_dir, run_id))
+                run(files, os.path.join(data_dir, run_id, "out"), cfg, workdir=os.path.join(data_dir, run_id),
+                    report=report)
             except ValueError as exc:
                 shutil.rmtree(os.path.join(data_dir, run_id), ignore_errors=True)
                 return self._form(str(exc))
             except Exception:
                 traceback.print_exc()
                 return self._form("The analysis failed; see the server console for details.")
+            state.pop("last_report", None)     # a new analysis starts with empty report details
             self._send(303, "", headers={"Location": f"/runs/{run_id}/"})
 
     return Handler

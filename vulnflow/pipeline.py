@@ -6,7 +6,7 @@ import shutil
 import sys
 import tempfile
 
-from . import netmap, pcap, resources
+from . import netmap, pcap, resources, runname
 from .correlate import Config, correlate
 from .ioc_archive import is_archive, match_archive, read_archives
 from .normalize import load
@@ -17,12 +17,16 @@ def run(paths: list[str], outdir: str, cfg: Config | None = None,
         overrides: dict[str, str] | None = None,
         article_previews: bool = True,
         article_preview_cache: str | None = None,
-        workdir: str | None = None) -> tuple[dict, dict[str, str]]:
+        workdir: str | None = None,
+        report: dict | None = None) -> tuple[dict, dict[str, str]]:
     """``workdir`` holds the run's Parquet batches and DuckDB file (default: system temp,
     or $VULNSCOPE_WORKDIR); it is deleted when the run finishes.
 
     Packet captures (.pcap/.pcapng, plain or .gz) are converted to Zeek logs with a local Zeek
-    first. ``VULNSCOPE_OFFLINE=1`` turns off every outbound lookup (article previews)."""
+    first. ``VULNSCOPE_OFFLINE=1`` turns off every outbound lookup (article previews).
+
+    ``report`` is the optional {"name", "description"} the analyst gave the run; it is stored in
+    results.json and shown at the top of the reports and in the Explorer."""
     cfg = cfg or Config()
     if offline():
         article_previews = False
@@ -54,7 +58,8 @@ def run(paths: list[str], outdir: str, cfg: Config | None = None,
             if zeek_dir:
                 shutil.rmtree(zeek_dir, ignore_errors=True)
         try:
-            return _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache, networks)
+            return _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache, networks,
+                        runname.clean((report or {}).get("name"), (report or {}).get("description")))
         except Exception as exc:
             friendly = resources.explain(exc, budget)
             if friendly is not None:
@@ -74,13 +79,14 @@ def _is_capture(path: str, overrides: dict[str, str]) -> bool:
     return forced == "pcap" or (forced is None and pcap.is_pcap(path))
 
 
-def _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache, networks=()):
+def _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache, networks=(), report=None):
     if not ds.flows and not ds.threats:
         raise ValueError("No network telemetry was provided (or none could be parsed). "
                          "Add Zeek conn.log, Palo Alto traffic/threat logs, IDS alerts or a flow CSV.")
     archive, archive_stats = read_archives(archive_paths)
     ds.stats.extend(archive_stats)
     res = correlate(ds, cfg)
+    res["report"] = report or runname.clean("", "")
     if networks:
         _apply_networks(res, ds, networks)
     if archive_paths:
