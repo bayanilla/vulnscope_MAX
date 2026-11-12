@@ -564,8 +564,11 @@ def _row(values) -> list:
     return [_cell(v) for v in values]
 
 
-def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
-    os.makedirs(os.path.join(outdir, "normalized"), mode=0o700, exist_ok=True)
+def write_reports(res: dict, outdir: str) -> dict[str, str]:
+    """The pages and files built from ``results.json`` alone: summaries, technical report,
+    hostile-activity diagram, results.json itself and the correlated findings CSV. Used by a
+    fresh analysis and when a saved results.json is reopened."""
+    os.makedirs(outdir, mode=0o700, exist_ok=True)
     paths = {}
 
     def w(name, text):
@@ -586,8 +589,6 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
                                          res.get("ioc_matches"), res.get("article_briefs")))
     if not telemetry_only:
         w("hostile_activity.svg", hostile_activity_svg(res, standalone=True))
-    from . import explore
-    w("explorer.html", explore.html(explore.build(res, ds)))
     w("results.json", json.dumps(res, indent=2, default=str))
 
     blast = {h["host"]: h["blast"] for h in res["hosts"]}
@@ -605,6 +606,17 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
                          " | ".join(i["text"] for i in r["indicators"]), _short(r["solution"], 500),
                          e.get("refused", 0)]))
     paths["correlated_findings.csv"] = p
+    return paths
+
+
+def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
+    os.makedirs(os.path.join(outdir, "normalized"), mode=0o700, exist_ok=True)
+    paths = write_reports(res, outdir)
+    from . import explore
+    p = os.path.join(outdir, "explorer.html")
+    with open(p, "w", encoding="utf-8") as fh:
+        fh.write(explore.html(explore.build(res, ds)))
+    paths["explorer.html"] = p
 
     p = os.path.join(outdir, "normalized", "flows.csv")
     with open(p, "w", newline="", encoding="utf-8") as fh:
@@ -656,15 +668,17 @@ def save_article_briefs(res: dict, outdir: str) -> None:
         pages[name + ".html"] = md_to_html(markdown, title, inserts,
                                             res.get("ioc_matches"), res.get("article_briefs"))
 
-    with open(os.path.join(outdir, "explorer.html"), encoding="utf-8") as fh:
-        previous = fh.read()
-    match = re.search(r'<script id="vf-data" type="application/json">(.*?)</script>', previous, re.S)
-    if not match:
-        raise ValueError("Cannot find the saved Explorer data for this run.")
-    explorer_data = json.loads(match.group(1))
-    explorer_data["article_briefs"] = res.get("article_briefs", {})
-    explorer_data["ioc_matches"] = res.get("ioc_matches", [])
-    pages["explorer.html"] = explore.html(explorer_data)
+    explorer_path = os.path.join(outdir, "explorer.html")
+    if os.path.exists(explorer_path):           # a run reopened from results.json alone has none
+        with open(explorer_path, encoding="utf-8") as fh:
+            previous = fh.read()
+        match = re.search(r'<script id="vf-data" type="application/json">(.*?)</script>', previous, re.S)
+        if not match:
+            raise ValueError("Cannot find the saved Explorer data for this run.")
+        explorer_data = json.loads(match.group(1))
+        explorer_data["article_briefs"] = res.get("article_briefs", {})
+        explorer_data["ioc_matches"] = res.get("ioc_matches", [])
+        pages["explorer.html"] = explore.html(explorer_data)
     pages["results.json"] = json.dumps(res, indent=2, default=str)
 
     for name, content in pages.items():

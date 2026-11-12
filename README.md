@@ -236,6 +236,13 @@ The HTML files work offline and embed the branding, theme, matched IOC source li
 article overviews they were made with. Live lookups such as Cloudflare Radar are offered only when
 the page is served by the upload page. Runs are kept until you delete them from the data folder.
 
+**Reopen a saved report:** on the upload page, choose a completed report's output folder (the one
+with `results.json` and `explorer.html`). The button changes to **Open report**; the summaries,
+technical report, Explorer and Timeline are redrawn with the current version and branding, the
+raw-data files are served from that folder, and nothing is reanalyzed or changed. `results.json`
+alone keeps the report data but not the traffic the Explorer is drawn from, so keep
+`explorer.html` with it. A `results.json` written by a newer VulnScope is refused.
+
 ## Branding and themes
 
 **Branding** (linked from the upload page) replaces the name before "VulnScope" and adds a small

@@ -26,6 +26,9 @@ LATERAL_PORTS = {22: "SSH", 23: "Telnet", 88: "Kerberos", 135: "RPC", 139: "NetB
 SEVERITY_CVSS = {4: 9.5, 3: 7.5, 2: 5.0, 1: 2.5, 0: 0.0}
 EXFIL_BYTES = 20 * 1024 * 1024
 BROAD_REACH = 5               # distinct internal clients that make a service "widely reached"
+# Version of the results.json layout. Raise it when a field the reports read changes meaning or
+# shape, so a saved results.json from another version is refused instead of misread on reopen.
+RESULTS_SCHEMA_VERSION = 1
 
 
 @dataclass
@@ -680,6 +683,7 @@ class Correlator:
                 network_leads.append({"host": host, "peer": peer, "sessions": int(n),
                                       "note": "Host connected to an outside address after inbound contact; this may be legitimate traffic."})
         return {
+            "schema_version": RESULTS_SCHEMA_VERSION,
             "generated": _iso(datetime.now(timezone.utc)),
             "config": {"internal_nets": cfg.internal_nets, "hops": cfg.hops,
                        "min_severity": SEVERITY_NAMES[cfg.min_severity]},
