@@ -5,6 +5,7 @@ import csv
 import re
 import xml.etree.ElementTree as ET
 
+from ..errors import UserError
 from ..schema import Finding, ParseStats
 from ._util import clean_ip, norm_header, open_gzip_binary, open_text, parse_ts, to_int
 
@@ -39,7 +40,7 @@ def _refuse_dtd(path: str) -> None:
     root = head.find(b"<NessusClientData")
     doctype = head.upper().find(b"<!DOCTYPE")
     if doctype >= 0 and (root < 0 or doctype < root):
-        raise ValueError("XML DOCTYPE declarations are not allowed in scan files")
+        raise UserError("XML DOCTYPE declarations are not allowed in scan files")
 
 
 def parse_xml(path: str, stats: ParseStats):

@@ -1,4 +1,4 @@
-"""Command line entry point: python -m vulnflow {analyze,serve,samples,filebeat-to-zeek,...}."""
+"""Command line entry point: python -m vulnflow {analyze,serve,compare,samples,filebeat-to-zeek,...}."""
 from __future__ import annotations
 
 import argparse
@@ -71,6 +71,59 @@ def _chat(outdir, analyst, cfg, first=None) -> int:
         print("\n" + a)
         log_qa(outdir, cfg, q, a)
         history += [{"role": "user", "content": q}, {"role": "assistant", "content": a}]
+
+
+def _compare(args) -> int:
+    from . import compare
+    from .errors import UserError
+    out = os.path.abspath(args.out)
+    names = {}
+    for item in args.network:
+        folder, sep, name = item.partition("=")
+        if not sep or not name.strip():
+            print(f"error: --network takes FOLDER=NAME, not {item!r}", file=sys.stderr)
+            return 2
+        names[os.path.realpath(folder)] = name.strip()
+    try:
+        folders = compare.find_reports(args.reports)
+        if not folders:
+            print("No report folders found (a report folder has results.json next to its reports).", file=sys.stderr)
+            return 1
+        reports = []
+        for folder in folders:
+            rep = compare.reopened(compare.describe(folder))
+            rep.network = names.get(os.path.realpath(folder), rep.network)
+            page = next((p for p in ("explorer.html", "technical_report.html", "executive_summary.html")
+                         if os.path.isfile(os.path.join(folder, p))), "")
+            if page:
+                target = os.path.join(os.path.abspath(folder), page)
+                try:
+                    rep.href = os.path.relpath(target, out).replace(os.sep, "/")
+                except ValueError:                  # another drive (Windows)
+                    from pathlib import Path
+                    rep.href = Path(target).as_uri()
+            reports.append(rep)
+        result = compare.compare(reports, args.ioc_csv, crosscheck=not args.no_crosscheck, workdir=args.workdir,
+                                 log=lambda m: print(m, file=sys.stderr))
+        paths = compare.write(result, out)
+    except UserError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    s = result["summary"]
+    print(f"\nCompared {s['reports']} report(s) from {s['networks']} network(s).")
+    print(f"IOCs in more than one report: {s['iocs_shared']} of {s['iocs']}")
+    print(f"Vulnerabilities in more than one report: {s['vulns_shared']} of {s['vulns']}")
+    if result["rehunt"]["indicators"]:
+        print(f"Re-hunt: {result['rehunt']['indicators']} indicator(s) looked for again; "
+              f"{s['found_by_hunt']} sighting(s) the analyses didn't have")
+    for row in [r for r in result["iocs"] if r["reports"] > 1][:10]:
+        print(f"  {row['type']:<7} {row['value'][:60]:<60} {row['reports']} reports, {row['networks']} networks")
+    for note in result["notes"]:
+        print(f"note: {note}", file=sys.stderr)
+    print(f"\nWritten to {out}:")
+    for name in paths:
+        print(f"  {name}")
+    return 0
 
 
 def main(argv=None) -> int:
@@ -167,6 +220,20 @@ def main(argv=None) -> int:
     common(x)
     report_flags(x)
 
+    c = sub.add_parser("compare", help="which IOCs and vulnerabilities show up in more than one saved report")
+    c.add_argument("reports", nargs="+", metavar="FOLDER",
+                   help="report output folders (with results.json), or folders that contain them, such as "
+                        "the upload page's data folder")
+    c.add_argument("-o", "--out", default="vulnflow_compare", help="output folder (default vulnflow_compare)")
+    c.add_argument("--ioc-csv", action="append", default=[], metavar="CSV",
+                   help="IOC CSV to look for again in every report's saved data (repeatable)")
+    c.add_argument("--no-crosscheck", action="store_true",
+                   help="don't look for the IOCs one report matched in the other reports")
+    c.add_argument("--network", action="append", default=[], metavar="FOLDER=NAME",
+                   help="count the report in FOLDER as network NAME (repeatable); default: its network "
+                        "name, else its report name")
+    c.add_argument("--workdir", metavar="DIR", help="where to put DuckDB's temporary files while searching flows")
+
     g = sub.add_parser("samples", help="write the scan-backed, telemetry-only and 4,324-host on-prem + AWS sample folders")
     g.add_argument("outdir", nargs="?", default="samples")
 
@@ -198,6 +265,8 @@ def main(argv=None) -> int:
         for stream, n in sorted(counts.items()):
             print(f"{os.path.join(args.out, stream + '.log')}: {n:,} record(s)")
         return 0
+    if args.cmd == "compare":
+        return _compare(args)
     if args.cmd in ("analyze", "explore", "serve"):
         os.umask(0o077)          # reports, normalized logs and spooled data are private to this account
     if args.cmd == "samples":

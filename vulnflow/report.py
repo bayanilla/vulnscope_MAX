@@ -398,6 +398,7 @@ def technical_report(res: dict) -> str:
           "- `hostile_activity.svg`: the hostile activity diagram as a standalone image",
           "- `explorer.html`: interactive host explorer (who targets each host, and its internal blast radius)",
           "- `normalized/flows.csv`, `normalized/findings.csv`: cleaned inputs in the common schema",
+          "- `normalized/threats.csv`: IPS/IDS alerts (signature, action and addresses)",
           "- `normalized/zeek_events.jsonl`: other Zeek streams with stream identity and source fields",
           "- `normalized/ot_events.jsonl`: industrial protocol records with operation and message direction"]
     report = "\n".join(L) + "\n"
@@ -575,7 +576,8 @@ def _cell(v):
     return v
 
 
-def _row(values) -> list:
+def csv_row(values) -> list:
+    """A CSV row with every text cell neutralised against spreadsheet formulas (see _cell)."""
     return [_cell(v) for v in values]
 
 
@@ -613,7 +615,7 @@ def write_reports(res: dict, outdir: str) -> dict[str, str]:
         cw.writerow(FINDING_COLUMNS)
         for r in res["findings"]:
             e, b = r["exposure"], blast[r["host"]]
-            cw.writerow(_row([r["priority"], r["score"], r["likelihood"], r["host"], r["hostname"], r["port"],
+            cw.writerow(csv_row([r["priority"], r["score"], r["likelihood"], r["host"], r["hostname"], r["port"],
                          r["proto"], r["service"], r["plugin_id"], r["plugin_name"], r["severity_name"],
                          r["cvss"], " ".join(r["cves"]), r["exploit_available"], e["label"],
                          e["external_sources"], e["internal_sources"], e["established"], e["denied"],
@@ -640,7 +642,7 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
                 "bytes_out", "bytes_in", "app", "src_zone", "dst_zone", "source"]
         cw.writerow(cols)
         for f in ds.flows:
-            cw.writerow(_row((f.ts.isoformat() if f.ts else "") if c == "ts" else getattr(f, c) for c in cols))
+            cw.writerow(csv_row((f.ts.isoformat() if f.ts else "") if c == "ts" else getattr(f, c) for c in cols))
     paths["normalized/flows.csv"] = p
 
     p = os.path.join(outdir, "normalized", "findings.csv")
@@ -653,8 +655,17 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
             row = [getattr(f, c) for c in cols]
             row[cols.index("cves")] = " ".join(f.cves)
             row[cols.index("exploit_frameworks")] = " ".join(f.exploit_frameworks)
-            cw.writerow(_row(row))
+            cw.writerow(csv_row(row))
     paths["normalized/findings.csv"] = p
+
+    p = os.path.join(outdir, "normalized", "threats.csv")
+    with open(p, "w", newline="", encoding="utf-8") as fh:
+        cw = csv.writer(fh)
+        cols = ["ts", "src_ip", "dst_ip", "dst_port", "name", "severity", "action", "source"]
+        cw.writerow(cols)
+        for t in ds.threats:
+            cw.writerow(csv_row((t.ts.isoformat() if t.ts else "") if c == "ts" else getattr(t, c) for c in cols))
+    paths["normalized/threats.csv"] = p
     for name, events in (("zeek_events.jsonl", ds.zeek_events), ("ot_events.jsonl", ds.ot_events)):
         p = os.path.join(outdir, "normalized", name)
         with open(p, "w", encoding="utf-8") as fh:

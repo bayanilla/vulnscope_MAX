@@ -4,7 +4,7 @@ Numeric bounds in one place. Each row names where the value is set; change it th
 
 | Boundary | Limit | Meaning | Set in |
 | --- | ---: | --- | --- |
-| Upload size | 1,024 MB | per upload; `serve --max-upload-mb` | `vulnflow/web.py` |
+| Upload size | 1,024 MB | per upload; `serve --max-upload-mb` | `vulnflow/web/server.py` |
 | Upload chunk | 64 KB | uploads stream to disk in chunks | `vulnflow/multipart.py` |
 | `.gz` expansion | 200× | of compressed size, minimum 256 MB; `VULNSCOPE_MAX_GZ_BYTES` | `vulnflow/parsers/_util.py` |
 | Parser batch | 100,000 | records per Parquet batch | `vulnflow/store.py` |
@@ -28,4 +28,9 @@ Numeric bounds in one place. Each row names where the value is set; change it th
 | Timeline | 20,000 | flows drawn; 200 alerts, 400 IOC lookups | `vulnflow/explore.py` |
 | Branding name | 40 | characters before "VulnScope" | `vulnflow/branding.py` |
 | Branding logo | 512 KB, 2,048 px | file size, longest side | `vulnflow/branding.py` |
-| Branding unlock | 30 min, 5 attempts | unlock lifetime; free attempts before a doubling lockout | `vulnflow/web.py` |
+| Branding unlock | 30 min, 5 attempts | unlock lifetime; free attempts before a doubling lockout | `vulnflow/web/branding_page.py` |
+| Report network name | 60 | characters | `vulnflow/runname.py` |
+| Compare upload | 64 MB | IOC CSVs added on the Compare page | `vulnflow/web/compare_page.py` |
+| Compare hosts | 12 / 1,000 | related hosts per report drawn on the page / per CSV cell (`comparison.json` has all) | `vulnflow/compare.py` |
+| Compare folder search | 4 levels | how deep `vulnflow compare FOLDER` looks for report folders | `vulnflow/compare.py` |
+| Earlier comparisons | 12 | listed on the Compare page (all are kept) | `vulnflow/web/compare_page.py` |

@@ -12,12 +12,15 @@ POST /runs/<id>/article-briefs  generate article briefs from matched sources
 POST /runs/<id>/ask    JSON {question, history} -> {answer, answer_html}
 GET  /runs/<id>/radar-status  whether on-demand Radar lookup is configured
 POST /runs/<id>/radar  Radar context for an observed IP or domain IOC
+GET  /compare     choose saved runs to compare; POST /compare compares them (optionally looking
+                  for an IOC CSV again in each one) and opens GET /compare/<time>/
 GET/POST /branding     set the name before "VulnScope" and an optional logo (saved per user; password protected)
 GET/POST /settings     choose the AI provider and enter its API key (kept in memory only)
 
 Layout: server.py starts it; app.py holds what the server remembers; handler.py is the HTTP
 plumbing (gate, CSRF, bodies, responses); routes.py maps paths to views; one module per page:
-upload, folders, runs, settings, branding_page.
+upload, folders, runs, settings, branding_page, compare_page (the comparison itself is
+compare.py).
 """
 from .runs import SAVED_SANDBOX
 from .server import make_handler, serve

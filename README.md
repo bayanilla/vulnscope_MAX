@@ -27,6 +27,7 @@ and correlates with DuckDB.
 - [Ask the Security Assistant](#ask-the-security-assistant)
 - [Interpret and validate the report](#interpret-and-validate-the-report)
 - [Save and share results](#save-and-share-results)
+- [Compare reports](#compare-reports)
 - [Branding and themes](#branding-and-themes)
 - [Privacy and practical limits](#privacy-and-practical-limits)
 - [Further documentation](#further-documentation)
@@ -92,14 +93,19 @@ All sample data is fabricated. See [the sample guide](samples/README.md) and the
    upload telemetry and scan files under **Analyze files** (up to 1 GB per upload by default).
 2. Optionally list your internal networks. The default is RFC 1918, CGNAT, loopback, link-local and
    ULA ranges.
-3. While the run works, the page shows your logo (or the Múcaro mark) turning slowly with an
+3. Optionally open **Report details** to give the run a name, the **network** or site the data
+   comes from, and a description. They appear at the top of the reports and in the Explorer, the
+   run folder is named after the report, and [Compare reports](#compare-reports) counts reports with
+   the same network as one network.
+4. While the run works, the page shows your logo (or the Múcaro mark) turning slowly with an
    elapsed timer. One analysis runs at a time; a second is refused with a message.
-4. The results page links the reports, the Explorer and the Security Assistant.
+5. The results page links the reports, the Explorer and the Security Assistant.
 
 From the command line the same run is:
 
 ```sh
 python3 -m vulnflow analyze /path/to/case -o out --internal-net 10.0.0.0/8
+python3 -m vulnflow analyze /path/to/case -o out --name "Plant 3 November" --network-name "Plant 3"
 python3 -m vulnflow explore ~/Documents/case-logs        # analyze and open the Explorer
 ```
 
@@ -225,8 +231,8 @@ Each run writes to its output folder (`vulnflow_runs/<id>/out/` on the upload pa
 - **Executive summary** and **technical report**, as Markdown and standalone HTML.
 - **Explorer**: `explorer.html`, a single offline file.
 - **CSV and JSON:** `correlated_findings.csv` for ticketing; `results.json` for automation.
-- **Normalized inputs:** `normalized/flows.csv`, `findings.csv`, `zeek_events.jsonl`,
-  `ot_events.jsonl`.
+- **Normalized inputs:** `normalized/flows.csv`, `findings.csv`, `threats.csv` (IPS/IDS alerts),
+  `zeek_events.jsonl`, `ot_events.jsonl`. [Compare reports](#compare-reports) searches them again.
 - **Hostile activity diagram** as `hostile_activity.svg`.
 - **Security Assistant** brief and an audit log of every question and answer (`ai_chat_log.md`),
   when used.
@@ -242,6 +248,39 @@ technical report, Explorer and Timeline are redrawn with the current version and
 raw-data files are served from that folder, and nothing is reanalyzed or changed. `results.json`
 alone keeps the report data but not the traffic the Explorer is drawn from, so keep
 `explorer.html` with it. A `results.json` written by a newer VulnScope is refused.
+
+## Compare reports
+
+**Compare reports** (linked from the upload page and every results page) shows which IOCs and
+vulnerabilities appear in more than one saved report, and in how many networks.
+
+1. Tick the reports to compare. The list holds every run saved by this upload page, newest first.
+   To include a report saved somewhere else, open it on the upload page first (**Open report**).
+2. Check each report's **Network**. It comes from Report details; change it here for this
+   comparison if needed (your browser remembers the change). Reports with the same network count
+   as one network.
+3. Leave **Look for every IOC matched in any chosen report in all of them** ticked, and optionally
+   add an IOC CSV, to search each report's saved data again: an indicator learned after a report
+   was made, or matched in only one report, is found in the others too.
+4. Click **Compare**. The comparison has IOC, Vulnerability and Report tabs. Each row shows how
+   many reports, networks and hosts it was seen in, and one square per report, oldest first:
+   filled when the analysis found it, striped when only the new search did. Click a row for the
+   hosts in each report.
+
+Comparisons are saved in the data folder under `comparisons/<time>/` with `ioc_overlap.csv`,
+`vulnerability_overlap.csv` (one row per item and report) and `comparison.json`, and are listed
+under **Earlier comparisons**. The reports themselves are not changed. From the command line:
+
+```sh
+python3 -m vulnflow compare vulnflow_runs/ -o compare_out --ioc-csv new_iocs.csv
+python3 -m vulnflow compare nov/out dec/out --network "dec/out=Plant 3"   # set a report's network
+```
+
+Vulnerabilities are matched by Nessus plugin and IOCs by indicator, never by internal address,
+since the same private address in two networks is two different machines. A report and its
+reopened copy count once. Reports made before this version didn't save their IPS/IDS alerts, so
+an IP seen only in an alert isn't found again in them; the comparison says so. See
+[Comparing reports](METHODS.md#comparing-reports) for the rules.
 
 ## Branding and themes
 

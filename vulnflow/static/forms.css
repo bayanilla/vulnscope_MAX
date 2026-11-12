@@ -7,6 +7,7 @@ input[type=text]{width:100%;max-width:520px;padding:6px}
 #report-details textarea{width:100%;max-width:640px;padding:6px;font:inherit;resize:vertical}
 .pathrow{display:flex;gap:8px;max-width:640px;align-items:center} .pathrow input{flex:1} .pathrow button{margin-top:0;white-space:nowrap}
 button.secondary{background:transparent;color:var(--fg);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:not-allowed;filter:none}
 .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 #picker{max-width:640px;margin-top:8px;border:1px solid var(--line);border-radius:var(--radius);padding:10px}
 .pk-head,.pk-foot{display:flex;gap:8px;align-items:center} .pk-head button,.pk-foot button{margin-top:0;padding:4px 12px;font-size:.9rem;white-space:nowrap}

@@ -11,9 +11,9 @@ CSRF token: a `csrf` form field, a `csrf` JSON field, or an `X-CSRF-Token` heade
 | Method and path | Purpose |
 | --- | --- |
 | `GET /` | The upload page. |
-| `POST /analyze-folder` | Analyzes a folder in place. Form fields: `path`, optional `internal_nets`. A completed report's output folder (with `results.json`) is reopened instead, without reanalyzing. |
+| `POST /analyze-folder` | Analyzes a folder in place. Form fields: `path`, optional `internal_nets`, `report_name`, `report_network`, `report_description`. A completed report's output folder (with `results.json`) is reopened instead, without reanalyzing. |
 | `POST /folder-kind` | Whether `path` is a completed report's output folder (JSON `{"report": true}`); the page then labels its button Open report. |
-| `POST /analyze` | Analyzes uploaded files (multipart: `telemetry`, `scans`, `ioc_archive`, optional `internal_nets`). |
+| `POST /analyze` | Analyzes uploaded files (multipart: `telemetry`, `scans`, `ioc_archive`, optional `internal_nets` and the `report_*` fields). |
 | `POST /browse` | Lists the subfolders of `path` for the in-page folder picker. |
 | `POST /pick-folder` | Opens the macOS Choose Folder dialog (native runs on a Mac only). |
 | `POST /locate-folder` | Finds a folder picked in the browser among the shared folders, from its `name` and sample file names, sizes and times. |
@@ -27,12 +27,18 @@ CSRF token: a `csrf` form field, a `csrf` JSON field, or an `X-CSRF-Token` heade
 | `POST /runs/<id>/article-briefs` | Generates OpenAI article briefs for matched source articles. |
 | `GET /runs/<id>/radar-status` | Whether a Cloudflare Radar token is configured. |
 | `POST /runs/<id>/radar` | Looks up one matched IP or domain IOC on Cloudflare Radar (JSON `type`, `value`). |
+| `GET /compare` | The Compare reports page: saved runs to choose from, and earlier comparisons. |
+| `POST /compare` | Compares the ticked runs (multipart: `run_<id>=1` per run, optional `net_<id>` network names, `crosscheck=1`, `ioc_csv` files) and redirects to the result. |
+| `GET /compare/<time>/` | A saved comparison; `comparison.json`, `ioc_overlap.csv` and `vulnerability_overlap.csv` under it. |
 
-Run IDs are 16 hex characters. Paths under `/runs/<id>/` are confined to that run's output folder.
+Run IDs are the report name (or 16 hex characters) and the time, such as
+`Plant-3-November_2026-11-01_09-00-00`. Paths under `/runs/<id>/` are confined to that run's output folder.
 For a reopened report, a fixed list of raw-data files (`normalized/*`, `correlated_findings.csv`,
 `hostile_activity.svg`, `ai_analyst_brief.html`, `ai_chat_log.md`) is also served read-only from
-the original report folder, and every page of that run is sent with a `sandbox` Content-Security-Policy.
-A second analysis while one is running is refused with a message rather than queued.
+the original report folder, and every page of that run is sent with a `sandbox` Content-Security-Policy,
+as is every comparison page.
+A second analysis while one is running is refused with a message rather than queued; so is a comparison
+that looks for IOCs again.
 
 ## Analyze a folder
 

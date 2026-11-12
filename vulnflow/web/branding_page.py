@@ -186,7 +186,7 @@ def lock(req):
 def save(req):
     """POST /branding: the name prefix and logo. The logo is checked by content, never trusted by name."""
     if not _unlocked(req):
-        req.close_connection = True
+        req.drain(MAX_BRANDING_UPLOAD)
         return _locked_page(req, "Enter the Branding password first.", 403)
     length = req.length()
     if length <= 0 or length > MAX_BRANDING_UPLOAD:

@@ -100,6 +100,18 @@ class Handler(BaseHTTPRequestHandler):
             return None
         return self.rfile.read(n)
 
+    def drain(self, cap: int):
+        """Read and drop a refused request's body (up to ``cap`` bytes) and close the connection
+        after the reply. Closing with the body unread can reset the connection before the reply
+        is read; a larger body is not read at all."""
+        n = self.length()
+        while 0 < n <= cap:
+            chunk = self.rfile.read(min(n, 65536))
+            if not chunk:
+                break
+            n -= len(chunk)
+        self.close_connection = True
+
     def read_form(self, cap: int = 20000) -> dict | None:
         """A url-encoded form as {name: first value}; None when missing or larger than ``cap``."""
         raw = self.read_body(cap)
