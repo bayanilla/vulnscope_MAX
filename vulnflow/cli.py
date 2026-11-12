@@ -93,6 +93,10 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="vulnflow", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
 
+    def report_flags(p):
+        p.add_argument("--name", default="", help="report name shown at the top of the reports and in the Explorer")
+        p.add_argument("--description", default="", help="report description shown under the name")
+
     def common(p):
         p.add_argument("--internal-net", action="append", metavar="CIDR",
                        help="internal address range (repeatable; default RFC1918 etc.)")
@@ -125,6 +129,7 @@ def main(argv=None) -> int:
                    help="saved short source overviews keyed by article URL (useful offline)")
     a.add_argument("--llm", action="store_true", help="also write a Security Assistant brief")
     common(a)
+    report_flags(a)
     _llm_flags(a)
 
     b = sub.add_parser("brief", help="write a Security Assistant brief for an existing output folder")
@@ -173,6 +178,7 @@ def main(argv=None) -> int:
     x.add_argument("--article-preview-cache", metavar="JSON",
                    help="saved short source overviews keyed by article URL")
     common(x)
+    report_flags(x)
 
     g = sub.add_parser("samples", help="write the scan-backed, telemetry-only and 4,324-host on-prem + AWS sample folders")
     g.add_argument("outdir", nargs="?", default="samples")
@@ -268,7 +274,8 @@ def main(argv=None) -> int:
         res, paths = run(files, args.out, _cfg(args), overrides,
                          article_previews=not args.no_article_preview,
                          article_preview_cache=args.article_preview_cache,
-                         workdir=args.workdir)
+                         workdir=args.workdir,
+                         report={"name": args.name, "description": args.description})
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

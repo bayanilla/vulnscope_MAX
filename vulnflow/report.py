@@ -57,11 +57,26 @@ def _svc(r) -> str:
     return "host-level" if r["port"] == 0 else f"{r['port']}/{r['proto']}" + (f" ({r['service']})" if r["service"] else "")
 
 
+def _report_intro(res: dict) -> list[str]:
+    """The analyst's report name and description, under the page title (nothing when not given)."""
+    r = res.get("report") or {}
+    L = [f"**Report:** {r['name']}", ""] if r.get("name") else []
+    for para in (r.get("description") or "").split("\n\n"):
+        if para.strip():
+            L += ["> " + ln for ln in para.splitlines() if ln.strip()] + [""]
+    return L
+
+
+def _tab_title(res: dict, title: str) -> str:
+    name = (res.get("report") or {}).get("name")
+    return f"{name} · {title}" if name else title
+
+
 def _telemetry_report(res: dict, technical: bool) -> str:
     """Describe observations without turning missing scan data into zero risk."""
     s = res["summary"]
     title = "Technical Analysis" if technical else "Executive Summary"
-    lines = [f"# {product_name()}: {title}", "", "## Vulnerability status: unknown", "",
+    lines = [f"# {product_name()}: {title}", "", *_report_intro(res), "## Vulnerability status: unknown", "",
              "No vulnerability data is available for this run. No CVSS scores, vulnerability priorities, "
              "or conclusions about safety can be drawn from the supplied network telemetry.", "",
              f"{s['flows']:,} network sessions and {s['threat_alerts']} IPS/IDS alerts were parsed. "
@@ -128,7 +143,7 @@ def executive_summary(res: dict) -> str:
     nm = lambda ips: ", ".join(names.get(ip, ip) for ip in ips)
     gaps = cov["active_servers_not_scanned"]
 
-    L = [f"# {product_name()}: Executive Summary", "",
+    L = [f"# {product_name()}: Executive Summary", "", *_report_intro(res),
          f"Prepared {res['generated'][:10]}. Network activity analysed from "
          f"{s['window_start'] or 'n/a'} to {s['window_end'] or 'n/a'}.", "",
          "## Bottom line", ""]
@@ -253,7 +268,7 @@ def technical_report(res: dict) -> str:
     if not res["summary"].get("vulnerability_data_available", True):
         return _telemetry_report(res, True)
     s, cov, F, H, cfg = res["summary"], res["coverage"], res["findings"], res["hosts"], res["config"]
-    L = [f"# {product_name()}: Technical Analysis", "",
+    L = [f"# {product_name()}: Technical Analysis", "", *_report_intro(res),
          f"Generated {res['generated']}. Telemetry window {s['window_start'] or 'n/a'} to {s['window_end'] or 'n/a'}.",
          "", "## 1. Inputs and data quality", "",
          "| File | Format | Records read | Kept | Dropped | Notes |", "|---|---|---|---|---|---|"]
@@ -579,10 +594,10 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
     from . import visual
     from .diagram import hostile_activity_svg
     telemetry_only = not res["summary"].get("vulnerability_data_available", True)
-    w("executive_summary.html", md_to_html(ex, "Executive Summary", None if telemetry_only else visual.executive_inserts(res),
+    w("executive_summary.html", md_to_html(ex, _tab_title(res, "Executive Summary"), None if telemetry_only else visual.executive_inserts(res),
                                            res.get("ioc_matches"), res.get("article_briefs")))
     w("technical_report.md", tech)
-    w("technical_report.html", md_to_html(tech, "Technical Analysis", None if telemetry_only else visual.technical_inserts(res),
+    w("technical_report.html", md_to_html(tech, _tab_title(res, "Technical Analysis"), None if telemetry_only else visual.technical_inserts(res),
                                          res.get("ioc_matches"), res.get("article_briefs")))
     if not telemetry_only:
         w("hostile_activity.svg", hostile_activity_svg(res, standalone=True))
@@ -653,7 +668,7 @@ def save_article_briefs(res: dict, outdir: str) -> None:
     ):
         with open(os.path.join(outdir, name + ".md"), encoding="utf-8") as fh:
             markdown = fh.read()
-        pages[name + ".html"] = md_to_html(markdown, title, inserts,
+        pages[name + ".html"] = md_to_html(markdown, _tab_title(res, title), inserts,
                                             res.get("ioc_matches"), res.get("article_briefs"))
 
     with open(os.path.join(outdir, "explorer.html"), encoding="utf-8") as fh:

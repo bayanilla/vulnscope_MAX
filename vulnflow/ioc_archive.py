@@ -221,7 +221,7 @@ SCRIPT = r"""<script>
   const shade = document.getElementById('ioc-shade');
   const drawer = document.getElementById('ioc-drawer');
   const body = document.getElementById('ioc-drawer-body');
-  const runPath = location.pathname.match(/^\/runs\/[a-f0-9]{16}\/(?:executive_summary|technical_report|explorer)\.html$/);
+  const runPath = location.pathname.match(/^\/runs\/[A-Za-z0-9][A-Za-z0-9_-]{0,120}\/(?:executive_summary|technical_report|explorer)\.html$/);
   const radarPath = runPath ? runPath[0].replace(/[^/]+$/, '') : null;
   let previous = null;
   function addRadar(item) {
