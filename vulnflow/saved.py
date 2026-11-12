@@ -20,6 +20,7 @@ import os
 import re
 
 from .correlate import RESULTS_SCHEMA_VERSION
+from .errors import UserError
 
 MAX_SAVED_FILE = 256 * 1024 * 1024       # results.json is parsed in memory (~10x its size)
 MARKER = "REOPENED.json"                  # in the run folder (next to out/): how the run was made
@@ -27,7 +28,7 @@ MARKER = "REOPENED.json"                  # in the run folder (next to out/): ho
 _VF_DATA = re.compile(r'<script id="vf-data" type="application/json">(.*?)</script>', re.S)
 
 
-class SavedRunError(ValueError):
+class SavedRunError(UserError):
     """The upload is not a usable saved run; the message is shown to the user."""
 
 

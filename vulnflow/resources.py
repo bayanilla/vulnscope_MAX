@@ -32,6 +32,8 @@ import threading
 from contextlib import contextmanager
 from dataclasses import dataclass
 
+from .errors import UserError
+
 GiB = 1024 ** 3
 MiB = 1024 ** 2
 
@@ -49,9 +51,9 @@ _UNITS = {"": 1, "b": 1, "k": 1000, "kb": 1000, "m": 1000 ** 2, "mb": 1000 ** 2,
           "tib": 1024 ** 4}
 
 
-class ResourceError(ValueError):
-    """A run was refused or stopped to protect the machine. Subclasses ValueError so the CLI and
-    the upload page show the message to the user instead of a traceback."""
+class ResourceError(UserError):
+    """A run was refused or stopped to protect the machine. A UserError, so the CLI and the
+    upload page show the message to the user instead of a traceback."""
 
 
 class BusyError(ResourceError):

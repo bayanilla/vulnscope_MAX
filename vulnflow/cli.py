@@ -73,22 +73,6 @@ def _chat(outdir, analyst, cfg, first=None) -> int:
         history += [{"role": "user", "content": q}, {"role": "assistant", "content": a}]
 
 
-def _input_files(paths, outdir):
-    """Expand input directories recursively, ignoring hidden files and the output folder."""
-    files = []
-    output = os.path.abspath(outdir)
-    for path in paths:
-        if not os.path.isdir(path):
-            files.append(path)
-            continue
-        for root, dirs, names in os.walk(path):
-            dirs[:] = sorted(d for d in dirs if not d.startswith(".") and
-                             os.path.abspath(os.path.join(root, d)) != output)
-            files.extend(os.path.join(root, name) for name in sorted(names)
-                         if not name.startswith(".") and os.path.isfile(os.path.join(root, name)))
-    return files
-
-
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="vulnflow", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -96,6 +80,9 @@ def main(argv=None) -> int:
     def report_flags(p):
         p.add_argument("--name", default="", help="report name shown at the top of the reports and in the Explorer")
         p.add_argument("--description", default="", help="report description shown under the name")
+        p.add_argument("--network-name", default="", metavar="NAME",
+                       help="the network or site the data comes from; `compare` counts reports with the "
+                            "same network name as one network")
 
     def common(p):
         p.add_argument("--internal-net", action="append", metavar="CIDR",
@@ -265,17 +252,18 @@ def main(argv=None) -> int:
             print(f"error: {exc}", file=sys.stderr)
             return 2
 
-    from .pipeline import run
+    from .pipeline import input_files, run
     if args.cmd == "explore" and not args.out:
         args.out = os.path.join("vulnflow_out", os.path.basename(os.path.abspath(args.files[0])) or "explore")
     overrides = dict(x.split("=", 1) for x in args.format)
-    files = _input_files(args.files, args.out) + args.ioc_archive
+    files = input_files(args.files, args.out) + args.ioc_archive
     try:
         res, paths = run(files, args.out, _cfg(args), overrides,
                          article_previews=not args.no_article_preview,
                          article_preview_cache=args.article_preview_cache,
                          workdir=args.workdir,
-                         report={"name": args.name, "description": args.description})
+                         report={"name": args.name, "description": args.description,
+                                 "network": args.network_name})
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

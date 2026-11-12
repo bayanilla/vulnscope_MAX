@@ -4,7 +4,7 @@
     python3 scripts/bench/bench_pipeline.py INPUT_DIR -o OUT_DIR --json result.json [--rss-limit 12G]
 
 Stages (same calls as vulnflow.pipeline.run, timed separately):
-  discover   walk the folder (vulnflow.cli._input_files)
+  discover   walk the folder (vulnflow.pipeline.input_files)
   parse      the format parsers, file by file (inside normalize.load)
   normalize  the rest of normalize.load: concatenation, exact-duplicate removal, sort
   correlate  vulnflow.correlate.correlate
@@ -28,7 +28,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, ROOT)
 
 from vulnflow import normalize                       # noqa: E402
-from vulnflow.cli import _input_files                # noqa: E402
+from vulnflow.pipeline import input_files            # noqa: E402
 from vulnflow.correlate import Config, correlate     # noqa: E402
 from vulnflow.report import write_all                # noqa: E402
 
@@ -124,7 +124,7 @@ def main():
     rec.deadline = rec.t0 + a.time_limit if a.time_limit else None
 
     rec.start_stage("discover")
-    files = _input_files([a.input], a.out)
+    files = input_files([a.input], a.out)
     in_bytes = sum(os.path.getsize(f) for f in files)
     rec.result.update(input=a.input, input_files=len(files), input_bytes_on_disk=in_bytes)
     rec.finish_stage()

@@ -1,6 +1,7 @@
 """One call that runs the whole workflow: load -> clean -> correlate -> report."""
 from __future__ import annotations
 
+import ipaddress
 import os
 import shutil
 import sys
@@ -8,6 +9,7 @@ import tempfile
 
 from . import netmap, pcap, resources, runname
 from .correlate import Config, correlate
+from .errors import UserError
 from .ioc_archive import is_archive, match_archive, read_archives
 from .normalize import load
 from .report import write_all
@@ -25,9 +27,10 @@ def run(paths: list[str], outdir: str, cfg: Config | None = None,
     Packet captures (.pcap/.pcapng, plain or .gz) are converted to Zeek logs with a local Zeek
     first. ``VULNSCOPE_OFFLINE=1`` turns off every outbound lookup (article previews).
 
-    ``report`` is the optional {"name", "description"} the analyst gave the run; it is stored in
-    results.json and shown at the top of the reports and in the Explorer."""
+    ``report`` is the optional {"name", "description", "network"} the analyst gave the run; it is
+    stored in results.json and shown at the top of the reports and in the Explorer."""
     cfg = cfg or Config()
+    check_internal_nets(cfg.internal_nets)           # a typo here would otherwise fail after loading
     if offline():
         article_previews = False
     map_files = [path for path in paths if netmap.is_map_file(path)] + ([cfg.network_map] if cfg.network_map else [])
@@ -59,7 +62,7 @@ def run(paths: list[str], outdir: str, cfg: Config | None = None,
                 shutil.rmtree(zeek_dir, ignore_errors=True)
         try:
             return _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache, networks,
-                        runname.clean((report or {}).get("name"), (report or {}).get("description")))
+                        runname.clean(*((report or {}).get(k) for k in ("name", "description", "network"))))
         except Exception as exc:
             friendly = resources.explain(exc, budget)
             if friendly is not None:
@@ -67,6 +70,32 @@ def run(paths: list[str], outdir: str, cfg: Config | None = None,
             raise
         finally:
             ds.close()
+
+
+def input_files(paths: list[str], outdir: str) -> list[str]:
+    """Expand input folders recursively, ignoring hidden files and the output folder."""
+    files = []
+    output = os.path.abspath(outdir)
+    for path in paths:
+        if not os.path.isdir(path):
+            files.append(path)
+            continue
+        for root, dirs, names in os.walk(path):
+            dirs[:] = sorted(d for d in dirs if not d.startswith(".") and
+                             os.path.abspath(os.path.join(root, d)) != output)
+            files.extend(os.path.join(root, name) for name in sorted(names)
+                         if not name.startswith(".") and os.path.isfile(os.path.join(root, name)))
+    return files
+
+
+def check_internal_nets(nets: list[str]) -> None:
+    """Refuse an internal network that is not an address range, before any data is read."""
+    for net in nets:
+        try:
+            ipaddress.ip_network(net, strict=False)
+        except ValueError:
+            raise UserError(f"Internal networks: '{net}' is not an address range. Write them like "
+                            "10.0.0.0/8, 192.168.1.0/24, separated by commas.") from None
 
 
 def offline() -> bool:
@@ -81,7 +110,7 @@ def _is_capture(path: str, overrides: dict[str, str]) -> bool:
 
 def _run(ds, archive_paths, outdir, cfg, article_previews, article_preview_cache, networks=(), report=None):
     if not ds.flows and not ds.threats:
-        raise ValueError("No network telemetry was provided (or none could be parsed). "
+        raise UserError("No network telemetry was provided (or none could be parsed). "
                          "Add Zeek conn.log, Palo Alto traffic/threat logs, IDS alerts or a flow CSV.")
     archive, archive_stats = read_archives(archive_paths)
     ds.stats.extend(archive_stats)

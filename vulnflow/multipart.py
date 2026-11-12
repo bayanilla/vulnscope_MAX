@@ -10,12 +10,14 @@ import os
 import re
 from email.parser import HeaderParser
 
+from .errors import UserError
+
 CHUNK = 1 << 16
 MAX_HEADER = 16 * 1024
 MAX_FIELD = 64 * 1024
 
 
-class MultipartError(ValueError):
+class MultipartError(UserError):
     pass
 
 

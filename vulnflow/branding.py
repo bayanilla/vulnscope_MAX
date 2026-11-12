@@ -26,6 +26,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+from .errors import UserError
+
 BASE_NAME = "VulnScope"
 DEFAULT_PREFIX = "Múcaro"
 EXPLORER_NAME = "VulnScope Explorer"
@@ -75,7 +77,7 @@ def check_password(password: str) -> bool:
     return hmac.compare_digest(digest, expected)
 
 
-class BrandingError(ValueError):
+class BrandingError(UserError):
     pass
 
 

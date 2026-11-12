@@ -16,6 +16,7 @@ import subprocess
 import sys
 import tempfile
 
+from .errors import UserError
 from .schema import ParseStats
 
 # pcap (micro- and nanosecond, either byte order) and the pcapng section header block
@@ -31,7 +32,7 @@ INSTALL_HINT = ("Install Zeek (macOS: brew install zeek; Linux: your distributio
                 "binary, or convert first with: zeek -C -r capture.pcap local")
 
 
-class ZeekMissing(ValueError):
+class ZeekMissing(UserError):
     """PCAP input was given but no Zeek binary could be found."""
 
 

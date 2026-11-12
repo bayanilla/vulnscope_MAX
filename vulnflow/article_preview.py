@@ -9,6 +9,8 @@ from concurrent.futures import ThreadPoolExecutor
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
 
+from .errors import UserError
+
 MAX_BYTES = 800_000
 MAX_PREVIEWS = 60
 MAX_BRIEF_BYTES = 1_500_000
@@ -211,9 +213,9 @@ def read_preview_cache(path: str) -> dict[str, dict]:
         with open(path, encoding="utf-8") as fh:
             data = json.load(fh)
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-        raise ValueError(f"Cannot read article preview cache: {exc}") from exc
+        raise UserError(f"Cannot read article preview cache: {exc}") from exc
     if not isinstance(data, dict):
-        raise ValueError("Article preview cache must be a JSON object keyed by article URL")
+        raise UserError("Article preview cache must be a JSON object keyed by article URL")
     return {url: {"title": _short(value.get("title", ""), 140),
                   "overview": _short(value.get("overview", ""))}
             for url, value in data.items()

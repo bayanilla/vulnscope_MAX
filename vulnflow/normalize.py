@@ -5,6 +5,7 @@ import os
 from dataclasses import dataclass, field
 
 from . import resources
+from .errors import UserError
 from .parsers import FORMATS, detect
 from .schema import Finding, Flow, OTEvent, ParseStats, ThreatEvent, ZeekEvent
 from .store import (DEFAULT_BATCH, DEFAULT_SKEW_SECONDS, SENSOR_RANK, EventSpool, FlowView,
@@ -92,7 +93,7 @@ def _load(store, paths, overrides, skew_seconds, batch_size) -> Dataset:
         name = os.path.basename(path)
         fmt = overrides.get(path) or overrides.get(name) or detect(path)
         if fmt not in FORMATS:
-            raise ValueError(f"{name}: unknown format '{fmt}' (choose from {', '.join(FORMATS)})")
+            raise UserError(f"{name}: unknown format '{fmt}' (choose from {', '.join(FORMATS)})")
         kind, parser = FORMATS[fmt]
         sensor = _sensor(fmt)
         stats = ParseStats(file=name, fmt=fmt)

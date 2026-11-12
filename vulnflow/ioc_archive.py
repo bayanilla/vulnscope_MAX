@@ -9,6 +9,7 @@ from collections import defaultdict
 from urllib.parse import urlsplit
 
 from .branding import brand_html
+from .errors import UserError
 from .schema import ParseStats
 
 TYPES = {"ip", "domain", "url", "hash", "cve", "package"}
@@ -75,7 +76,7 @@ def read_archives(paths: list[str]) -> tuple[dict, list[ParseStats]]:
             value_column = _column(reader.fieldnames, VALUE_COLUMNS)
             article_column = _column(reader.fieldnames, ARTICLE_COLUMNS)
             if not kind_column or not value_column:
-                raise ValueError(f"IOC CSV needs type and indicator columns: {path}")
+                raise UserError(f"IOC CSV needs type and indicator columns: {path}")
             for row in reader:
                 stat.read += 1
                 kind = (row.get(kind_column) or "").strip().lower()
