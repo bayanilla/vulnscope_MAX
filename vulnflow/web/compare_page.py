@@ -17,7 +17,8 @@ from .runs import SAVED_SANDBOX
 
 FOLDER = "comparisons"                          # inside the data folder; never a run id (no out/)
 COMPARISON_ID = r"\d{4}-\d\d-\d\d_\d\d-\d\d-\d\d(?:-\d{1,3})?"
-FILES = ("comparison.html", "comparison.json", "ioc_overlap.csv", "vulnerability_overlap.csv")
+FILES = ("comparison.html", "comparison.json", "ioc_overlap.csv", "vulnerability_overlap.csv",
+         "explorer.html", "explorer.json")
 MAX_UPLOAD = 64 * 1024 * 1024                   # an IOC CSV and the ticked boxes
 RECENT = 12
 HINT = ("Looking for IOCs again in large reports can take a few minutes. Keep this tab open; "

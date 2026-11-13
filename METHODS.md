@@ -227,6 +227,23 @@ Compare reports reads finished report folders and changes none of them.
   saved can't show an IP seen only in an IPS/IDS alert, and a report reopened from a folder that
   has since moved has no saved data to search. Both are listed under "How to read this" on the
   comparison. Matches are exact, as in the analysis; a match is a lead for review, not proof.
+- **All networks on one map.** The comparison's Explorer is made from each report's own saved
+  Explorer data (the JSON inside its `explorer.html`), so nothing is reanalyzed and each network
+  looks as its own Explorer drew it; a report without `explorer.html`, or whose `explorer.html` is
+  from another analysis than its `results.json`, is left off with a note. Internal addresses stay
+  on their report's island (on the map and in `explorer.json` a host's id is `<address>@<island>`).
+  Outside addresses are the same everywhere, so each is drawn once, with its sessions and alerts
+  added over the networks that reached it. Three levels of highlight: a host is **lit** when it has
+  an IOC or vulnerability that the comparison found in more than one report; **highlighted** when
+  it has an IOC match or a vulnerability of its own; **dimmed** otherwise. The IOCs are the
+  comparison's (each analysis' own matches plus the re-hunt's), so a host can be lit for an IOC its
+  own report never matched.
+- **What the map leaves out.** Over 3,000 hosts it keeps the lit hosts first, then the
+  highlighted, then the rest, taking each report's hosts in turn and each report's riskiest first,
+  so one large network can't crowd the others off. Host cards keep their first 24 outside
+  addresses and peers, and each outside address beams down to 12 hosts, the worst of each network
+  in turn. The report's own Explorer (linked from every card) has everything. Attack paths and the
+  Timeline follow one network's traffic, so they are only in each report's own Explorer.
 
 ## Processing limits
 

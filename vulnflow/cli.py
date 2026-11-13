@@ -105,7 +105,7 @@ def _compare(args) -> int:
             reports.append(rep)
         result = compare.compare(reports, args.ioc_csv, crosscheck=not args.no_crosscheck, workdir=args.workdir,
                                  log=lambda m: print(m, file=sys.stderr))
-        paths = compare.write(result, out)
+        paths = compare.write(result, out, log=lambda m: print(m, file=sys.stderr))
     except UserError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -118,7 +118,11 @@ def _compare(args) -> int:
               f"{s['found_by_hunt']} sighting(s) the analyses didn't have")
     for row in [r for r in result["iocs"] if r["reports"] > 1][:10]:
         print(f"  {row['type']:<7} {row['value'][:60]:<60} {row['reports']} reports, {row['networks']} networks")
-    for note in result["notes"]:
+    explorer = result.get("explorer") or {}
+    if explorer.get("file"):
+        print(f"All networks on one map: {explorer['drawn']:,} of {explorer['hosts']:,} hosts from "
+              f"{explorer['reports']} report(s) in explorer.html")
+    for note in result["notes"] + explorer.get("notes", []):
         print(f"note: {note}", file=sys.stderr)
     print(f"\nWritten to {out}:")
     for name in paths:

@@ -514,12 +514,18 @@ def _ioc_row(key: tuple[str, str], row: dict, labels: list[str]) -> dict:
 
 
 # -- writing it out ----------------------------------------------------------------------------
-def write(result: dict, outdir: str) -> dict[str, str]:
+def write(result: dict, outdir: str, log=None) -> dict[str, str]:
     """comparison.html (open it in a browser; works offline), ioc_overlap.csv,
-    vulnerability_overlap.csv and comparison.json."""
+    vulnerability_overlap.csv and comparison.json, and the all-networks Explorer (explorer.html
+    and its data, explorer.json) when a compared report has an Explorer page (combine.py)."""
+    from . import combine
     from .report import csv_row
     os.makedirs(outdir, exist_ok=True)
     paths = {}
+    result["explorer"] = combine.write(result, outdir, log)
+    if (result["explorer"] or {}).get("file"):
+        paths["explorer.html"] = os.path.join(outdir, "explorer.html")
+        paths["explorer.json"] = os.path.join(outdir, "explorer.json")
     p = os.path.join(outdir, "comparison.json")
     with open(p, "w", encoding="utf-8") as fh:
         json.dump(result, fh, indent=1)

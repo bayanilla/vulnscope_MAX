@@ -77,8 +77,9 @@ def check_results(res) -> dict:
     return res
 
 
-def explorer_data(text: str, res: dict) -> dict:
-    """The Explorer data embedded in a saved explorer.html, checked against its results.json."""
+def explorer_blob(text: str, generated: str) -> dict:
+    """The Explorer data embedded in a saved explorer.html, checked to be from the analysis made
+    at ``generated`` (results.json's "generated")."""
     m = _VF_DATA.search(text)
     if not m:
         raise SavedRunError("explorer.html in that folder is not a VulnScope Explorer page (no Explorer data inside).")
@@ -87,9 +88,15 @@ def explorer_data(text: str, res: dict) -> dict:
         raise SavedRunError("The Explorer data in explorer.html is not an object.")
     for key, kind in (("generated", str), ("nodes", list), ("links", list), ("focus", dict)):
         _need(data, key, kind, "explorer.html")
-    if data["generated"] != res["generated"]:
+    if data["generated"] != generated:
         raise SavedRunError(f"explorer.html is from a different analysis than results.json "
-                            f"(made {data['generated']} vs {res['generated']}). The folder mixes files from two runs.")
+                            f"(made {data['generated']} vs {generated}). The folder mixes files from two runs.")
+    return data
+
+
+def explorer_data(text: str, res: dict) -> dict:
+    """The Explorer data embedded in a saved explorer.html, checked against its results.json."""
+    data = explorer_blob(text, res["generated"])
     # The Explorer shows the IOC matches and article briefs saved with the results (as after
     # generating briefs), so the two files can't disagree.
     data["ioc_matches"] = res.get("ioc_matches", [])
@@ -109,7 +116,8 @@ def is_report_folder(folder: str) -> bool:
         os.path.isfile(os.path.join(folder, n)) for n in ("explorer.html", "executive_summary.md", "technical_report.md"))
 
 
-def _read(path: str, what: str) -> str:
+def read_text(path: str, what: str) -> str:
+    """A saved file's text, refused (SavedRunError) when it is larger than MAX_SAVED_FILE."""
     if os.path.getsize(path) > MAX_SAVED_FILE:
         raise SavedRunError(f"{what} is larger than {MAX_SAVED_FILE // 1048576} MB, too large to reopen.")
     with open(path, encoding="utf-8", errors="replace") as fh:
@@ -122,14 +130,14 @@ def load_results(folder: str) -> dict:
     if not os.path.isfile(path):
         raise SavedRunError("There's no results.json in that folder. Choose a completed report's output folder "
                             "(the one with results.json, explorer.html and the reports).")
-    return check_results(_load_json(_read(path, "results.json"), "results.json"))
+    return check_results(_load_json(read_text(path, "results.json"), "results.json"))
 
 
 def load_folder(folder: str) -> tuple[dict, dict | None]:
     """results.json (required) and the Explorer data in explorer.html (if present) of a report folder."""
     res = load_results(folder)
     path = os.path.join(folder, "explorer.html")
-    data = explorer_data(_read(path, "explorer.html"), res) if os.path.isfile(path) else None
+    data = explorer_data(read_text(path, "explorer.html"), res) if os.path.isfile(path) else None
     return res, data
 
 
