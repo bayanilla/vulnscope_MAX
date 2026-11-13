@@ -1,25 +1,31 @@
 /* Attack paths view: a full-screen layer over the network view. Dark by default to match the Explorer. */
 #attack-paths{position:fixed;inset:0;z-index:40;overflow:hidden;isolation:isolate;
-/* follows the Múcaro theme picked on the upload and report pages (html[data-theme], key vulnflow-theme) */
+/* follows the theme picked on the upload and report pages (html[data-theme], key vulnflow-theme) */
 --ap-paper:#020617;--ap-glow:#16223a;--ap-paper2:rgba(15,23,42,.78);--ap-card:#0f172a;--ap-ink:#f1f5f9;--ap-ink2:#cbd5e1;--ap-ink3:#8193ab;
 --ap-rule:#334155;--ap-band:rgba(30,41,59,.38);--ap-band2:rgba(2,6,23,.25);--ap-halo:#08101f;--ap-accent:#22d3ee;--ap-accent-text:#082f49;
 --ap-crit:#ef4444;--ap-high:#f97316;--ap-med:#eab308;--ap-low:#60a5fa;--ap-none:#475569;--ap-cut:#7d8796;
 --ap-bar-v:#7c6a4b;--ap-bar-b:#3d4757;--ap-bar-o:#3f6680;--ap-shadow:0 8px 24px rgba(0,0,0,.45);--ap-radius:8px;
 background:radial-gradient(ellipse at 55% 35%,var(--ap-glow),var(--ap-paper) 72%);color:var(--ap-ink);
 font:13px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-[data-theme="olive-drab"] #attack-paths{--ap-paper:#10150e;--ap-glow:#263021;--ap-paper2:rgba(25,32,23,.8);--ap-card:#192017;--ap-ink:#f0f0e9;--ap-ink2:#b7bcab;--ap-ink3:#8a8f7c;
---ap-rule:#62613e;--ap-band:rgba(38,48,33,.4);--ap-band2:rgba(16,21,14,.25);--ap-halo:#141a12;--ap-accent:#d2c681;--ap-accent-text:#10150e;--ap-none:#4d5440;
---ap-bar-v:#7b6f45;--ap-bar-b:#41463a;--ap-bar-o:#56653f;--ap-radius:4px}
-[data-theme="matrix"] #attack-paths{--ap-paper:#020b04;--ap-glow:#05200c;--ap-paper2:rgba(3,21,8,.82);--ap-card:#031508;--ap-ink:#86efac;--ap-ink2:#4ade80;--ap-ink3:#2f9e57;
---ap-rule:#166534;--ap-band:rgba(5,46,22,.35);--ap-band2:rgba(2,11,4,.25);--ap-halo:#020f05;--ap-accent:#22c55e;--ap-accent-text:#000;--ap-none:#14532d;
---ap-bar-v:#3f6b2a;--ap-bar-b:#123d22;--ap-bar-o:#1f5a3a;--ap-radius:4px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
-[data-theme="high-contrast"] #attack-paths{--ap-paper:#000;--ap-glow:#0a0a0a;--ap-paper2:#000;--ap-card:#111;--ap-ink:#fff;--ap-ink2:#f1f5f9;--ap-ink3:#d4d4d8;
---ap-rule:#fff;--ap-band:#0a0a0a;--ap-band2:#000;--ap-halo:#000;--ap-accent:#fde047;--ap-accent-text:#000;
---ap-crit:#ff5c5c;--ap-high:#ffa040;--ap-med:#fde047;--ap-low:#7cc4ff;--ap-none:#a1a1aa;--ap-cut:#a1a1aa;--ap-bar-v:#a16207;--ap-bar-b:#52525b;--ap-bar-o:#2563eb;--ap-radius:0}
-[data-theme="light"] #attack-paths{--ap-paper:#cfd8e3;--ap-glow:#dde4ec;--ap-paper2:rgba(219,226,234,.85);--ap-card:#e7ecf2;--ap-ink:#0f172a;--ap-ink2:#334155;--ap-ink3:#5b6b80;
---ap-rule:#a3b1c2;--ap-band:rgba(191,202,215,.45);--ap-band2:rgba(207,216,227,.3);--ap-halo:#d3dce6;--ap-accent:#1d4ed8;--ap-accent-text:#fff;
---ap-crit:#b91c1c;--ap-high:#c2410c;--ap-med:#a16207;--ap-low:#1d4ed8;--ap-none:#94a3b8;--ap-cut:#64748b;
---ap-bar-v:#b49b6c;--ap-bar-b:#a3b1c2;--ap-bar-o:#7593b3;--ap-shadow:0 12px 34px #47556922}
+[data-theme="graphite"] #attack-paths{--ap-paper:#111214;--ap-glow:#111214;--ap-paper2:#17181b;--ap-card:#1b1c20;--ap-ink:#e6e6e3;--ap-ink2:#a0a19d;--ap-ink3:#7f807c;
+--ap-rule:#2b2d31;--ap-band:rgba(27,28,32,0.6);--ap-band2:rgba(17,18,20,0.3);--ap-halo:#111214;--ap-accent:#45b0c2;--ap-accent-text:#0c0d0e;
+--ap-crit:#e5534b;--ap-high:#d98845;--ap-med:#c9a544;--ap-low:#7c9fd4;--ap-none:#505358;--ap-cut:#7f807c;--ap-bar-v:#7a6a4c;--ap-bar-b:#3a3c41;--ap-bar-o:#505358;--ap-shadow:none;--ap-radius:4px}
+[data-theme="olive-drab"] #attack-paths{--ap-paper:#14160f;--ap-glow:#14160f;--ap-paper2:#1a1d14;--ap-card:#1f2218;--ap-ink:#e8e7dc;--ap-ink2:#a5a794;--ap-ink3:#84866f;
+--ap-rule:#33382a;--ap-band:rgba(31,34,24,0.6);--ap-band2:rgba(20,22,15,0.3);--ap-halo:#14160f;--ap-accent:#c2b56e;--ap-accent-text:#14160f;
+--ap-crit:#e5534b;--ap-high:#d98845;--ap-med:#c9a544;--ap-low:#7c9fd4;--ap-none:#5c6349;--ap-cut:#84866f;--ap-bar-v:#7a6a4c;--ap-bar-b:#454b38;--ap-bar-o:#5c6349;--ap-shadow:none;--ap-radius:4px}
+[data-theme="matrix"] #attack-paths{--ap-paper:#0a0f0b;--ap-glow:#0a0f0b;--ap-paper2:#0f1611;--ap-card:#131c15;--ap-ink:#cfe8d6;--ap-ink2:#86a892;--ap-ink3:#668571;
+--ap-rule:#1f2e23;--ap-band:rgba(19,28,21,0.6);--ap-band2:rgba(10,15,11,0.3);--ap-halo:#0a0f0b;--ap-accent:#4ccf7a;--ap-accent-text:#06110a;
+--ap-crit:#e5534b;--ap-high:#d98845;--ap-med:#c9a544;--ap-low:#7c9fd4;--ap-none:#3d5c47;--ap-cut:#668571;--ap-bar-v:#7a6a4c;--ap-bar-b:#2c4233;--ap-bar-o:#3d5c47;--ap-shadow:none;--ap-radius:4px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+[data-theme="high-contrast"] #attack-paths{--ap-paper:#000000;--ap-glow:#000000;--ap-paper2:#000000;--ap-card:#0d0d0d;--ap-ink:#ffffff;--ap-ink2:#e0e0e0;--ap-ink3:#c8c8c8;
+--ap-rule:#7a7a7a;--ap-band:rgba(13,13,13,0.6);--ap-band2:rgba(0,0,0,0.3);--ap-halo:#000000;--ap-accent:#fde047;--ap-accent-text:#000000;
+--ap-crit:#ff5c5c;--ap-high:#ffa040;--ap-med:#fde047;--ap-low:#7cc4ff;--ap-none:#a1a1aa;--ap-cut:#a1a1aa;--ap-bar-v:#a16207;--ap-bar-b:#52525b;--ap-bar-o:#2563eb;--ap-shadow:none;--ap-radius:0}
+[data-theme="amphibious"] #attack-paths{--ap-paper:#0f1729;--ap-glow:#0f1729;--ap-paper2:#1b2a47;--ap-card:#1f3052;--ap-ink:#f2ede1;--ap-ink2:#c8c0af;--ap-ink3:#9a9689;
+--ap-rule:#3a4a6b;--ap-band:rgba(31,48,82,0.6);--ap-band2:rgba(15,23,41,0.3);--ap-halo:#0f1729;--ap-accent:#ffc72c;--ap-accent-text:#0f1729;
+--ap-crit:#e5534b;--ap-high:#d98845;--ap-med:#c9a544;--ap-low:#7c9fd4;--ap-none:#7186a8;--ap-cut:#9a9689;--ap-bar-v:#7a6a4c;--ap-bar-b:#526484;--ap-bar-o:#7186a8;--ap-shadow:none;--ap-radius:3px}
+[data-theme="light"] #attack-paths{--ap-paper:#f7f7f5;--ap-glow:#f7f7f5;--ap-paper2:#ffffff;--ap-card:#ffffff;--ap-ink:#1b1c1e;--ap-ink2:#5c5e62;--ap-ink3:#7a7c80;
+--ap-rule:#e2e2de;--ap-band:rgba(240,240,237,.7);--ap-band2:rgba(247,247,245,.4);--ap-halo:#f7f7f5;--ap-accent:#0f6f80;--ap-accent-text:#fff;
+--ap-crit:#b91c1c;--ap-high:#c2410c;--ap-med:#a16207;--ap-low:#1d4ed8;--ap-none:#a3a39e;--ap-cut:#7a7c80;
+--ap-bar-v:#b49b6c;--ap-bar-b:#c9c9c4;--ap-bar-o:#a3a39e;--ap-shadow:none;--ap-radius:4px}
 #attack-paths::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background-position:center;background-size:cover;opacity:.08;filter:blur(2px)}
 #attack-paths[hidden]{display:none}
 #attack-paths *{box-sizing:border-box}

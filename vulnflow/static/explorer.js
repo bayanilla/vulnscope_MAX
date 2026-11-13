@@ -25,30 +25,50 @@ const iocButton = (type, value, label = value) => {
 };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // backdrop follows the report theme picked on the vulnflow pages (same browser storage when served);
-// light themes get a dark slate, since the glowing graph needs a dark canvas
-const BACKDROP = {dark: ['#16223a', '#020617'], 'olive-drab': ['#263021', '#10150e'],
-  'high-contrast': ['#0a0a0a', '#000000'], matrix: ['#05200c', '#020b04'],
-  light: ['#3a4a60', '#283548']};
+// Light draws the graph on a white canvas with darker line and label colours (LIGHT below)
+const BACKDROP = {dark: ['#16223a', '#020617'], light: ['#ffffff', '#f3f3f0'],
+  graphite: ['#1b1c20', '#111214'], 'olive-drab': ['#1f2218', '#14160f'], matrix: ['#131c15', '#0a0f0b'], 'high-contrast': ['#0d0d0d', '#000000'], amphibious: ['#1f3052', '#0f1729']};
 const SLATE = ['#3a4a60', '#283548'];
 let themeName = 'dark';
 try { themeName = localStorage.getItem('vulnflow-theme') || 'dark'; } catch (_) {}
 if (!BACKDROP[themeName]) themeName = 'dark';
 document.documentElement.dataset.theme = themeName;
 const [BG_IN, BG_OUT] = BACKDROP[themeName] || SLATE;
+// restrained themes: accent colour of each; they share the flat chrome (html[data-calm]) and the muted graph palette
+const CALM_ACCENT = {graphite: '#45b0c2', light: '#0f6f80', 'olive-drab': '#c2b56e', matrix: '#4ccf7a', 'high-contrast': '#fde047', amphibious: '#ffc72c'};
+const CALM = themeName in CALM_ACCENT;   // no stars, haze or glow text
+document.documentElement.toggleAttribute('data-calm', CALM);
+const LIGHT = themeName === 'light';   // white canvas: dark labels, darker lines, no additive glow
+// Restrained themes keep colour for what needs attention (alerts, vulnerable paths, severity, IOCs); ordinary
+// traffic, guides and labels go neutral. C() maps a default colour to its restrained counterpart.
+const CALM_MAP = {'#ff3b5c': '#e5534b', '#ff8a3d': '#d98845', '#ffd23f': '#c9a544', '#4dabf7': '#7c9fd4', '#8da2b5': '#8e8f8b',
+  '#ffc857': '#8a8d91', '#b98cff': '#9088b0', '#8892a6': '#6f7276', '#5b6b82': '#55585c',
+  '#ff2e88': '#c4627c', '#ffb020': '#c9963f', '#2ee6d6': '#45b0c2', '#6ea8ff': '#6c7076', '#78aaff': '#777a80',
+  '#e4ecfa': '#d8d9d6', '#d6e4f5': '#dcdcd8', '#7f95b3': '#8e8f8b', '#a9bcd6': '#b4b5b1', '#e6f1ff': '#f0f0ee',
+  '#6f86a6': '#85868a', '#8fa3c0': '#9a9b97', '#9fb3cc': '#a0a19d', '#ff8095': '#e8837c', '#ffb27a': '#e0a273'};
+if (CALM) CALM_MAP['#2ee6d6'] = CALM_ACCENT[themeName];
+if (LIGHT) Object.assign(CALM_MAP, {'#ff3b5c': '#c62828', '#ff8a3d': '#c2570c', '#ffd23f': '#a87b08', '#4dabf7': '#2f6fc4', '#8da2b5': '#6b6d71',
+  '#ffc857': '#a6a8ab', '#b98cff': '#6d5fb0', '#8892a6': '#b3b5b8', '#5b6b82': '#c4c6c8',
+  '#ff2e88': '#b0486a', '#ffb020': '#a87b08', '#6ea8ff': '#b0b2b5', '#78aaff': '#b0b2b5',
+  '#e4ecfa': '#4a4c50', '#d6e4f5': '#1b1c1e', '#7f95b3': '#5c5e62', '#a9bcd6': '#3a3c40', '#e6f1ff': '#000000',
+  '#6f86a6': '#6b6d71', '#8fa3c0': '#5c5e62', '#9fb3cc': '#5c5e62', '#ff4fd8': '#a8327f', '#ffb8f3': '#a8327f', '#ff8095': '#c62828', '#ffb27a': '#c2570c'});
+// outline behind canvas labels, and the fill of hollow markers: the page colour
+const LABEL_HALO = LIGHT ? 'rgba(255,255,255,.9)' : 'rgba(3,6,12,.85)', HOLLOW = LIGHT ? '#ffffff' : null;
+const C = h => (CALM && CALM_MAP[h.toLowerCase()]) || h;
 document.documentElement.style.setProperty('--bg', BG_OUT);
-const SEV = {Critical: '#ff3b5c', High: '#ff8a3d', Medium: '#ffd23f', Low: '#4dabf7', Info: '#8da2b5', '': '#8da2b5'};
-const RETURN = '#b98cff';
+const SEV = {Critical: C('#ff3b5c'), High: C('#ff8a3d'), Medium: C('#ffd23f'), Low: C('#4dabf7'), Info: C('#8da2b5'), '': C('#8da2b5')};
+const RETURN = C('#b98cff');
 // optional network map (network_map.csv): named ranges such as AWS VPCs; empty without a map
-const NETS = D.networks || [], CLOUD_COL = '#e4ecfa';
+const NETS = D.networks || [], CLOUD_COL = C('#e4ecfa');
 const netOf = d => (d && d.net != null && NETS[d.net]) || null;
 const SUBNET_NET = new Map((D.subnets || []).filter(x => x.net != null).map(x => [x.id, NETS[x.net]]));
 const subnetNet = id => SUBNET_NET.get(id) || null;
-const netTag = n => n ? (n.cloud ? '☁ ' : '') + n.name : '';
-const KIND = {alert: '#ff3b5c', vuln: '#ff8a3d', reached: '#ffc857', outbound: RETURN, attempt: '#8892a6', blocked: '#5b6b82'};
+const netTag = n => n ? (n.cloud && !CALM ? '☁ ' : '') + n.name : '';
+const KIND = {alert: C('#ff3b5c'), vuln: C('#ff8a3d'), reached: C('#ffc857'), outbound: RETURN, attempt: C('#8892a6'), blocked: C('#5b6b82')};
 const KIND_RANK = {alert: 0, vuln: 1, reached: 2, outbound: 3, attempt: 4, blocked: 5};
 const KIND_TXT = {alert: 'IPS alert, not blocked', vuln: 'Reached a vulnerable service', reached: 'Reached the host',
   outbound: 'Host connected out to it', attempt: 'Tried, no completed session', blocked: 'Blocked by firewall/IPS or refused by the host'};
-const BAND = {High: '#ff2e88', Medium: '#ffb020', Low: '#2ee6d6', None: '#5b6b82', Unknown: '#8da2b5'};
+const BAND = {High: C('#ff2e88'), Medium: C('#ffb020'), Low: C('#2ee6d6'), None: C('#5b6b82'), Unknown: C('#8da2b5')};
 
 let W = 0, H = 0, DPR = 1;
 const cam = {x: 0, y: 0, z: 0.25, tx: 0, ty: 0, tz: 1, sx: 0, sy: 0, tsx: 0, tsy: 0};
@@ -167,7 +187,7 @@ nodes.forEach(n => { n.x = n.ox * 1.8; n.y = n.oy * 1.8; n.tx = n.ox; n.ty = n.o
 // every shared item (the default), only IOCs or vulnerabilities, only items in more than one
 // network, or one item.
 const ITEMS = COMBINED ? COMBINED.items : [], REPS = COMBINED ? COMBINED.reports : [];
-const SHARED = '#ff4fd8', BEACON_MAX = 400;
+const SHARED = C('#ff4fd8'), BEACON_MAX = 400;
 const itemHosts = ITEMS.map(() => []);
 D.nodes.forEach(n => (n.sh || []).forEach(j => { if (itemHosts[j]) itemHosts[j].push(n.id); }));
 const spot = {kind: 'all', item: -1, multi: false};
@@ -293,7 +313,7 @@ function domainNode(match) {
   let n = nodes.get(id);
   if (!n) {
     n = {d: {id: match.value, name: '', scanned: false, sev: ''}, id, x: 0, y: 0, z: 0, tx: 0, ty: 0, tz: 0, ox: 0, oy: 0, oz: 0, a: 0, ta: 0,
-      r: 7, tr: 7, color: '#2ee6d6', ext: false, domain: true, born: 0, info: match};
+      r: 7, tr: 7, color: C('#2ee6d6'), ext: false, domain: true, born: 0, info: match};
     nodes.set(id, n);
   }
   n.info = match;
@@ -374,7 +394,7 @@ function focus(id, push = true) {
     edges.push(mkEdge(n, center, KIND[a.kind], Math.max(a.sessions, a.alerts + a.alerts_blocked), a.kind === 'blocked' || a.kind === 'attempt', 'atk', a, false, sm));
     if (a.out_sessions) edges.push(mkEdge(center, n, RETURN, a.out_sessions, !a.out_established, 'ret', a, true, sm));
   });
-  domains.forEach(n => edges.push(mkEdge(center, n, '#2ee6d6', 1, true, 'dns', n.info, false, false)));
+  domains.forEach(n => edges.push(mkEdge(center, n, C('#2ee6d6'), 1, true, 'dns', n.info, false, false)));
   F.peers.slice(0, SIDE_MAX).forEach(p => {
     const n = nodes.get(p.ip), sm = n.small, c = BAND[p.band], none = p.band === 'None';
     if (p.out_tries) edges.push(mkEdge(center, n, c, none ? p.out_tries : p.out, none || !p.out, 'out', p, false, sm));
@@ -476,10 +496,10 @@ function frame(now) {
   g.addColorStop(0, BG_IN); g.addColorStop(1, BG_OUT);
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   const T = now / 1000;
-  stars.forEach(s => {
+  if (!CALM) stars.forEach(s => {
     const x = ((s.x * W - cam.x * cam.z * s.z * 0.15) % W + W) % W, y = ((s.y * H - cam.y * cam.z * s.z * 0.15) % H + H) % H;
     ctx.globalAlpha = 0.25 + 0.35 * s.z * (0.6 + 0.4 * Math.sin(T * 1.3 + s.p));
-    ctx.fillStyle = '#9fc6ff'; ctx.fillRect(x, y, s.z * 1.6, s.z * 1.6);
+    ctx.fillStyle = C('#9fc6ff'); ctx.fillRect(x, y, s.z * 1.6, s.z * 1.6);
   });
   ctx.globalAlpha = 1;
   drawGrid();
@@ -499,11 +519,11 @@ function frame(now) {
     const [x, y] = toS(c.x * (focusing ? 2.4 : 1), c.y * (focusing ? 2.4 : 1));
     ctx.globalAlpha = focusing ? 0.05 : 0.5;
     const cn = subnetNet(c.subnet), cloud = cn && cn.cloud, lt = litSubnets.has(c.subnet);
-    ctx.strokeStyle = lt ? 'rgba(255,79,216,.75)' : cloud ? 'rgba(228,236,250,.55)' : 'rgba(120,170,255,.22)'; ctx.setLineDash(cloud ? [8, 4] : [3, 6]); ctx.lineWidth = lt ? 1.8 : cloud ? 1.6 : 1;
+    ctx.strokeStyle = lt ? 'rgba(255,79,216,.75)' : cloud ? 'rgba(228,236,250,.55)' : CALM ? 'rgba(150,152,156,.28)' : 'rgba(120,170,255,.22)'; ctx.setLineDash(cloud ? [8, 4] : [3, 6]); ctx.lineWidth = lt ? 1.8 : cloud ? 1.6 : 1;
     ctx.beginPath(); ctx.arc(x, y, c.r * cam.z, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-    if (!focusing && cam.z > 0.35) { ctx.fillStyle = '#6f86a6'; ctx.font = '11px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center';
+    if (!focusing && cam.z > 0.35) { ctx.fillStyle = C('#6f86a6'); ctx.font = '11px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center';
       ctx.fillText(shown(c.subnet), x, y - c.r * cam.z - 6);
-      if (cloud) { ctx.fillStyle = cloud ? CLOUD_COL : '#8fa3c0'; ctx.font = '600 11px ui-monospace,Menlo,monospace'; ctx.fillText(netTag(cn), x, y - c.r * cam.z - 20); } }
+      if (cloud) { ctx.fillStyle = cloud ? CLOUD_COL : C('#8fa3c0'); ctx.font = '600 11px ui-monospace,Menlo,monospace'; ctx.fillText(netTag(cn), x, y - c.r * cam.z - 20); } }
   });
   ctx.globalAlpha = 1;
   // overview links
@@ -511,7 +531,7 @@ function frame(now) {
     const al = Math.min(l.a.a, l.b.a) * (focusing ? 0.15 : 1);
     if (al < 0.02) return;
     const [x1, y1] = toS(l.a.x, l.a.y), [x2, y2] = toS(l.b.x, l.b.y);
-    ctx.globalAlpha = al * 0.22; ctx.strokeStyle = '#6ea8ff'; ctx.lineWidth = 0.6 + Math.min(2.5, Math.log10(1 + l.w));
+    ctx.globalAlpha = al * 0.22; ctx.strokeStyle = C('#6ea8ff'); ctx.lineWidth = 0.6 + Math.min(2.5, Math.log10(1 + l.w));
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
   });
   ctx.globalAlpha = 1;
@@ -535,7 +555,7 @@ function frame(now) {
         const [x, y] = qpt(p, t);
         const r = 1.6 + e.w * 0.5;
         const gr = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
-        gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.3, e.color); gr.addColorStop(1, 'rgba(0,0,0,0)');
+        gr.addColorStop(0, C('#ffffff')); gr.addColorStop(0.3, e.color); gr.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.globalAlpha = al * (lit ? 0.95 : 0.15); ctx.fillStyle = gr;
         ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI * 2); ctx.fill();
       });
@@ -553,7 +573,7 @@ function frame(now) {
     const [x, y] = toS(n.x, n.y);
     for (let i = 0; i < cnt; i++) {
       const ang = T * (0.4 + i * 0.03) + i * (Math.PI * 2 / cnt), rr = (n.r + 9 + (i % 3) * 4) * cam.z;
-      ctx.globalAlpha = n.a * 0.8; ctx.fillStyle = n.d.alert && i === 0 ? '#ff3b5c' : '#ffc857';
+      ctx.globalAlpha = n.a * 0.8; ctx.fillStyle = n.d.alert && i === 0 ? C('#ff3b5c') : C('#ffc857');
       ctx.beginPath(); ctx.arc(x + rr * Math.cos(ang), y + rr * Math.sin(ang), Math.max(1.2, 1.6 * cam.z), 0, 7); ctx.fill();
     }
   });
@@ -565,10 +585,10 @@ function frame(now) {
 function islandLabel(isl, x, y, al) {
   const r = isl.info, same = netKey(r.network) === netKey(r.name);
   ctx.globalAlpha = al; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(3,6,12,.85)';
-  ctx.font = '700 13px ui-monospace,Menlo,monospace'; ctx.fillStyle = isl.lit ? '#ffb8f3' : '#e6f1ff';
+  ctx.font = '700 13px ui-monospace,Menlo,monospace'; ctx.fillStyle = isl.lit ? C('#ffb8f3') : C('#e6f1ff');
   const t1 = r.network.toUpperCase();
   ctx.strokeText(t1, x, y); ctx.fillText(t1, x, y);
-  ctx.font = '10.5px ui-monospace,Menlo,monospace'; ctx.fillStyle = '#9fb3cc';
+  ctx.font = '10.5px ui-monospace,Menlo,monospace'; ctx.fillStyle = C('#9fb3cc');
   const bits = [(same ? '' : r.name + ' · ') + (r.generated || '').slice(0, 10), `${r.drawn.toLocaleString()} host${r.drawn === 1 ? '' : 's'}` +
     (r.drawn < r.nodes ? ` of ${r.nodes.toLocaleString()}` : '')];
   if (isl.lit) bits.push(`${isl.lit.toLocaleString()} lit`);
@@ -619,41 +639,41 @@ function drawNode(n, T) {
   ctx.shadowColor = n.color; ctx.shadowBlur = (sel ? 30 : hov ? 22 : 12);
   if (gl) {
     ctx.shadowBlur = 0;
-    if (n.domain) { ctx.strokeStyle = '#2ee6d6'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = '#2ee6d6'; ctx.font = '700 10px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center'; ctx.fillText('D', x, y + 3); }
-    else if (n.ext) { if (iocIds.has('ip:' + n.d.id)) { ctx.strokeStyle = '#2ee6d6'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke(); } }
-    else if (n.d.observed && n.d.ev) { ctx.strokeStyle = n.d.ev === 'likely' ? '#ff3b5c' : '#ffd23f'; ctx.lineWidth = 2;
+    if (n.domain) { ctx.strokeStyle = C('#2ee6d6'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = C('#2ee6d6'); ctx.font = '700 10px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center'; ctx.fillText('D', x, y + 3); }
+    else if (n.ext) { if (iocIds.has('ip:' + n.d.id)) { ctx.strokeStyle = C('#2ee6d6'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke(); } }
+    else if (n.d.observed && n.d.ev) { ctx.strokeStyle = n.d.ev === 'likely' ? C('#ff3b5c') : C('#ffd23f'); ctx.lineWidth = 2;
       ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.arc(x, y, r + 5, T % 7, T % 7 + 6.28); ctx.stroke(); ctx.setLineDash([]); }
   } else if (n.domain) { // source-linked DNS observations are separate from network traffic nodes
-    ctx.fillStyle = 'rgba(8,40,48,.95)'; ctx.strokeStyle = '#2ee6d6'; ctx.lineWidth = 2;
+    ctx.fillStyle = HOLLOW || 'rgba(8,40,48,.95)'; ctx.strokeStyle = C('#2ee6d6'); ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.shadowBlur = 0;
     ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = '#2ee6d6'; ctx.font = '700 10px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = C('#2ee6d6'); ctx.font = '700 10px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center';
     ctx.fillText('D', x, y + 3);
   } else if (n.ext) {   // outside sources are diamonds
-    ctx.fillStyle = n.info.kind === 'blocked' ? 'rgba(20,30,46,.9)' : n.color;
+    ctx.fillStyle = n.info.kind === 'blocked' ? (HOLLOW || 'rgba(20,30,46,.9)') : n.color;
     ctx.strokeStyle = n.color; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(x, y - r * 1.25); ctx.lineTo(x + r * 1.25, y); ctx.lineTo(x, y + r * 1.25); ctx.lineTo(x - r * 1.25, y); ctx.closePath();
     ctx.fill(); ctx.stroke();
     if (iocIds.has('ip:' + n.d.id)) {
-      ctx.strokeStyle = '#2ee6d6'; ctx.lineWidth = 2;
+      ctx.strokeStyle = C('#2ee6d6'); ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke();
     }
   } else if (!n.d.observed) {
-    ctx.fillStyle = 'rgba(14,22,36,.9)'; ctx.strokeStyle = '#8da2b5'; ctx.lineWidth = 1.5; ctx.setLineDash([2, 2]);
+    ctx.fillStyle = HOLLOW || 'rgba(14,22,36,.9)'; ctx.strokeStyle = C('#8da2b5'); ctx.lineWidth = 1.5; ctx.setLineDash([2, 2]);
     ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
   } else {
     const gr = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
-    gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.25, n.color); gr.addColorStop(1, shade(n.color));
+    gr.addColorStop(0, C('#ffffff')); gr.addColorStop(0.25, n.color); gr.addColorStop(1, shade(n.color));
     ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
-    if (n.d.ev) { ctx.shadowBlur = 0; ctx.strokeStyle = n.d.ev === 'likely' ? '#ff3b5c' : '#ffd23f'; ctx.lineWidth = 2;
+    if (n.d.ev) { ctx.shadowBlur = 0; ctx.strokeStyle = n.d.ev === 'likely' ? C('#ff3b5c') : C('#ffd23f'); ctx.lineWidth = 2;
       ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.arc(x, y, r + 5, T % 7, T % 7 + 6.28); ctx.stroke(); ctx.setLineDash([]); }
   }
   ctx.shadowBlur = 0;
   if (COMBINED && !n.ext && !n.domain) {   // all-networks map: IOC hosts ringed teal, lit hosts magenta
     const few = lit.size <= BEACON_MAX, gap = Math.max(1.5, Math.min(1, sc * 2.5) * 4);
-    if (iocCounts[n.id]) { ctx.strokeStyle = '#2ee6d6'; ctx.lineWidth = few ? 1.8 : 1.2; ctx.beginPath(); ctx.arc(x, y, r + gap, 0, 7); ctx.stroke(); }
+    if (iocCounts[n.id]) { ctx.strokeStyle = C('#2ee6d6'); ctx.lineWidth = few ? 1.8 : 1.2; ctx.beginPath(); ctx.arc(x, y, r + gap, 0, 7); ctx.stroke(); }
     if (lit.has(n.id) && (few || sc > 0.3 || state.mode === 'focus')) {
       ctx.strokeStyle = SHARED; ctx.lineWidth = few ? 2 : 1.2; ctx.beginPath(); ctx.arc(x, y, r + gap * 2, 0, 7); ctx.stroke();
       if (!gl && state.motion && few && state.mode === 'overview') {
@@ -663,7 +683,7 @@ function drawNode(n, T) {
       }
     }
   }
-  if (hov && !sel) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r + 4, 0, 7); ctx.stroke(); }
+  if (hov && !sel) { ctx.strokeStyle = LIGHT ? '#1b1c1e' : '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r + 4, 0, 7); ctx.stroke(); }
   // labels
   const show = state.labels && (sel || hov || (n.inet ? n.labelled && n.a > 0.5 : state.mode === 'focus' ? n.a > 0.5 && !n.small :
     (n.d.observed && (sc > 0.55 || (n.d.pri === 'P1' && (!R3 || fewP1 || n.d.ev)))) || (lit.size <= 40 && lit.has(n.id))));
@@ -673,8 +693,8 @@ function drawNode(n, T) {
     const side = n.domain ? 'center' : n.ext ? 'right' : (state.mode === 'focus' && n.id !== state.focus && n.info) ? 'left' : 'center';
     ctx.textAlign = side;
     const lx = side === 'right' ? x - r - 8 : side === 'left' ? x + r + 8 : x, ly = side === 'center' ? y + r + 15 : y + 4;
-    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(3,6,12,.85)'; ctx.strokeText(name, lx, ly);
-    ctx.fillStyle = sel ? '#ffffff' : '#d6e4f5'; ctx.fillText(name, lx, ly);
+    ctx.lineWidth = 4; ctx.strokeStyle = LABEL_HALO; ctx.strokeText(name, lx, ly);
+    ctx.fillStyle = sel ? (LIGHT ? '#000000' : C('#ffffff')) : C('#d6e4f5'); ctx.fillText(name, lx, ly);
     // tight columns: keep everything on one line so neighbouring rows don't collide
     const tight = state.mode === 'focus' && !sel && (n.gap || 99) * sc < 42;
     if (tight && n.info && n.info.band && side === 'left') {
@@ -683,7 +703,7 @@ function drawNode(n, T) {
       const t = n.info.band === 'None' ? 'NO SESSION' : (n.info.p * 100).toFixed(0) + '% ' + n.info.band.toUpperCase();
       ctx.strokeText(t, lx + nw + 8, ly); ctx.fillText(t, lx + nw + 8, ly);
     } else if ((sel || state.mode === 'focus') && !n.ext && n.d.name) {
-      ctx.font = '10.5px ui-monospace,Menlo,monospace'; ctx.fillStyle = '#7f95b3';
+      ctx.font = '10.5px ui-monospace,Menlo,monospace'; ctx.fillStyle = C('#7f95b3');
       ctx.strokeText(shown(n.d.id), lx, ly + 13); ctx.fillText(shown(n.d.id), lx, ly + 13);
     }
     if (state.mode === 'focus' && n.info && n.info.band && !sel && !tight) {
@@ -697,7 +717,7 @@ function drawNode(n, T) {
 function shade(hex) { const c = parseInt(hex.slice(1), 16); return `rgb(${(c >> 16 & 255) * 0.35 | 0},${(c >> 8 & 255) * 0.35 | 0},${(c & 255) * 0.35 | 0})`; }
 function sideTitles() {
   const F = D.focus[state.focus]; if (!F) return;
-  ctx.font = '600 11px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#7f95b3';
+  ctx.font = '600 11px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center'; ctx.fillStyle = C('#7f95b3');
   let top = 0;
   nodes.forEach(n => { if (n.ta > 0.5 && n.id !== state.focus) top = Math.min(top, n.ty); });
   const [cx, ly0] = Pw(0, top - 46, 0), ly = Math.max(96, ly0);
@@ -735,7 +755,7 @@ function markView() {
 function set3d(on, remember) {
   on = !!on && can3d;
   if (on && !R3inst) {
-    try { R3inst = window.VF3D.create(cv3, {bgIn: BG_IN, bgOut: BG_OUT, onLost: () => set3d(false, false)}); R3inst.setSize(W, H, DPR); }
+    try { R3inst = window.VF3D.create(cv3, {bgIn: BG_IN, bgOut: BG_OUT, calm: CALM, light: LIGHT, onLost: () => set3d(false, false)}); R3inst.setSize(W, H, DPR); }
     catch (err) { console.warn('3D view unavailable, using 2D', err); R3inst = null; on = false; }
   }
   R3 = on ? R3inst : null;
@@ -756,9 +776,9 @@ function edgeCurve(e) {
 }
 const qb = (c, t) => { const u = 1 - t, A = u * u, B = 2 * u * t, C = t * t;
   return [A * c[0] + B * c[3] + C * c[6], A * c[1] + B * c[4] + C * c[7], A * c[2] + B * c[5] + C * c[8]]; };
-const HALO = RGB('#78aaff'), CLOUD_RGB = RGB(CLOUD_COL), SHARED_RGB = RGB(SHARED);
-const RISK2 = RGB('#ff2e88'), RISK1 = RGB('#ffb020'), BUNDLE = RGB('#6ea8ff'), BUNDLE_LAT = RGB('#ff8a3d'),
-  RING = RGB('#2ee6d6'), P_CRIT = RGB('#ff3b5c'), P_HIGH = RGB('#ff8a3d');
+const HALO = RGB(C('#78aaff')), CLOUD_RGB = RGB(CLOUD_COL), SHARED_RGB = RGB(SHARED);
+const RISK2 = RGB(C('#ff2e88')), RISK1 = RGB(C('#ffb020')), BUNDLE = RGB(C('#6ea8ff')), BUNDLE_LAT = RGB(C('#ff8a3d')),
+  RING = RGB(C('#2ee6d6')), P_CRIT = RGB(C('#ff3b5c')), P_HIGH = RGB(C('#ff8a3d'));
 const BEAM_ALPHA = {alert: 0.85, vuln: 0.13, reached: 0.08, outbound: 0.08, attempt: 0.04, blocked: 0.035};
 const OUT_BEAM = RGB(RETURN), OUT_ALPHA = 0.15;
 // which way a host's traffic with an outside address went: in, out or both (older data has no 4th field)
@@ -926,8 +946,8 @@ function draw3d(now, dt, k) {
     const hov = state.hoverCluster === c;
     if (!hov && !c.labelled) return;
     ctx.globalAlpha = cm * (hov ? 1 : 0.8); ctx.textAlign = 'center';
-    ctx.font = (hov ? '600 ' : '') + '11px ui-monospace,Menlo,monospace'; ctx.fillStyle = hov ? '#e6f1ff' : '#a9bcd6';
-    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(3,6,12,.8)';
+    ctx.font = (hov ? '600 ' : '') + '11px ui-monospace,Menlo,monospace'; ctx.fillStyle = hov ? C('#e6f1ff') : C('#a9bcd6');
+    ctx.lineWidth = 4; ctx.strokeStyle = LIGHT ? LABEL_HALO : 'rgba(3,6,12,.8)';
     ctx.strokeText(shown(c.subnet), x, y + 14); ctx.fillText(shown(c.subnet), x, y + 14);
     const cn = subnetNet(c.subnet);
     if (cn && cn.cloud) { ctx.font = '600 11px ui-monospace,Menlo,monospace'; ctx.fillStyle = CLOUD_COL;
@@ -938,7 +958,7 @@ function draw3d(now, dt, k) {
       if (si.likely) bits.push(`${si.likely} likely`);
       if (si.exposed) bits.push(`${si.exposed} exposed`);
       if (si.drawn < si.hosts) bits.push(`${si.hosts - si.drawn} not drawn`);
-      ctx.font = '10px ui-monospace,Menlo,monospace'; ctx.fillStyle = si.likely ? '#ff8095' : si.p1 ? '#ffb27a' : '#7f95b3';
+      ctx.font = '10px ui-monospace,Menlo,monospace'; ctx.fillStyle = si.likely ? C('#ff8095') : si.p1 ? C('#ffb27a') : C('#7f95b3');
       const t = bits.join(' · ');
       ctx.strokeText(t, x, y + 27); ctx.fillText(t, x, y + 27);
     }
@@ -951,11 +971,11 @@ function draw3d(now, dt, k) {
   if (cm > 0.3 && inetNodes.length) {
     const ac = arcCenter(view.yaw), [x, y] = Pw(ring.cx + ring.R * 1.08 * Math.cos(ac), ring.cy + ring.R * 1.08 * Math.sin(ac), ring.z + 70);
     if (y > 70) {
-      ctx.globalAlpha = 0.75 * cm; ctx.font = '600 11px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#2ee6d6';
+      ctx.globalAlpha = 0.75 * cm; ctx.font = '600 11px ui-monospace,Menlo,monospace'; ctx.textAlign = 'center'; ctx.fillStyle = C('#2ee6d6');
       const tot = D.internet_total || inetNodes.length;
       ctx.fillText(`INTERNET · ${tot.toLocaleString()} OUTSIDE ADDRESS${tot === 1 ? '' : 'ES'}` + (tot > inetNodes.length ? ` · TOP ${inetNodes.length} SHOWN` : ''), x, Math.max(84, y - 18));
       if (D.internet_out_total != null) {
-        ctx.font = '10px ui-monospace,Menlo,monospace'; ctx.fillStyle = '#7f95b3';
+        ctx.font = '10px ui-monospace,Menlo,monospace'; ctx.fillStyle = C('#7f95b3');
         const a = `↓ ${D.internet_in_total.toLocaleString()} REACHED IN   `, b = `↑ ${D.internet_out_total.toLocaleString()} CONTACTED BY HOSTS`;
         const wa = ctx.measureText(a).width, wb = ctx.measureText(b).width, x0 = x - (wa + wb) / 2;
         ctx.textAlign = 'left'; ctx.fillText(a, x0, Math.max(98, y - 4));
@@ -1116,12 +1136,12 @@ function tip(n, x, y) {
       '<br>' + e.targets.slice(0, 5).map(t => `${esc(shown(t[0]))}${COMBINED ? ` <span class="m">(${esc(netLabel(nodes.get(t[0]) && nodes.get(t[0]).d))})</span>` : ''} ${arrow(t)} <span style="color:${KIND[t[1]]}">${esc(KIND_TXT[t[1]])}</span>` +
         (beamDir(t) === 'both' && t[1] !== 'outbound' ? ` <span style="color:${RETURN}">+ host connected out</span>` : '')).join('<br>') +
       (more > 0 ? `<br><span class="m">+${more} more host(s)</span>` : '') +
-      (iocIds.has('ip:' + e.ip) ? '<br><span style="color:#2ee6d6">Click for IOC details</span>' : '<br><span class="m">Click to focus its top target</span>');
+      (iocIds.has('ip:' + e.ip) ? '<br><span style="color:' + C('#2ee6d6') + '">Click for IOC details</span>' : '<br><span class="m">Click to focus its top target</span>');
   } else if (n.domain) {
     const observed = n.info.observed && n.info.observed['dns event'];
     h = `<b>${esc(n.d.id)}</b> <span class="m">domain IOC · ${observed ? 'observed DNS query' : 'observed domain match'}</span>` +
       '<br>Exact IOC match. A DNS query alone does not prove a connection or compromise.' +
-      '<br><span style="color:#2ee6d6">Click for report overview</span>';
+      '<br><span style="color:' + C('#2ee6d6') + '">Click for report overview</span>';
   } else if (n.ext) {
     const a = n.info;
     h = `<b>${esc(a.ip)}</b> <span class="m">outside address · north/south</span><br>${esc(KIND_TXT[a.kind])}` +
@@ -1131,8 +1151,8 @@ function tip(n, x, y) {
         (a.out_ports.length ? `; ports ${esc(a.out_ports.join(', '))}` : '') + '</span>' : '') +
       (a.alerts || a.alerts_blocked ? `<br>IPS: ${a.alerts} not blocked, ${a.alerts_blocked} blocked` : '') +
       (a.signatures.length ? `<br><span class="m">${esc(a.signatures.join('; '))}</span>` : '') +
-      (a.returned && a.dir === 'both' ? '<br><span style="color:#b98cff">The host also connected out to this address (lead)</span>' : '') +
-      (iocIds.has('ip:' + a.ip) ? '<br><span style="color:#2ee6d6">Click for IOC details</span>' : '');
+      (a.returned && a.dir === 'both' ? '<br><span style="color:' + C('#b98cff') + '">The host also connected out to this address (lead)</span>' : '') +
+      (iocIds.has('ip:' + a.ip) ? '<br><span style="color:' + C('#2ee6d6') + '">Click for IOC details</span>' : '');
   } else {
     const d = n.d, info = state.mode === 'focus' && n.info && n.id !== state.focus ? n.info : null;
     h = `<b>${esc(d.name || shown(d.id))}</b>${d.name ? ` <span class="m">${esc(shown(d.id))}</span>` : ''}<br>` +
@@ -1655,21 +1675,34 @@ if (!state.motion) $('btn-motion').setAttribute('aria-pressed', 'false');
 $('legend').innerHTML =
   `<span class="only3d m">Drag: rotate and tilt · right-drag or Shift-drag: pan · Q / E: rotate · T top · Y tilted · U low · R reset (low, turning)</span>` +
   `<span class="only3d">${telemetryOnly ? 'Pillar height: outside exposure' : 'Pillar height: risk score'}</span>` +
-  `<span class="only3d"><i style="background:#2ee6d6"></i>Arc above: top outside addresses, beams down to hosts they reached, violet beams up from hosts that called out</span>` +
-  `<span class="only3d"><i style="background:#6ea8ff"></i><i style="background:#ff8a3d;width:12px"></i>Traffic between subnets (orange: mostly admin protocols)</span>` +
-  `<span class="only3d"><i style="background:#ff2e88"></i><i style="background:#ffb020;width:12px"></i>Risky host paths: admin protocol into P1 or flagged host / either one</span>` +
-  (NETS.some(n => n.cloud) ? `<span><i style="background:repeating-linear-gradient(90deg,${CLOUD_COL} 0 6px,transparent 6px 9px)"></i>☁ Cloud network (from the network map)</span>` : '') +
+  `<span class="only3d"><i style="background:${C('#2ee6d6')}"></i>Arc above: top outside addresses, beams down to hosts they reached, violet beams up from hosts that called out</span>` +
+  `<span class="only3d"><i style="background:${C('#6ea8ff')}"></i><i style="background:${C('#ff8a3d')};width:12px"></i>Traffic between subnets (orange: mostly admin protocols)</span>` +
+  `<span class="only3d"><i style="background:${C('#ff2e88')}"></i><i style="background:${C('#ffb020')};width:12px"></i>Risky host paths: admin protocol into P1 or flagged host / either one</span>` +
+  (NETS.some(n => n.cloud) ? `<span><i style="background:repeating-linear-gradient(90deg,${CLOUD_COL} 0 6px,transparent 6px 9px)"></i>${CALM ? '' : '☁ '}Cloud network (from the network map)</span>` : '') +
   (COMBINED ? `<span><span class="sw" style="background:transparent;border:2px solid ${SHARED}"></span>IOC or vulnerability seen in more than one report</span>` +
-    `<span><span class="sw" style="background:transparent;border:2px solid #2ee6d6"></span>Host with an IOC match</span>` +
-    `<span><i style="background:repeating-linear-gradient(90deg,#78aaff 0 8px,transparent 8px 12px)"></i>One report's network · dim hosts: no IOC or vulnerability</span>` : '') +
+    `<span><span class="sw" style="background:transparent;border:2px solid ${C('#2ee6d6')}"></span>Host with an IOC match</span>` +
+    `<span><i style="background:repeating-linear-gradient(90deg,${C('#78aaff')} 0 8px,transparent 8px 12px)"></i>One report's network · dim hosts: no IOC or vulnerability</span>` : '') +
   `<span><i style="background:${KIND.alert}"></i>IPS alert, not blocked</span>` +
   (telemetryOnly ? '' : `<span><i style="background:${KIND.vuln}"></i>Reached a vulnerable service</span>`) +
   `<span><i style="background:${KIND.reached}"></i>Reached the host</span>` +
-  `<span><i style="background:repeating-linear-gradient(90deg,#5b6b82 0 5px,transparent 5px 9px)"></i>Blocked or failed, no session</span>` +
+  `<span><i style="background:repeating-linear-gradient(90deg,${C('#5b6b82')} 0 5px,transparent 5px 9px)"></i>Blocked or failed, no session</span>` +
   `<span><i style="background:${RETURN}"></i>Host connected out</span>` +
-  `<span><span class="sw" style="background:transparent;border:2px solid #2ee6d6"></span>Click outlined IP or domain IOC for report overview</span>` +
+  `<span><span class="sw" style="background:transparent;border:2px solid ${C('#2ee6d6')}"></span>Click outlined IP or domain IOC for report overview</span>` +
   (telemetryOnly ? '' : `<span><i style="background:${BAND.High}"></i><i style="background:${BAND.Medium};width:12px"></i><i style="background:${BAND.Low};width:12px"></i>Blast-radius likelihood high / medium / low</span>` +
   `<span><span class="sw" style="background:${SEV.Critical}"></span>Critical <span class="sw" style="background:${SEV.High}"></span>High <span class="sw" style="background:${SEV.Medium}"></span>Medium <span class="sw" style="background:${SEV.Low}"></span>Low</span>`) +
+  `<span class="cal">${telemetryOnly ? 'No vulnerability data; status unknown' : 'Leads and estimates, not confirmed compromise'}</span>`;
+
+// Restrained themes: a one-line key. Mouse and keyboard help lives in the "?" note and the button tooltips.
+if (CALM) $('legend').innerHTML =
+  `<span><i style="background:${KIND.alert}"></i>IPS alert, not blocked</span>` +
+  (telemetryOnly ? '' : `<span><i style="background:${KIND.vuln}"></i>Vulnerable service reached</span>`) +
+  `<span><i style="background:${KIND.reached}"></i>Other traffic</span>` +
+  (telemetryOnly ? '' : `<span class="only3d"><i style="background:${BAND.High}"></i>Admin path into a P1 or flagged host</span>`) +
+  `<span><i style="background:${RETURN}"></i>Host connected out</span>` +
+  `<span><i style="background:repeating-linear-gradient(90deg,${KIND.blocked} 0 5px,transparent 5px 9px)"></i>Blocked or failed</span>` +
+  `<span><span class="sw" style="background:transparent;border:2px solid ${C('#2ee6d6')}"></span>IOC match</span>` +
+  (NETS.some(n => n.cloud) ? `<span><i style="background:repeating-linear-gradient(90deg,${CLOUD_COL} 0 6px,transparent 6px 9px)"></i>Cloud network</span>` : '') +
+  (telemetryOnly ? '' : `<span><span class="sw" style="background:${SEV.Critical}"></span>Critical <span class="sw" style="background:${SEV.High}"></span>High <span class="sw" style="background:${SEV.Medium}"></span>Medium <span class="sw" style="background:${SEV.Low}"></span>Low</span>`) +
   `<span class="cal">${telemetryOnly ? 'No vulnerability data; status unknown' : 'Leads and estimates, not confirmed compromise'}</span>`;
 
 const c = D.counts, w = D.window;

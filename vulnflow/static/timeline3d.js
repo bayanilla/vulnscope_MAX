@@ -14,6 +14,9 @@ const apTimeline = document.querySelector('#attack-paths .ap-seg [data-view="tim
 if (apTimeline) apTimeline.hidden = false;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 const COL = {crit: 0xff3b5c, pink: 0xff2e88, cyan: 0x2ee6d6, violet: 0xb98cff, orange: 0xff8a3d, internal: 0x2f5d9c, blocked: 0x55606e, guide: 0x24406a, day: 0x2b4f80};
+// restrained themes (html[data-calm]): muted lines, neutral guides
+if (document.documentElement.hasAttribute('data-calm')) Object.assign(COL, {crit: 0xe5534b, pink: 0xd86a8c, cyan: parseInt((getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#45b0c2').slice(1), 16), violet: 0x9088b0, orange: 0xd98845, internal: 0x5a5d62, blocked: 0x4a4c50, guide: 0x34363a, day: 0x44464b});
+if (document.documentElement.dataset.theme === 'light') Object.assign(COL, {crit: 0xc62828, pink: 0xb0486a, cyan: 0x0f6f80, violet: 0x6d5fb0, orange: 0xc2570c, internal: 0xa6a8ab, blocked: 0xc4c6c8, guide: 0xd5d5d1, day: 0xbdbdb9});
 const hex = c => '#' + c.toString(16).padStart(6, '0');
 const T0 = new Date(T.t0), HRS = Math.max(T.hours, 1);
 const when = h => new Date(T0.getTime() + h * 3600e3);
