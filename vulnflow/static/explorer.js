@@ -29,9 +29,11 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const BACKDROP = {dark: ['#16223a', '#020617'], light: ['#ffffff', '#f3f3f0'],
   graphite: ['#1b1c20', '#111214'], 'olive-drab': ['#1f2218', '#14160f'], matrix: ['#131c15', '#0a0f0b'], 'high-contrast': ['#0d0d0d', '#000000'], amphibious: ['#1f3052', '#0f1729']};
 const SLATE = ['#3a4a60', '#283548'];
-let themeName = 'dark';
-try { themeName = localStorage.getItem('vulnflow-theme') || 'dark'; } catch (_) {}
-if (!BACKDROP[themeName]) themeName = 'dark';
+// Graphite is the default theme (DEFAULT_THEME in report.py), also where the browser's choice can't be read
+const DEFAULT_THEME = 'graphite';
+let themeName = DEFAULT_THEME;
+try { themeName = localStorage.getItem('vulnflow-theme') || DEFAULT_THEME; } catch (_) {}
+if (!BACKDROP[themeName]) themeName = DEFAULT_THEME;
 document.documentElement.dataset.theme = themeName;
 const [BG_IN, BG_OUT] = BACKDROP[themeName] || SLATE;
 // restrained themes: accent colour of each; they share the flat chrome (html[data-calm]) and the muted graph palette

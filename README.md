@@ -315,9 +315,11 @@ folder). It is password protected; set a different password with
 `python3 -m vulnflow branding-password` and the `VULNSCOPE_BRANDING_PASSWORD_HASH` it prints.
 Branding is local to your computer and is never part of the repository.
 
-The upload page, settings, results and reports share a theme picker: SOC Dark, Graphite, Amphibious,
-Olive Drab, Matrix, High Contrast and Light. The browser remembers the choice, and the Explorer, Attack
-paths and Timeline follow it. Every theme except SOC Dark uses the same restrained layout (flat
+The upload page, settings, results and reports share a theme picker: Graphite (the default), SOC
+Dark, Amphibious, Olive Drab, Matrix, High Contrast and Light. The browser remembers the choice, and
+the Explorer, Attack paths and Timeline follow it. Comparisons and reopened reports can't read that
+choice, so they open in Graphite. Ones made before this version open in SOC Dark; reopen the report
+or compare again to update them. Every theme except SOC Dark uses the same restrained layout (flat
 surfaces, one accent colour, colour reserved for alerts, vulnerable paths and severity); they differ
 only in palette. Light also draws the Explorer on a white canvas.
 

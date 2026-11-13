@@ -409,26 +409,36 @@ def technical_report(res: dict) -> str:
 
 
 # ---------------------------------------------------------------- HTML
+# Pages open in the default theme until one is picked (the browser remembers the pick). Pages that
+# can't read the browser's choice (reopened reports and comparisons are sandboxed) always use it.
+# The Explorer applies the same default in explorer.js.
+DEFAULT_THEME = "graphite"
 THEMES = (
-    ("dark", "SOC Dark"), ("graphite", "Graphite"), ("amphibious", "Amphibious"), ("olive-drab", "Olive Drab"),
+    ("graphite", "Graphite"), ("dark", "SOC Dark"), ("amphibious", "Amphibious"), ("olive-drab", "Olive Drab"),
     ("matrix", "Matrix"), ("high-contrast", "High Contrast"), ("light", "Light"),
 )
 
 # Restrained themes share one structure (flat surfaces, one accent, one type scale); see html[data-calm] in CSS.
 CALM_THEMES = ("graphite", "amphibious", "olive-drab", "matrix", "high-contrast", "light")
 
+# Start of every page: the default theme is on <html> already, so a page shown without JavaScript
+# (a file preview, for one) is in it too; THEME_INIT, or explorer.js, then applies the picked theme.
+HTML_OPEN = (f'<!doctype html><html lang="en" data-theme="{DEFAULT_THEME}"'
+             + (" data-calm" if DEFAULT_THEME in CALM_THEMES else "") + ">")
+
 THEME_INIT = """<script>
 const supportedThemes = new Set(__THEMES__);
-let savedTheme = 'dark';
-try { savedTheme = localStorage.getItem('vulnflow-theme') || 'dark'; } catch (_) {}
+let savedTheme = __DEFAULT__;
+try { savedTheme = localStorage.getItem('vulnflow-theme') || __DEFAULT__; } catch (_) {}
 const calmThemes = new Set(__CALM__);
 function vfSetTheme(name) {
   const root = document.documentElement;
-  root.dataset.theme = supportedThemes.has(name) ? name : 'dark';
+  root.dataset.theme = supportedThemes.has(name) ? name : __DEFAULT__;
   root.toggleAttribute('data-calm', calmThemes.has(root.dataset.theme));
 }
 vfSetTheme(savedTheme);
-</script>""".replace("__THEMES__", json.dumps([value for value, _ in THEMES])).replace("__CALM__", json.dumps(list(CALM_THEMES)))
+</script>""".replace("__THEMES__", json.dumps([value for value, _ in THEMES])).replace(
+    "__CALM__", json.dumps(list(CALM_THEMES))).replace("__DEFAULT__", json.dumps(DEFAULT_THEME))
 
 
 def theme_control() -> str:
@@ -437,7 +447,7 @@ def theme_control() -> str:
             f'<label for="theme-choice">Theme</label><select id="theme-choice" aria-label="Theme">{options}</select></div>'
             '<script>(function(){const s=document.getElementById("theme-choice");'
             'const root=document.documentElement;'
-            's.value=[...s.options].some(o=>o.value===root.dataset.theme)?root.dataset.theme:"dark";'
+            's.value=[...s.options].some(o=>o.value===root.dataset.theme)?root.dataset.theme:"' + DEFAULT_THEME + '";'
             's.addEventListener("change",()=>{vfSetTheme(s.value);'
             'try{localStorage.setItem("vulnflow-theme",s.value)}catch(_){}})})();</script>')
 
@@ -591,7 +601,7 @@ def md_to_html(md: str, title: str, inserts: dict | None = None,
     script = ""
     if inserts is not None:
         body, script = visual.decorate(body), visual.SCRIPT
-    return (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+    return (f"{HTML_OPEN}<head><meta charset=\"utf-8\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
             f"<title>{html.escape(title)} · {html.escape(product_name())}</title><link rel=\"icon\" href=\"{icon_data_uri()}\">{THEME_INIT}<style>{CSS}{visual.VISUAL_CSS}"
             f"{ioc_archive.CSS if ioc_matches else ''}</style></head><body>"
