@@ -39,7 +39,7 @@ for (const n of D.nodes || []) {
   };
 }
 for (const m of D.ioc_matches || []) {
-  const url = (m.articles || [''])[0], slug = url.replace(/\/+$/, '').split('/').pop();
+  const url = (m.articles || [])[0] || '', slug = url.replace(/\/+$/, '').split('/').pop();   // an IOC may have no article
   for (const ip of m.hosts || []) (IOC[ip] = IOC[ip] || []).push({v: m.value, t: m.type, src: (m.sources || [''])[0], slug});
 }
 const zoneOf = ip => (H[ip] && H[ip].sub) || 'other';
