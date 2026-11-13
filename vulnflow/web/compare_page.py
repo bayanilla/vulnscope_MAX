@@ -134,10 +134,7 @@ def run(req):
     if length <= 0 or length > MAX_UPLOAD:
         req.close_connection = True
         return view(req, f"The IOC CSV must be smaller than {MAX_UPLOAD // 1048576} MB.", code=413)
-    root = _root(app)
-    os.makedirs(root, exist_ok=True)
-    cid = _new_id(root)
-    out = os.path.join(root, cid)
+    cid, out = new_comparison(app.data_dir)
     upload = os.path.join(out, "in")
     os.makedirs(upload)
     try:
@@ -163,11 +160,7 @@ def run(req):
         if (crosscheck or csvs) and resources.busy():
             raise UserError("An analysis is running on this machine. Wait for it to finish, or compare "
                             "without looking for IOCs again.")
-        result = compare.compare(reports, csvs, crosscheck=crosscheck, workdir=out)
-        compare.write(result, out)
-        with open(os.path.join(out, "about.json"), "w", encoding="utf-8") as fh:
-            json.dump({"generated": result["generated"], "summary": result["summary"],
-                       "reports": [r["name"] for r in result["reports"]]}, fh)
+        save(out, reports, csvs, crosscheck)
     except UserError as exc:
         shutil.rmtree(out, ignore_errors=True)
         return view(req, str(exc), selected, labels, crosscheck, 400)
@@ -176,6 +169,25 @@ def run(req):
         shutil.rmtree(out, ignore_errors=True)
         return view(req, "The comparison failed; see the server console for details.", selected, labels, crosscheck, 500)
     req.redirect(f"/compare/{cid}/")
+
+
+def new_comparison(data_dir: str) -> tuple[str, str]:
+    """A new, empty comparison folder under <data_dir>/comparisons/: (its id, its path)."""
+    root = os.path.join(data_dir, FOLDER)
+    os.makedirs(root, exist_ok=True)
+    cid = _new_id(root)
+    return cid, os.path.join(root, cid)
+
+
+def save(out: str, reports: list[compare.Report], csvs: list[str] = (), crosscheck: bool = True) -> dict:
+    """Compare ``reports`` into the comparison folder ``out``, with the short summary the list of
+    earlier comparisons shows (also used by ``vulnflow compare-sample``)."""
+    result = compare.compare(reports, csvs, crosscheck=crosscheck, workdir=out)
+    compare.write(result, out)
+    with open(os.path.join(out, "about.json"), "w", encoding="utf-8") as fh:
+        json.dump({"generated": result["generated"], "summary": result["summary"],
+                   "reports": [r["name"] for r in result["reports"]]}, fh)
+    return result
 
 
 def _keep_name(folder: str, i: int, name: str) -> str:

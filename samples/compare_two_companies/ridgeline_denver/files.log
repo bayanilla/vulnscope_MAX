@@ -1,0 +1,10 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	files
+#open	2026-10-26-00-00-00
+#fields	ts	fuid	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	source	analyzers	mime_type	filename	is_orig	seen_bytes	md5	sha1	sha256
+#types	time	string	string	addr	port	addr	port	string	set[string]	string	string	bool	count	string	string	string
+1793085845.000000	FD0000000	D000000469	10.20.0.10	56404	10.21.0.20	445	SMB	MD5,SHA1,SHA256	application/x-dosexec	\\DEN-FS01\ADMIN$\e544944.exe	T	306651	f769cb73317421c290832777c9e14f92	f043898fc9db6985c4ad8bb84669c081cdaa8e6f	40c40495434bf987b04f0742c3e9201189675d87a042aa72abbd0084c3de66d8
+#close	2026-10-28-00-00-00

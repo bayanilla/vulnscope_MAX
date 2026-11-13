@@ -238,8 +238,15 @@ def main(argv=None) -> int:
                         "name, else its report name")
     c.add_argument("--workdir", metavar="DIR", help="where to put DuckDB's temporary files while searching flows")
 
-    g = sub.add_parser("samples", help="write the scan-backed, telemetry-only and 4,324-host on-prem + AWS sample folders")
+    g = sub.add_parser("samples", help="write the sample folders (scan-backed, telemetry-only, 4,324-host on-prem + AWS, "
+                                       "Gootloader, and the two-company Compare sample)")
     g.add_argument("outdir", nargs="?", default="samples")
+
+    cs = sub.add_parser("compare-sample", help="load the two-company Compare sample into the upload page: seven site "
+                                               "reports and a comparison of them")
+    cs.add_argument("--data-dir", default="vulnflow_runs",
+                    help="the upload page's data folder (default vulnflow_runs, as for serve)")
+    cs.add_argument("--again", action="store_true", help="add another set even if the seven reports are already there")
 
     fb = sub.add_parser("filebeat-to-zeek",
                         help="turn a Filebeat/Elastic export (CSV or NDJSON) of Zeek logs back into Zeek logs")
@@ -271,6 +278,20 @@ def main(argv=None) -> int:
         return 0
     if args.cmd == "compare":
         return _compare(args)
+    if args.cmd == "compare-sample":
+        os.umask(0o077)          # like the upload page's own runs
+        from .sample_compare import load
+        runs, cid = load(args.data_dir, again=args.again, log=lambda m: print(m, file=sys.stderr))
+        where = os.path.abspath(args.data_dir)
+        if cid is None:
+            print(f"The seven sample reports are already in {where} (--again adds another set).")
+        else:
+            print(f"Loaded seven reports into {where}:")
+            for run_id in runs:
+                print(f"  /runs/{run_id}/")
+            print(f"and compared them: /compare/{cid}/")
+        print("On the upload page, open Compare reports to see them.")
+        return 0
     if args.cmd in ("analyze", "explore", "serve"):
         os.umask(0o077)          # reports, normalized logs and spooled data are private to this account
     if args.cmd == "samples":

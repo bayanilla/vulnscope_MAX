@@ -1,0 +1,12 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	ssl
+#open	2026-10-26-00-00-00
+#fields	ts	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	version	server_name	established	ja3	ja3s
+#types	time	string	addr	port	addr	port	string	string	bool	string	string
+1793031600.000000	A0000004e3	10.32.10.34	65318	198.51.100.47	443	TLSv12	nda-template-hub.example	T	-	-
+1793031637.652880	A0000004e5	10.32.10.34	55748	203.0.113.105	443	TLSv12	my-little-kitchen.com	F	-	-
+1793031657.744628	A0000004e7	10.32.10.34	51282	203.0.113.107	443	TLSv12	pocketofpreschool.com	F	-	-
+#close	2026-10-28-00-00-00

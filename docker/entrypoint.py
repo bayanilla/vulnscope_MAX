@@ -2,6 +2,7 @@
 
   serve [flags]           upload page on port 8080 (the default command)
   analyze|explore|...     any `python -m vulnflow` command, e.g. analyze /data/case1 -o /runs/case1
+  compare-sample          load the two-company Compare sample into the upload page's runs (/runs/web)
   zeek ...                run the bundled Zeek directly
   anything else           run as a command (sh, bash, ...)
 
@@ -13,8 +14,8 @@ import os
 import sys
 
 RUNS = "/runs"
-VULNFLOW_COMMANDS = {"analyze", "explore", "serve", "samples", "brief", "ask", "article-briefs",
-                     "branding-password", "-h", "--help"}
+VULNFLOW_COMMANDS = {"analyze", "explore", "serve", "samples", "brief", "ask", "article-briefs", "compare",
+                     "compare-sample", "filebeat-to-zeek", "branding-password", "-h", "--help"}
 
 
 def drop_privileges():
@@ -50,6 +51,8 @@ def main():
         if "--data-dir" not in args:
             defaults += ["--data-dir", os.path.join(RUNS, "web")]
         args = ["serve"] + defaults + args[1:]
+    if args[0] == "compare-sample" and not any(a.split("=")[0] == "--data-dir" for a in args):
+        args.append("--data-dir=" + os.path.join(RUNS, "web"))   # where the upload page keeps its runs
     if args[0] == "explore" and "--no-open" not in args:
         args.append("--no-open")              # no browser inside the container
     if args[0] in VULNFLOW_COMMANDS:
