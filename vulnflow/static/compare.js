@@ -51,6 +51,20 @@
   if (hunt.indicators) tiles.append(tile(S.found_by_hunt, "sightings found by the re-hunt", "the analysis didn't have these IOCs"));
   root.append(tiles);
 
+  // -- every network on one Explorer map (combine.py) ----------------------------------------------
+  const ex = data.explorer;
+  if (ex && ex.file) {
+    root.append(el("div", {class: "cmp-explorer"},
+      el("a", {href: ex.file, class: "cmp-explorer-link", text: "Open all networks in the Explorer"}),
+      el("p", {class: "hint", text: ex.drawn.toLocaleString() + (ex.drawn < ex.hosts ? " of " + ex.hosts.toLocaleString() : "") +
+        " hosts from " + plural(ex.reports, "report") + " on one map, one island per report. Hosts with an IOC or vulnerability " +
+        "that more than one report has are lit up in every network."}),
+      ex.notes.map(n => el("p", {class: "hint", text: n}))));
+  } else if (ex && ex.notes && ex.notes.length) {
+    root.append(el("div", {class: "cmp-explorer"}, el("p", {class: "hint", text: "No all-networks Explorer: none of these reports has an Explorer page."}),
+      ex.notes.map(n => el("p", {class: "hint", text: n}))));
+  }
+
   // -- tabs ----------------------------------------------------------------------------------
   const tabs = el("div", {class: "cmp-tabs", role: "tablist"});
   const panels = el("div");
@@ -257,7 +271,9 @@
       el("a", {href: "ioc_overlap.csv", download: true, text: "IOCs (CSV)"}), " · ",
       el("a", {href: "vulnerability_overlap.csv", download: true, text: "vulnerabilities (CSV)"}), " · ",
       el("a", {href: "comparison.json", download: true, text: "everything (JSON)"}),
-      el("span", {class: "hint", text: " — one row per item per report, with every related host."}))));
+      el("span", {class: "hint", text: " — one row per item per report, with every related host."})),
+    ex && ex.file ? el("p", {}, "The all-networks Explorer's data: ", el("a", {href: ex.data, download: true, text: "explorer.json"}),
+      el("span", {class: "hint", text: " — the hosts, subnets, traffic and highlights it draws, per report."})) : ""));
 
   const start = (location.hash || "").slice(1);
   select(tabList.some(t => t.id === start) ? start : (S.iocs || !S.vulns ? "iocs" : "vulns"));

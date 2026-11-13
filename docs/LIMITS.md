@@ -34,3 +34,5 @@ Numeric bounds in one place. Each row names where the value is set; change it th
 | Compare hosts | 12 / 1,000 | related hosts per report drawn on the page / per CSV cell (`comparison.json` has all) | `vulnflow/compare.py` |
 | Compare folder search | 4 levels | how deep `vulnflow compare FOLDER` looks for report folders | `vulnflow/compare.py` |
 | Earlier comparisons | 12 | listed on the Compare page (all are kept) | `vulnflow/web/compare_page.py` |
+| All-networks Explorer | 3,000 / 3,000 / 300 / 80 | hosts / links / risky paths / outside addresses drawn over all compared reports | `vulnflow/combine.py` |
+| All-networks host cards | 24 / 24 / 6 / 12 | outside addresses / peers / two-hop hosts per card; hosts beamed per outside address (each report's Explorer has all) | `vulnflow/combine.py` |

@@ -605,7 +605,9 @@ def _read(name: str) -> str:
         return fh.read()
 
 
-def html(data: dict) -> str:
+def html(data: dict, ioc_drawer: list | None = None) -> str:
+    """The Explorer page for ``data``. ``ioc_drawer``: the IOC list for the indicator details drawer,
+    when it should name hosts differently from the map (the all-networks map does)."""
     from . import ioc_archive
     from html import escape
     from .branding import EXPLORER_NAME, icon_data_uri, load as load_branding
@@ -632,4 +634,5 @@ def html(data: dict) -> str:
             + "<script>" + _read("attackpaths.js") + "</script>"
             + "<script>" + _read("timeline3d.js") + "</script>"
             + "<script>" + _read("analyst_chat.js") + "</script>"
-            + ioc_archive.drawer_html(data["ioc_matches"], data.get("article_briefs")) + "</body></html>\n")
+            + ioc_archive.drawer_html(data["ioc_matches"] if ioc_drawer is None else ioc_drawer,
+                                     data.get("article_briefs")) + "</body></html>\n")

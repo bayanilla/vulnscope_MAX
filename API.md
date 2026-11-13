@@ -29,7 +29,7 @@ CSRF token: a `csrf` form field, a `csrf` JSON field, or an `X-CSRF-Token` heade
 | `POST /runs/<id>/radar` | Looks up one matched IP or domain IOC on Cloudflare Radar (JSON `type`, `value`). |
 | `GET /compare` | The Compare reports page: saved runs to choose from, and earlier comparisons. |
 | `POST /compare` | Compares the ticked runs (multipart: `run_<id>=1` per run, optional `net_<id>` network names, `crosscheck=1`, `ioc_csv` files) and redirects to the result. |
-| `GET /compare/<time>/` | A saved comparison; `comparison.json`, `ioc_overlap.csv` and `vulnerability_overlap.csv` under it. |
+| `GET /compare/<time>/` | A saved comparison; `comparison.json`, `ioc_overlap.csv`, `vulnerability_overlap.csv`, and the all-networks Explorer `explorer.html` with its data `explorer.json` under it. |
 
 Run IDs are the report name (or 16 hex characters) and the time, such as
 `Plant-3-November_2026-11-01_09-00-00`. Paths under `/runs/<id>/` are confined to that run's output folder.

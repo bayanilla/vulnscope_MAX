@@ -6,7 +6,8 @@
 'use strict';
 const D = JSON.parse(document.getElementById('vf-data').textContent);
 const root = document.getElementById('attack-paths'), openBtn = document.getElementById('btn-paths');
-if (!root || !openBtn) return;
+// not on the all-networks map (combine.py): its chains are drawn per report, in each report's own Explorer
+if (!root || !openBtn || D.combined) return;
 const q = id => document.getElementById('ap-' + id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 const NS = 'http://www.w3.org/2000/svg';
@@ -39,7 +40,7 @@ for (const n of D.nodes || []) {
   };
 }
 for (const m of D.ioc_matches || []) {
-  const url = (m.articles || [''])[0], slug = url.replace(/\/+$/, '').split('/').pop();
+  const url = (m.articles || [])[0] || '', slug = url.replace(/\/+$/, '').split('/').pop();   // an IOC may have no article
   for (const ip of m.hosts || []) (IOC[ip] = IOC[ip] || []).push({v: m.value, t: m.type, src: (m.sources || [''])[0], slug});
 }
 const zoneOf = ip => (H[ip] && H[ip].sub) || 'other';
