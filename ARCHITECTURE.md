@@ -89,7 +89,10 @@ Folder path, Browse, upload, or command line
 | `vulnflow/llm.py`, `offline_assistant.py` | Provider adapters, grounding, redaction, and the built-in offline assistant |
 | `vulnflow/radar.py` | Optional Cloudflare Radar lookups for one selected indicator |
 | `vulnflow/branding.py` | Analyst name prefix and logo, logo validation, password hash |
-| `vulnflow/web.py`, `multipart.py` | Loopback HTTP server, Host/Origin/CSRF checks, streamed uploads, Browse, results pages |
+| `vulnflow/web/handler.py`, `routes.py`, `multipart.py` | Loopback HTTP server: Host/Origin/CSRF checks, security headers and streamed uploads in one request handler; a route table sends each path to the page module that serves it |
+| `vulnflow/web/` page modules | `upload.py` (Analyze), `folders.py` (Browse and folder paths), `runs.py` (results pages, Security Assistant, briefs, Radar), `settings.py`, `branding_page.py`, `compare_page.py` |
+| `vulnflow/compare.py` | Compare reports: counts per report and network from saved `results.json` files; looks for IOCs again in saved normalized data with the analysis' matcher |
+| `vulnflow/errors.py` | `UserError`: a problem the person can fix, whose message is shown. Any other exception is a bug: the page says the step failed and the traceback goes to the server console |
 | `vulnflow/pipeline.py`, `cli.py` | Orchestration and the `vulnflow` command line |
 | `docker/`, `Dockerfile`, `compose.yaml` | Container image with Zeek, entry point and folder sharing |
 
@@ -227,6 +230,16 @@ before a branding change keep their branding.
 
 Tradeoff: there is no database of past runs, no multi-user store and no crash recovery. A run that
 stops partway is started again. Shared deployment needs a separate security design.
+
+**Comparing reports** works on the saved report folders themselves rather than a database:
+`results.json` gives each report's vulnerabilities and IOC matches, and the `normalized/` files
+are searched again for IOCs with the same matcher the analysis uses (`ioc_archive.Matcher`), so a
+re-hunt of a report's own IOC CSV finds what its analysis found. The upload page keeps a small
+summary cache (`comparisons/index.json`, checked against each `results.json`'s size and time) so
+listing many reports doesn't reread them. A comparison page shows text from the reports, some of
+which may be reopened from folders the server doesn't control, so it is served sandboxed like a
+reopened report. Tradeoff: a search over saved flows rereads `flows.csv` for every comparison; a
+persistent index across reports would be faster but is another store to secure and keep in step.
 
 ## Contracts and limits
 

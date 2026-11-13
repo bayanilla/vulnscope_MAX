@@ -20,6 +20,7 @@ import os
 import re
 
 from .correlate import RESULTS_SCHEMA_VERSION
+from .errors import UserError
 
 MAX_SAVED_FILE = 256 * 1024 * 1024       # results.json is parsed in memory (~10x its size)
 MARKER = "REOPENED.json"                  # in the run folder (next to out/): how the run was made
@@ -27,7 +28,7 @@ MARKER = "REOPENED.json"                  # in the run folder (next to out/): ho
 _VF_DATA = re.compile(r'<script id="vf-data" type="application/json">(.*?)</script>', re.S)
 
 
-class SavedRunError(ValueError):
+class SavedRunError(UserError):
     """The upload is not a usable saved run; the message is shown to the user."""
 
 
@@ -98,8 +99,8 @@ def explorer_data(text: str, res: dict) -> dict:
 
 # Files served from the original folder when the rebuilt run doesn't have its own copy.
 SOURCE_FILES = ("correlated_findings.csv", "hostile_activity.svg", "ai_analyst_brief.html", "ai_chat_log.md",
-                "normalized/flows.csv", "normalized/findings.csv", "normalized/zeek_events.jsonl",
-                "normalized/ot_events.jsonl")
+                "normalized/flows.csv", "normalized/findings.csv", "normalized/threats.csv",
+                "normalized/zeek_events.jsonl", "normalized/ot_events.jsonl")
 
 
 def is_report_folder(folder: str) -> bool:
@@ -115,13 +116,18 @@ def _read(path: str, what: str) -> str:
         return fh.read()
 
 
-def load_folder(folder: str) -> tuple[dict, dict | None]:
-    """results.json (required) and the Explorer data in explorer.html (if present) of a report folder."""
+def load_results(folder: str) -> dict:
+    """A report folder's results.json, size capped and checked (SavedRunError otherwise)."""
     path = os.path.join(folder, "results.json")
     if not os.path.isfile(path):
         raise SavedRunError("There's no results.json in that folder. Choose a completed report's output folder "
                             "(the one with results.json, explorer.html and the reports).")
-    res = check_results(_load_json(_read(path, "results.json"), "results.json"))
+    return check_results(_load_json(_read(path, "results.json"), "results.json"))
+
+
+def load_folder(folder: str) -> tuple[dict, dict | None]:
+    """results.json (required) and the Explorer data in explorer.html (if present) of a report folder."""
+    res = load_results(folder)
     path = os.path.join(folder, "explorer.html")
     data = explorer_data(_read(path, "explorer.html"), res) if os.path.isfile(path) else None
     return res, data

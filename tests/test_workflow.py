@@ -473,7 +473,7 @@ class EndToEndTests(Base):
             gone = os.path.join(self.tmp, "pick", "missing", "deeper")   # falls back to the nearest folder
             with urllib.request.urlopen(call("/browse", {"path": gone, "csrf": csrf})) as resp:
                 self.assertEqual(json.loads(resp.read())["path"], os.path.realpath(os.path.join(self.tmp, "pick")))
-            if not web.NATIVE_PICKER:
+            if not web.folders.NATIVE_PICKER:
                 with urllib.request.urlopen(call("/pick-folder", {"csrf": csrf})) as resp:
                     self.assertTrue(json.loads(resp.read())["unsupported"])
         finally:
@@ -513,7 +513,7 @@ class BundledSamplesTests(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(root, "telemetry_only", "modbus.log")))
 
     def test_checked_in_folders_keep_scan_and_network_only_contracts(self):
-        from vulnflow.cli import _input_files
+        from vulnflow.pipeline import input_files as _input_files
         root = os.path.join(os.path.dirname(__file__), "..", "samples")
         self.assertEqual(sorted(name for name in os.listdir(root) if os.path.isdir(os.path.join(root, name))),
                          ["gootloader_seo_poisoning", "hosts_onprem_and_aws", "scan_and_telemetry", "telemetry_only"])
@@ -565,7 +565,7 @@ class BundledSamplesTests(unittest.TestCase):
 
     def test_host_sample_has_4324_hosts_on_prem_and_in_aws(self):
         from vulnflow import sample_hosts
-        from vulnflow.cli import _input_files
+        from vulnflow.pipeline import input_files as _input_files
         root = os.path.join(os.path.dirname(__file__), "..", "samples", sample_hosts.FOLDER)
         with tempfile.TemporaryDirectory() as tmp:
             fresh = os.path.join(tmp, "fresh")
@@ -604,7 +604,7 @@ class BundledSamplesTests(unittest.TestCase):
         import ipaddress
         from datetime import datetime, timezone
         from vulnflow import sample_gootloader as g
-        from vulnflow.cli import _input_files
+        from vulnflow.pipeline import input_files as _input_files
         root = os.path.join(os.path.dirname(__file__), "..", "samples", g.FOLDER)
         with tempfile.TemporaryDirectory() as tmp:
             fresh = os.path.join(tmp, "fresh")
@@ -654,7 +654,7 @@ class BundledSamplesTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             folder = os.path.join(tmp, "in")
             shutil.copytree(src, folder, ignore=shutil.ignore_patterns("network_map.csv"))
-            from vulnflow.cli import _input_files
+            from vulnflow.pipeline import input_files as _input_files
             res, paths = run(_input_files([folder], tmp), os.path.join(tmp, "out"), article_previews=False)
             with open(paths["explorer.html"], encoding="utf-8") as fh:
                 page = fh.read()

@@ -21,7 +21,8 @@ class RunNameTests(unittest.TestCase):
         self.assertEqual(r["name"], "Plant 3 review")
         self.assertTrue(r["description"].startswith("line one\n\nline two"))
         self.assertEqual(len(r["description"]), runname.DESCRIPTION_MAX)
-        self.assertEqual(runname.clean(None, None), {"name": "", "description": ""})
+        self.assertEqual(runname.clean(None, None), {"name": "", "description": "", "network": ""})
+        self.assertEqual(runname.clean("a", "b", "  Plant\n 3 ")["network"], "Plant 3")
 
     def test_slug_is_folder_and_url_safe(self):
         self.assertEqual(runname.slug("Múcaro / Q4: review ../etc"), "Mucaro-Q4-review-etc")
@@ -66,7 +67,7 @@ class WebReportNameTests(unittest.TestCase):
         boundary = uuid.uuid4().hex
         part = lambda name, value: (f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n"
                                     f"{value}\r\n").encode()
-        body = part("csrf", csrf) + part("report_name", "Plant 3 <review>") + \
+        body = part("csrf", csrf) + part("report_name", "Plant 3 <review>") + part("report_network", " Plant\t3 ") + \
             part("report_description", "Case 42.\r\n\r\nAsked by the <b>plant</b> manager.")
         for p in self.samples:
             with open(p, "rb") as fh:
@@ -82,9 +83,11 @@ class WebReportNameTests(unittest.TestCase):
         self.assertEqual(os.listdir(data), [run_url.rstrip("/").rsplit("/", 1)[1]])  # temp folder renamed
         self.assertIn("<h1>Plant 3 &lt;review&gt;</h1>", index)
         self.assertIn("Asked by the &lt;b&gt;plant&lt;/b&gt; manager.", index)
+        self.assertIn("<strong>Network:</strong> Plant 3</p>", index)
         with urllib.request.urlopen(run_url + "results.json") as resp:
             self.assertEqual(json.load(resp)["report"], {"name": "Plant 3 <review>",
-                                                         "description": "Case 42.\n\nAsked by the <b>plant</b> manager."})
+                                                         "description": "Case 42.\n\nAsked by the <b>plant</b> manager.",
+                                                         "network": "Plant 3"})
         for page in ("executive_summary.html", "technical_report.html"):
             with urllib.request.urlopen(run_url + page) as resp:
                 text = resp.read().decode()
@@ -107,7 +110,7 @@ class WebReportNameTests(unittest.TestCase):
         self.assertRegex(run_url, r"/runs/[0-9a-f]{16}_\d{4}-\d\d-\d\d_\d\d-\d\d-\d\d/$")
         self.assertIn("<h1>Results</h1>", index)
         with urllib.request.urlopen(run_url + "results.json") as resp:
-            self.assertEqual(json.load(resp)["report"], {"name": "", "description": ""})
+            self.assertEqual(json.load(resp)["report"], {"name": "", "description": "", "network": ""})
         with urllib.request.urlopen(run_url + "executive_summary.html") as resp:
             self.assertNotIn("Report:", resp.read().decode())
         with urllib.request.urlopen(run_url + "ai-status") as resp:     # run routes accept the new ids

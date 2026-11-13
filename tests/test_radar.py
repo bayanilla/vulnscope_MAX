@@ -74,7 +74,7 @@ class RadarServerTests(unittest.TestCase):
                         return urllib.request.Request(base + "radar", data=body,
                             headers={"Content-Type": "application/json"})
 
-                    with mock.patch("vulnflow.web.radar_lookup",
+                    with mock.patch("vulnflow.web.runs.radar_lookup",
                                     return_value={"type": "ip", "value": "8.8.8.8"}) as call:
                         with self.assertRaises(urllib.error.HTTPError) as denied:
                             urllib.request.urlopen(post("8.8.8.8", "wrong"))

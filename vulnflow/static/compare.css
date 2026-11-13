@@ -1,0 +1,53 @@
+/* Compare reports: the result page and the report list (theme colors come from the report CSS). */
+.cmp-scroll{overflow-x:auto;margin:.6rem 0} .cmp-scroll > table{display:table;width:100%;margin:0}
+.cmp-lede{font-size:1.05rem;margin:.2rem 0 .4rem}
+.cmp-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:18px 0}
+.cmp-tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.cmp-tile b{font-size:1.9rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.cmp-tile span{font-weight:600} .cmp-tile small{color:var(--muted)}
+.cmp-tile.hot{border-color:var(--accent)} .cmp-tile.hot b{color:var(--accent)}
+.cmp-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-top:8px}
+.cmp-tabs button{margin:0;padding:8px 14px;font-size:.95rem;background:transparent;color:var(--fg);border:1px solid transparent;border-bottom:0;border-radius:var(--radius) var(--radius) 0 0}
+.cmp-tabs button[aria-selected="true"]{background:var(--panel);border-color:var(--line);font-weight:700;color:var(--accent)}
+.cmp-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 6px}
+.cmp-controls input[type=search]{flex:1 1 260px;max-width:420px;padding:6px 8px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:var(--radius);font:inherit}
+.cmp-controls label{display:flex;gap:6px;align-items:center;font-weight:400;margin:0}
+.cmp-controls select{padding:5px 6px;font:inherit;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:var(--radius)}
+.cmp-table td.num,.cmp-table th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cmp-table th{white-space:nowrap}
+.cmp-sort{all:unset;cursor:pointer;font-weight:700} .cmp-sort:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+th[aria-sort="descending"] .cmp-sort::after{content:" \25BE"} th[aria-sort="ascending"] .cmp-sort::after{content:" \25B4"}
+.cmp-open{all:unset;cursor:pointer;color:var(--accent);overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.88rem}
+.cmp-open:hover{text-decoration:underline} .cmp-open:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.cmp-open[aria-expanded="true"]{font-weight:700}
+#p-vulns .cmp-open{font-family:inherit;font-size:inherit}
+.cmp-ind{min-width:220px;max-width:420px}
+.cmp-detail td{background:var(--panel)} .cmp-detail p{margin:.3rem 0}
+.cmp-seen{margin:.2rem 0;padding-left:1.1rem} .cmp-seen li{overflow-wrap:anywhere}
+.cmp-strip{display:inline-flex;flex-wrap:wrap;gap:3px;max-width:260px;vertical-align:middle}
+.cmp-strip .cell{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);background:transparent}
+.cmp-strip .cell.on{background:var(--accent);border-color:var(--accent)}
+.cmp-strip .cell.on.hunted{background:repeating-linear-gradient(135deg,var(--accent) 0 3px,transparent 3px 5px)}
+.badge{display:inline-block;padding:0 6px;border-radius:999px;font-size:.78rem;line-height:1.5;border:1px solid var(--line);white-space:nowrap;margin-left:4px}
+td > .badge:first-child{margin-left:0}
+.badge.hunt{border-color:var(--accent);color:var(--accent)}
+.badge.exploit{border-color:#e5484d;color:#e5484d}
+.badge.sev-4{background:#e5484d;border-color:#e5484d;color:#fff}
+.badge.sev-3{background:#f76b15;border-color:#f76b15;color:#fff}
+.badge.sev-2{background:#ffc53d;border-color:#ffc53d;color:#1d1d1d}
+.badge.sev-1{background:#3e63dd;border-color:#3e63dd;color:#fff}
+.badge.sev-0{color:var(--muted)}
+.cmp-cves{font-size:.85rem;color:var(--muted);overflow-wrap:anywhere;max-width:200px}
+.cmp-empty{color:var(--muted);font-style:italic}
+.cmp-legend{margin:2px 0 6px} .cmp-legend .cmp-strip{vertical-align:-1px}
+.cmp-more{margin:8px 0 0}
+.cmp-notes{margin-top:2rem} .cmp-notes li{color:var(--muted)}
+/* the report list on the Compare page */
+.cmp-pick > h2:first-of-type{margin-top:.2rem}
+.cmp-pick table{font-size:.9rem} .cmp-pick td:first-child{width:28px;text-align:center}
+.cmp-pick input.cmp-net{width:100%;min-width:120px;max-width:220px;padding:3px 6px}
+.cmp-pick tr.off td{color:var(--muted)}
+.cmp-pick .cmp-controls{margin-top:4px}
+.cmp-pick label.check{display:flex;gap:8px;align-items:flex-start;font-weight:400}
+.cmp-pick label.check input{margin-top:.3rem}
+@media(max-width:600px){.cmp-strip{max-width:140px}.cmp-ind{min-width:160px}}

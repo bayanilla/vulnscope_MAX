@@ -8,6 +8,7 @@ import unicodedata
 from datetime import datetime
 
 NAME_MAX = 100          # characters kept from the report name
+NETWORK_MAX = 60        # characters kept from the network name
 DESCRIPTION_MAX = 2000  # characters kept from the description
 SLUG_MAX = 60           # characters of the name used in the folder name
 # A run's folder name, as it appears in /runs/<id>/ URLs: old runs are 16 hex characters,
@@ -16,13 +17,14 @@ SLUG_MAX = 60           # characters of the name used in the folder name
 RUN_ID = r"[A-Za-z0-9][A-Za-z0-9_-]{0,120}"
 
 
-def clean(name: str | None, description: str | None) -> dict:
-    """The ``report`` block stored in results.json: one-line name, multi-line description."""
+def clean(name: str | None, description: str | None, network: str | None = None) -> dict:
+    """The ``report`` block stored in results.json: one-line name, multi-line description and the
+    network (or site) the data came from, which Compare reports uses to count networks."""
     name = " ".join((name or "").split())[:NAME_MAX]
     lines = [" ".join(ln.split()) for ln in (description or "").replace("\r\n", "\n").split("\n")]
     text = "\n".join(lines).strip()
     text = re.sub(r"\n{3,}", "\n\n", text)[:DESCRIPTION_MAX].strip()
-    return {"name": name, "description": text}
+    return {"name": name, "description": text, "network": " ".join((network or "").split())[:NETWORK_MAX]}
 
 
 def slug(name: str) -> str:

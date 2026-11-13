@@ -1,0 +1,27 @@
+/* Upload and Compare pages: forms, the folder picker and the "working" overlay. */
+form{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:16px 0}
+label{display:block;font-weight:600;margin:14px 0 4px} .hint{color:var(--muted);font-size:.9rem}
+button{margin-top:18px;padding:8px 18px;font-size:1rem}
+input[type=text]{width:100%;max-width:520px;padding:6px}
+#report-details{margin:16px 0} #report-details h2{margin-top:1rem} #report-details h2 .hint{font-weight:400}
+#report-details textarea{width:100%;max-width:640px;padding:6px;font:inherit;resize:vertical}
+.pathrow{display:flex;gap:8px;max-width:640px;align-items:center} .pathrow input{flex:1} .pathrow button{margin-top:0;white-space:nowrap}
+button.secondary{background:transparent;color:var(--fg);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:not-allowed;filter:none}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#picker{max-width:640px;margin-top:8px;border:1px solid var(--line);border-radius:var(--radius);padding:10px}
+.pk-head,.pk-foot{display:flex;gap:8px;align-items:center} .pk-head button,.pk-foot button{margin-top:0;padding:4px 12px;font-size:.9rem;white-space:nowrap}
+.pk-foot{margin-top:8px} #pk-roots{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px} #pk-roots:empty{display:none} #pk-roots button{margin-top:0;padding:4px 12px;font-size:.9rem} .pk-foot span{flex:1} #pk-where{overflow-wrap:anywhere}
+#pk-list{list-style:none;margin:8px 0 0;padding:0;max-height:280px;overflow:auto;border-top:1px solid var(--line)}
+#pk-list li{padding:5px 8px;cursor:pointer;border-bottom:1px solid var(--line)} #pk-list li:hover,#pk-list li:focus{background:rgba(127,127,127,.15)}
+#pk-list li::before{content:"📁  "}
+#busy[hidden]{display:none}
+#busy{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:#000a;backdrop-filter:blur(2px)}
+.busy-card{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:var(--radius);padding:28px 36px;text-align:center;min-width:280px;max-width:90vw;box-shadow:0 18px 48px #0008}
+.busy-stage{perspective:600px;height:112px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.busy-logo{height:96px;width:auto;max-width:200px;object-fit:contain;animation:busy-spin 2.4s linear infinite;transform-style:preserve-3d}
+.busy-title{font-size:1.15rem;font-weight:700;margin:0} .busy-time{font-variant-numeric:tabular-nums}
+.busy-card .hint{margin:6px 0 0}
+@keyframes busy-spin{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}
+@media (prefers-reduced-motion:reduce){.busy-logo{animation:busy-pulse 2s ease-in-out infinite}
+@keyframes busy-pulse{50%{opacity:.55}}}

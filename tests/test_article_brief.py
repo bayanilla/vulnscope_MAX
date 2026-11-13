@@ -189,7 +189,7 @@ class ArticleBriefTests(unittest.TestCase):
                     return {"generated": 1, "saved": 1, "unavailable": 0, "errors": []}
 
                 body = urllib.parse.urlencode({"csrf": csrf.group(1)}).encode()
-                with mock.patch("vulnflow.web.generate_article_briefs", side_effect=fake_generate):
+                with mock.patch("vulnflow.web.runs.generate_article_briefs", side_effect=fake_generate):
                     with urllib.request.urlopen(urllib.request.Request(base + "article-briefs", body)) as response:
                         self.assertIn("Generated 1 brief", response.read().decode())
                 with urllib.request.urlopen(base + "explorer.html") as response:

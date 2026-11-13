@@ -202,6 +202,32 @@ python3 -m vulnflow article-briefs out --llm-provider openai --llm-model gpt-4.1
 - **Built-in offline assistant.** `offline` (older name `mock`) uses fixed rules and templates over
   the results. It can't reason beyond the data; choose a model for open-ended questions.
 
+## Comparing reports
+
+Compare reports reads finished report folders and changes none of them.
+
+- **What is counted.** A vulnerability is a Nessus plugin (its ID, else its name); an IOC is a
+  typed indicator in the form the IOC CSV matching uses (lower-case domains, normalized IPs). Each
+  is counted per report, with the hosts it was found on there. Internal addresses are never matched
+  across reports, because the same private address in two networks is two different machines, so
+  the host count adds the reports' hosts together.
+- **Networks.** A report's network is its Network field (Report details or `--network-name`), else
+  its report name, else its folder name. Names that differ only in case or spacing are one network.
+- **Same analysis.** A report and its reopened copy, or one folder given twice (same analysis time,
+  name and counts), count once, with a note.
+- **Looking for IOCs again (re-hunt).** Every IOC any chosen report matched, and every indicator
+  in an IOC CSV added to the comparison, is looked for in each report's saved normalized data with
+  the analysis' own rules: IPs in `flows.csv` and `threats.csv` (IPS/IDS alerts), CVEs in
+  `findings.csv`, domains, URLs, hashes and packages in the named fields of `zeek_events.jsonl`.
+  Related hosts are the report's scanned hosts (its observed hosts without a scan), as in the
+  analysis. On a report's own IOC CSV, the re-hunt finds exactly the matches its analysis found.
+  `flows.csv` is read by DuckDB in a streaming scan sized like an analysis; the upload page runs
+  one re-hunt or analysis at a time.
+- **What the re-hunt can't see.** Only what a report saved. Reports made before `threats.csv` was
+  saved can't show an IP seen only in an IPS/IDS alert, and a report reopened from a folder that
+  has since moved has no saved data to search. Both are listed under "How to read this" on the
+  comparison. Matches are exact, as in the analysis; a match is a lead for review, not proof.
+
 ## Processing limits
 
 | Area | Current behavior |

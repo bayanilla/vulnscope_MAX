@@ -17,6 +17,8 @@ import csv
 import ipaddress
 import os
 
+from .errors import UserError
+
 FILENAME = "network_map.csv"
 CLOUD_TYPES = {"aws", "azure", "gcp", "cloud", "oci"}
 _HEADERS = {"cidr": ("cidr", "range", "network", "subnet", "prefix"),
@@ -29,15 +31,15 @@ def is_map_file(path: str) -> bool:
 
 
 def read(path: str) -> list[dict]:
-    """Return [{cidr, name, type, cloud}] in file order. Raises ValueError with the line number."""
+    """Return [{cidr, name, type, cloud}] in file order. Raises UserError with the line number."""
     with open(path, encoding="utf-8-sig", newline="") as fh:
         rows = list(csv.reader(fh))
     if not rows:
-        raise ValueError(f"{os.path.basename(path)} is empty; expected a header row: cidr,name,type")
+        raise UserError(f"{os.path.basename(path)} is empty; expected a header row: cidr,name,type")
     head = [h.strip().lower() for h in rows[0]]
     idx = {k: next((head.index(a) for a in aliases if a in head), None) for k, aliases in _HEADERS.items()}
     if idx["cidr"] is None or idx["name"] is None:
-        raise ValueError(f"{os.path.basename(path)} needs 'cidr' and 'name' columns; header was: {', '.join(head)}")
+        raise UserError(f"{os.path.basename(path)} needs 'cidr' and 'name' columns; header was: {', '.join(head)}")
     out = []
     for line, row in enumerate(rows[1:], 2):
         if not any(c.strip() for c in row) or row[0].lstrip().startswith("#"):
@@ -46,7 +48,7 @@ def read(path: str) -> list[dict]:
         try:
             net = ipaddress.ip_network(get("cidr"), strict=False)
         except ValueError:
-            raise ValueError(f"{os.path.basename(path)} line {line}: '{get('cidr')}' is not an address range") from None
+            raise UserError(f"{os.path.basename(path)} line {line}: '{get('cidr')}' is not an address range") from None
         name = get("name") or str(net)
         kind = get("type").lower() or "on-prem"
         out.append({"cidr": str(net), "name": name[:60], "type": kind[:20], "cloud": kind in CLOUD_TYPES})

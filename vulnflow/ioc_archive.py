@@ -9,6 +9,7 @@ from collections import defaultdict
 from urllib.parse import urlsplit
 
 from .branding import brand_html
+from .errors import UserError
 from .schema import ParseStats
 
 TYPES = {"ip", "domain", "url", "hash", "cve", "package"}
@@ -33,7 +34,8 @@ def is_archive(path: str) -> bool:
         return False
 
 
-def _value(kind: str, value: str) -> str:
+def indicator_value(kind: str, value: str) -> str:
+    """The form an indicator is compared in ("" when it is not a valid one of its kind)."""
     value = value.strip()
     if kind == "ip":
         try:
@@ -75,11 +77,11 @@ def read_archives(paths: list[str]) -> tuple[dict, list[ParseStats]]:
             value_column = _column(reader.fieldnames, VALUE_COLUMNS)
             article_column = _column(reader.fieldnames, ARTICLE_COLUMNS)
             if not kind_column or not value_column:
-                raise ValueError(f"IOC CSV needs type and indicator columns: {path}")
+                raise UserError(f"IOC CSV needs type and indicator columns: {path}")
             for row in reader:
                 stat.read += 1
                 kind = (row.get(kind_column) or "").strip().lower()
-                value = _value(kind, row.get(value_column) or "") if kind in TYPES else ""
+                value = indicator_value(kind, row.get(value_column) or "") if kind in TYPES else ""
                 links = _urls(row.get(article_column) or "") if article_column else []
                 if not value:
                     stat.drop("missing or invalid indicator")
@@ -107,53 +109,74 @@ def read_archives(paths: list[str]) -> tuple[dict, list[ParseStats]]:
     return archive, stats
 
 
+# Zeek fields whose values are compared with each indicator type (by the field name's last part,
+# so "dns.query" and "tls.client.server_name" count too).
+FIELD_TYPES = {
+    "domain": {"query", "domain", "hostname", "host", "server_name", "dns_name"},
+    "url": {"url", "uri"},
+    "hash": {"hash", "md5", "sha1", "sha256"},
+    "package": {"package", "package_name"},
+}
+FIELD_KINDS = {name: kind for kind, names in FIELD_TYPES.items() for name in names}
+
+
+class Matcher:
+    """Exact matches of an IOC archive, fed one observation at a time.
+
+    The analysis feeds it a run's own data (``match_archive``); Compare reports feeds it the
+    normalized data saved with a finished report (compare.py), so both find the same things."""
+
+    def __init__(self, archive: dict, scanned: set[str]):
+        self.archive = archive
+        self.scanned = scanned          # related hosts are only ever these (scanned or observed hosts)
+        self.seen: dict[tuple[str, str], dict] = {}
+
+    def _record(self, key, hosts, label, n=1):
+        if key not in self.archive:
+            return
+        row = self.seen.setdefault(key, {**self.archive[key], "hosts": set(), "observed": defaultdict(int)})
+        row["hosts"].update(h for h in hosts if h in self.scanned)
+        row["observed"][label] += n
+
+    def flow(self, src: str, dst: str, n: int = 1, label: str = "network session"):
+        """``n`` sessions (or IPS/IDS alerts, with that label) between two addresses."""
+        for value, other in ((src, dst), (dst, src)):
+            key = ("ip", indicator_value("ip", value))
+            if key in self.archive:
+                self._record(key, (value, other), label, n)
+
+    def finding(self, host: str, cves):
+        for cve in cves:
+            self._record(("cve", indicator_value("cve", cve)), (host,), "scan finding")
+
+    def event(self, stream: str, src: str, dst: str, fields: dict):
+        """A Zeek event: its domain, URL, hash and package fields."""
+        for field, raw in fields.items():
+            kind = FIELD_KINDS.get(field.lower().rsplit(".", 1)[-1])
+            if kind is None:
+                continue
+            for value in (raw if isinstance(raw, list) else [raw]):
+                if isinstance(value, str):
+                    self._record((kind, indicator_value(kind, value)), (src, dst), f"{stream} event")
+
+    def matches(self) -> list[dict]:
+        return [{**row, "hosts": sorted(row["hosts"]),
+                 "observed": dict(sorted(row["observed"].items()))}
+                for _, row in sorted(self.seen.items())]
+
+
 def match_archive(ds, archive: dict, observed_hosts: set[str] | None = None) -> list[dict]:
     """Exact matches in normalized traffic, findings, and named Zeek fields."""
-    seen: dict[tuple[str, str], dict] = {}
-    scanned = set(ds.scanned_hosts) or (observed_hosts or set())
-
-    def record(key, hosts, label):
-        if key not in archive:
-            return
-        row = seen.setdefault(key, {**archive[key], "hosts": set(), "observed": defaultdict(int)})
-        row["hosts"].update(h for h in hosts if h in scanned)
-        row["observed"][label] += 1
-
+    m = Matcher(archive, set(ds.scanned_hosts) or (observed_hosts or set()))
     for flow in ds.flows:
-        for value, other in ((flow.src_ip, flow.dst_ip), (flow.dst_ip, flow.src_ip)):
-            key = ("ip", _value("ip", value))
-            if key in archive:
-                record(key, (value, other), "network session")
+        m.flow(flow.src_ip, flow.dst_ip)
     for event in ds.threats:
-        for value, other in ((event.src_ip, event.dst_ip), (event.dst_ip, event.src_ip)):
-            key = ("ip", _value("ip", value))
-            if key in archive:
-                record(key, (value, other), "IDS/IPS alert")
+        m.flow(event.src_ip, event.dst_ip, label="IDS/IPS alert")
     for finding in ds.findings:
-        for cve in finding.cves:
-            record(("cve", _value("cve", cve)), (finding.host_ip,), "scan finding")
-
-    field_types = {
-        "domain": {"query", "domain", "hostname", "host", "server_name", "dns_name"},
-        "url": {"url", "uri"},
-        "hash": {"hash", "md5", "sha1", "sha256"},
-        "package": {"package", "package_name"},
-    }
+        m.finding(finding.host_ip, finding.cves)
     for event in ds.zeek_events:
-        for field, raw in event.fields.items():
-            name = field.lower().rsplit(".", 1)[-1]
-            values = raw if isinstance(raw, list) else [raw]
-            for kind, fields in field_types.items():
-                if name not in fields:
-                    continue
-                for value in values:
-                    if isinstance(value, str):
-                        record((kind, _value(kind, value)),
-                               (event.src_ip, event.dst_ip), f"{event.stream} event")
-
-    return [{**row, "hosts": sorted(row["hosts"]),
-             "observed": dict(sorted(row["observed"].items()))}
-            for _, row in sorted(seen.items())]
+        m.event(event.stream, event.src_ip, event.dst_ip, event.fields)
+    return m.matches()
 
 
 def markdown_section(matches: list[dict]) -> str:

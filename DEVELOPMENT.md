@@ -13,9 +13,7 @@ Verification uses synthetic data and never needs a model, an API key or network 
 python3 -m unittest discover -s tests
 ```
 
-`tests/test_pcap.py` runs Zeek when it is installed and skips those cases otherwise. In the full
-suite, `tests/test_branding.py::test_branding_page_is_locked_until_password` can fail with a
-connection reset; it passes when run alone.
+`tests/test_pcap.py` runs Zeek when it is installed and skips those cases otherwise.
 
 | Test file | Covers |
 | --- | --- |
@@ -27,6 +25,9 @@ connection reset; it passes when run alone.
 | `test_llm.py`, `test_offline_assistant.py` | Provider adapters, redaction, grounding; the built-in assistant |
 | `test_article_brief.py`, `test_radar.py` | Article briefs and Radar lookups with stubbed services |
 | `test_branding.py` | Branding page, password lock, logo validation |
+| `test_saved.py`, `test_report_name.py` | Reopening a saved report; report names, networks and timestamped run folders |
+| `test_compare.py` | Compare reports: counts per report and network, the re-hunt over saved data, command line and page |
+| `test_web_errors.py` | Which analysis errors the upload page shows, and which go to the server console |
 
 ## Samples
 

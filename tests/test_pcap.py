@@ -11,6 +11,7 @@ import unittest
 from unittest import mock
 
 from vulnflow import pcap, web
+from vulnflow.web import folders, server
 from vulnflow.correlate import Config
 from vulnflow.pipeline import run
 
@@ -105,7 +106,7 @@ class ContainerModeTests(unittest.TestCase):
             servers.append(srv)
             started.set()
             srv.serve_forever()
-        with mock.patch.object(web, "_serve_forever", fake_forever):
+        with mock.patch.object(server, "_serve_forever", fake_forever):
             threading.Thread(target=web.serve, args=("0.0.0.0", port, os.path.join(tmp, "r"), Config()),
                              kwargs={"container": True, "public_port": 18099}, daemon=True).start()
             self.assertTrue(started.wait(10))
@@ -142,24 +143,24 @@ class ContainerBrowseTests(unittest.TestCase):
         os.makedirs(self.data)
 
     def patched(self, host_root):
-        return mock.patch.multiple(web, BROWSE_ROOTS=[self.home, self.data], HOST_ROOT=host_root)
+        return mock.patch.multiple(folders, BROWSE_ROOTS=[self.home, self.data], HOST_ROOT=host_root)
 
     def test_browse_stays_inside_shared_folders(self):
         with self.patched(""):
-            top = web.list_folder("")
+            top = folders.list_folder("")
             self.assertEqual(top["path"], self.home)
             self.assertIsNone(top["parent"])                     # no climbing into the container
             self.assertEqual(top["roots"], [self.home, self.data])
-            self.assertEqual(web.list_folder("/etc")["path"], self.home)
-            self.assertEqual(web.list_folder(os.path.join(self.home, "Documents"))["parent"], self.home)
+            self.assertEqual(folders.list_folder("/etc")["path"], self.home)
+            self.assertEqual(folders.list_folder(os.path.join(self.home, "Documents"))["parent"], self.home)
 
     def test_windows_paths_are_translated(self):
         with self.patched("C:\\Users\\bay"):
-            self.assertEqual(web.host_to_container("C:\\Users\\bay\\Documents\\case1"),
+            self.assertEqual(folders.host_to_container("C:\\Users\\bay\\Documents\\case1"),
                              self.home + "/Documents/case1")
-            self.assertEqual(web.host_to_container("c:/users/bay"), self.home)
-            self.assertEqual(web.host_to_container("D:\\other"), "D:\\other")
-            self.assertEqual(web.list_folder("C:\\Users\\bay\\Documents")["dirs"], ["case1"])
+            self.assertEqual(folders.host_to_container("c:/users/bay"), self.home)
+            self.assertEqual(folders.host_to_container("D:\\other"), "D:\\other")
+            self.assertEqual(folders.list_folder("C:\\Users\\bay\\Documents")["dirs"], ["case1"])
 
     def test_locate_folder_from_browser_dialog(self):
         case = os.path.join(self.home, "Documents", "case1")
@@ -169,9 +170,9 @@ class ContainerBrowseTests(unittest.TestCase):
         with open(os.path.join(self.home, "Old", "case1", "conn.log"), "w") as fh:
             fh.write("y" * 3)
         with self.patched(""):
-            self.assertEqual(web.locate_folder("case1", [["conn.log", 10]]), {"matches": [case]})
-            self.assertIn("error", web.locate_folder("case1", [["conn.log", 999]]))
-            self.assertIn("error", web.locate_folder("case1", [["../../etc/passwd", 0]]))
+            self.assertEqual(folders.locate_folder("case1", [["conn.log", 10]]), {"matches": [case]})
+            self.assertIn("error", folders.locate_folder("case1", [["conn.log", 999]]))
+            self.assertIn("error", folders.locate_folder("case1", [["../../etc/passwd", 0]]))
 
     def test_locate_folder_tells_copies_apart_by_file_time(self):
         picked = os.path.join(self.home, "Documents", "telemetry_only")
@@ -185,6 +186,6 @@ class ContainerBrowseTests(unittest.TestCase):
                 os.utime(path, (1_700_000_000 + i * 3600, 1_700_000_000 + i * 3600))
         samples = [[n, 20, 1_700_000_000_000] for n in ("conn.log", "dns.log")]
         with self.patched(""):
-            self.assertEqual(web.locate_folder("telemetry_only", samples), {"matches": [picked]})
+            self.assertEqual(folders.locate_folder("telemetry_only", samples), {"matches": [picked]})
             # without file times (older page) every copy still matches, so the user picks
-            self.assertEqual(len(web.locate_folder("telemetry_only", [s[:2] for s in samples])["matches"]), 3)
+            self.assertEqual(len(folders.locate_folder("telemetry_only", [s[:2] for s in samples])["matches"]), 3)
