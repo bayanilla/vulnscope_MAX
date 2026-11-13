@@ -127,6 +127,14 @@ OTHER_HASHES = [
      "e0b568a3e35257cd30b0c42727c3529cef13b081", "831955bd05186381a8f15539a41f48166873eab3feb55fb1104202e4152bd507"),
 ]
 PRIVACY = "Potential Corporate Privacy Violation"
+IOC_HEADER = ["indicatorType", "indicator", "disposition", "dispositionReason", "riskTags", "firstSeenAt",
+              "lastSeenAt", "sightingCount", "sources", "articleUrls", "extractionMethods", "confidences"]
+PREVIEW = {REPORT_URL: {   # article_previews.json: the report's title and a short overview, for offline runs
+    "title": "SEO Poisoning to Domain Control: The Gootloader Saga Continues",
+    "overview": "The DFIR Report follows an intrusion that began when a user downloaded a poisoned "
+                "search result: Gootloader JavaScript fetched a Cobalt Strike payload about nine hours "
+                "later, and the attacker moved over SMB, WinRM and RDP, used SystemBC as a SOCKS5 tunnel "
+                "and reached the domain controllers, file shares and backup server."}}
 CS_JA3, CS_JA3S = "72a589da586844d7f0818ce684948eea", "f176ba63b4d68e576b5ba345bec2c7b7"
 
 # (ip, port, proto, svc, pluginID, name, sev, cvss3, cves, exploit, metasploit, synopsis, solution)
@@ -564,12 +572,7 @@ def _write(outdir, log, rng):
 
     p = os.path.join(outdir, "article_previews.json")
     with open(p, "w") as fh:
-        json.dump({REPORT_URL: {
-            "title": "SEO Poisoning to Domain Control: The Gootloader Saga Continues",
-            "overview": "The DFIR Report follows an intrusion that began when a user downloaded a poisoned "
-                        "search result: Gootloader JavaScript fetched a Cobalt Strike payload about nine hours "
-                        "later, and the attacker moved over SMB, WinRM and RDP, used SystemBC as a SOCKS5 tunnel "
-                        "and reached the domain controllers, file shares and backup server."}}, fh, indent=2)
+        json.dump(PREVIEW, fh, indent=2)
         fh.write("\n")
     paths.append(p)
     return paths
@@ -607,8 +610,8 @@ def _nessus(path):
     ET.ElementTree(root).write(path, encoding="utf-8", xml_declaration=True)
 
 
-def _iocs(path):
-    """The report's published indicators, as data."""
+def ioc_rows() -> list[list]:
+    """The report's published indicators, as rows of ``IOC_HEADER`` (the Compare sample reuses them)."""
     rows = []
     for name, _, https in GOOT_SITES:
         rows.append(("domain", name, "Gootloader compromised WordPress site"))
@@ -620,13 +623,16 @@ def _iocs(path):
     for fname, md5, sha1, sha256 in OTHER_HASHES:
         rows += [("hash", h, fname) for h in (md5, sha1, sha256)]
     seen = "2024-02-26T00:00:00.000Z"
+    return [[kind, value, "Actionable", why, "gootloader", seen, seen, 1, "thedfirreport.com", REPORT_URL,
+             "ioc-table", ""] for kind, value, why in rows]
+
+
+def _iocs(path):
+    """The report's published indicators, as data."""
     with open(path, "w", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
-        w.writerow(["indicatorType", "indicator", "disposition", "dispositionReason", "riskTags", "firstSeenAt",
-                    "lastSeenAt", "sightingCount", "sources", "articleUrls", "extractionMethods", "confidences"])
-        for kind, value, why in rows:
-            w.writerow([kind, value, "Actionable", why, "gootloader", seen, seen, 1, "thedfirreport.com",
-                        REPORT_URL, "ioc-table", ""])
+        w.writerow(IOC_HEADER)
+        w.writerows(ioc_rows())
 
 
 def generate(outdir: str, seed: int = 26) -> list[str]:

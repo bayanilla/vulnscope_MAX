@@ -1,0 +1,950 @@
+<?xml version='1.0' encoding='utf-8'?>
+<NessusClientData_v2>
+  <Report name="Quarterly scan - Austin design center">
+    <ReportHost name="10.32.1.5">
+      <HostProperties>
+        <tag name="host-ip">10.32.1.5</tag>
+        <tag name="host-fqdn">vpn-aus.corvane.example</tag>
+        <tag name="operating-system">Cisco Adaptive Security Appliance</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634400</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634580</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="500" svc_name="ike" protocol="udp" severity="2" pluginID="62694" pluginName="Internet Key Exchange (IKE) Aggressive Mode with Pre-Shared Key" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <cve>CVE-2002-1623</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The VPN gateway answers IKE Aggressive Mode with a pre-shared key: anyone who knows a group name gets a hash of its group password to crack offline.</synopsis>
+        <solution>Disable Aggressive Mode, or use certificates; give every site its own strong group key.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.0.20">
+      <HostProperties>
+        <tag name="host-ip">10.32.0.20</tag>
+        <tag name="host-fqdn">aus-fs01.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows Server 2019 Standard</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634420</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634600</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="4" pluginID="151440" pluginName="Windows Print Spooler Service Enabled (PrintNightmare, CVE-2021-34527)" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2021-34527</cve>
+        <exploit_available>true</exploit_available>
+        <exploit_framework_metasploit>true</exploit_framework_metasploit>
+        <synopsis>The Print Spooler service is affected by a remote code execution vulnerability.</synopsis>
+        <solution>Apply the July 2021 security updates or disable the Print Spooler service.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.0.25">
+      <HostProperties>
+        <tag name="host-ip">10.32.0.25</tag>
+        <tag name="host-fqdn">git01.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634440</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634620</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="4" pluginID="187600" pluginName="GitLab 16.1 &lt; 16.7.2 Account Takeover via Password Reset" pluginFamily="General">
+        <cvss3_base_score>10.0</cvss3_base_score>
+        <cve>CVE-2023-7028</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The GitLab instance allows account takeover through the password reset flow.</synopsis>
+        <solution>Upgrade to GitLab 16.7.2 or later and enable two-factor authentication.</solution>
+      </ReportItem>
+      <ReportItem port="22" svc_name="ssh" protocol="tcp" severity="2" pluginID="187201" pluginName="OpenSSH &lt; 9.6 Multiple Vulnerabilities (Terrapin)" pluginFamily="General">
+        <cvss3_base_score>5.9</cvss3_base_score>
+        <cve>CVE-2023-48795</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The SSH server is affected by a prefix truncation weakness.</synopsis>
+        <solution>Upgrade to OpenSSH 9.6 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.0.26">
+      <HostProperties>
+        <tag name="host-ip">10.32.0.26</tag>
+        <tag name="host-fqdn">build01.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 20.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634460</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634640</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="8080" svc_name="www" protocol="tcp" severity="4" pluginID="189463" pluginName="Jenkins &lt; 2.442 Arbitrary File Read (CVE-2024-23897)" pluginFamily="General">
+        <cvss3_base_score>9.8</cvss3_base_score>
+        <cve>CVE-2024-23897</cve>
+        <exploit_available>true</exploit_available>
+        <exploit_framework_metasploit>true</exploit_framework_metasploit>
+        <synopsis>The Jenkins CLI allows unauthenticated reading of arbitrary files.</synopsis>
+        <solution>Upgrade to Jenkins 2.442 or later.</solution>
+      </ReportItem>
+      <ReportItem port="22" svc_name="ssh" protocol="tcp" severity="4" pluginID="201194" pluginName="OpenSSH &lt; 9.8 Race Condition RCE (regreSSHion)" pluginFamily="General">
+        <cvss3_base_score>8.1</cvss3_base_score>
+        <cve>CVE-2024-6387</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The SSH server is affected by a signal handler race condition.</synopsis>
+        <solution>Upgrade to OpenSSH 9.8 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.0.27">
+      <HostProperties>
+        <tag name="host-ip">10.32.0.27</tag>
+        <tag name="host-fqdn">lic01.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634480</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634660</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="22" svc_name="ssh" protocol="tcp" severity="2" pluginID="187201" pluginName="OpenSSH &lt; 9.6 Multiple Vulnerabilities (Terrapin)" pluginFamily="General">
+        <cvss3_base_score>5.9</cvss3_base_score>
+        <cve>CVE-2023-48795</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The SSH server is affected by a prefix truncation weakness.</synopsis>
+        <solution>Upgrade to OpenSSH 9.6 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.21">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.21</tag>
+        <tag name="host-fqdn">aus-ws-01.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634500</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634680</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.22">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.22</tag>
+        <tag name="host-fqdn">aus-ws-02.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634520</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634700</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.23">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.23</tag>
+        <tag name="host-fqdn">aus-ws-03.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634540</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634720</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.24">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.24</tag>
+        <tag name="host-fqdn">aus-ws-04.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634560</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634740</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.25">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.25</tag>
+        <tag name="host-fqdn">aus-ws-05.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634580</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634760</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.26">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.26</tag>
+        <tag name="host-fqdn">aus-ws-06.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634600</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634780</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.27">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.27</tag>
+        <tag name="host-fqdn">aus-ws-07.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634620</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634800</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.28">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.28</tag>
+        <tag name="host-fqdn">aus-ws-08.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634640</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634820</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.29">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.29</tag>
+        <tag name="host-fqdn">aus-ws-09.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634660</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634840</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.30">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.30</tag>
+        <tag name="host-fqdn">aus-ws-10.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634680</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634860</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.31">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.31</tag>
+        <tag name="host-fqdn">aus-ws-11.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634700</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634880</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.32">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.32</tag>
+        <tag name="host-fqdn">aus-ws-12.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634720</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634900</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.33">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.33</tag>
+        <tag name="host-fqdn">aus-ws-13.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634740</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634920</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.34">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.34</tag>
+        <tag name="host-fqdn">aus-ws-14.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634760</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634940</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.35">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.35</tag>
+        <tag name="host-fqdn">aus-ws-15.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634780</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634960</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.36">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.36</tag>
+        <tag name="host-fqdn">aus-ws-16.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634800</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634980</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.37">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.37</tag>
+        <tag name="host-fqdn">aus-ws-17.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634820</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635000</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.38">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.38</tag>
+        <tag name="host-fqdn">aus-ws-18.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634840</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635020</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.39">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.39</tag>
+        <tag name="host-fqdn">aus-ws-19.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634860</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635040</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.40">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.40</tag>
+        <tag name="host-fqdn">aus-ws-20.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634880</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635060</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.41">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.41</tag>
+        <tag name="host-fqdn">aus-ws-21.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634900</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635080</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.42">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.42</tag>
+        <tag name="host-fqdn">aus-ws-22.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634920</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635100</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.43">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.43</tag>
+        <tag name="host-fqdn">aus-ws-23.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634940</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635120</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.44">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.44</tag>
+        <tag name="host-fqdn">aus-ws-24.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634960</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635140</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.45">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.45</tag>
+        <tag name="host-fqdn">aus-ws-25.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634980</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635160</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.46">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.46</tag>
+        <tag name="host-fqdn">aus-ws-26.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635000</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635180</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.47">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.47</tag>
+        <tag name="host-fqdn">aus-ws-27.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635020</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635200</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.48">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.48</tag>
+        <tag name="host-fqdn">aus-ws-28.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635040</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635220</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.49">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.49</tag>
+        <tag name="host-fqdn">aus-ws-29.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635060</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635240</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.10.50">
+      <HostProperties>
+        <tag name="host-ip">10.32.10.50</tag>
+        <tag name="host-fqdn">aus-ws-30.corvane.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635080</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635260</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.30.10">
+      <HostProperties>
+        <tag name="host-ip">10.32.30.10</tag>
+        <tag name="host-fqdn">aus-prn-10.corvane.example</tag>
+        <tag name="operating-system">HP LaserJet</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635100</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635280</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.21">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.21</tag>
+        <tag name="host-fqdn">aus-eng-01.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635120</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635300</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="22" svc_name="ssh" protocol="tcp" severity="2" pluginID="187201" pluginName="OpenSSH &lt; 9.6 Multiple Vulnerabilities (Terrapin)" pluginFamily="General">
+        <cvss3_base_score>5.9</cvss3_base_score>
+        <cve>CVE-2023-48795</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The SSH server is affected by a prefix truncation weakness.</synopsis>
+        <solution>Upgrade to OpenSSH 9.6 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.20.22">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.22</tag>
+        <tag name="host-fqdn">aus-eng-02.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635140</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635320</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.23">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.23</tag>
+        <tag name="host-fqdn">aus-eng-03.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635160</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635340</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.24">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.24</tag>
+        <tag name="host-fqdn">aus-eng-04.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635180</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635360</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.25">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.25</tag>
+        <tag name="host-fqdn">aus-eng-05.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635200</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635380</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="22" svc_name="ssh" protocol="tcp" severity="2" pluginID="187201" pluginName="OpenSSH &lt; 9.6 Multiple Vulnerabilities (Terrapin)" pluginFamily="General">
+        <cvss3_base_score>5.9</cvss3_base_score>
+        <cve>CVE-2023-48795</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The SSH server is affected by a prefix truncation weakness.</synopsis>
+        <solution>Upgrade to OpenSSH 9.6 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.20.26">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.26</tag>
+        <tag name="host-fqdn">aus-eng-06.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635220</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635400</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.27">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.27</tag>
+        <tag name="host-fqdn">aus-eng-07.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635240</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635420</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.28">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.28</tag>
+        <tag name="host-fqdn">aus-eng-08.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635260</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635440</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.29">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.29</tag>
+        <tag name="host-fqdn">aus-eng-09.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635280</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635460</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="22" svc_name="ssh" protocol="tcp" severity="2" pluginID="187201" pluginName="OpenSSH &lt; 9.6 Multiple Vulnerabilities (Terrapin)" pluginFamily="General">
+        <cvss3_base_score>5.9</cvss3_base_score>
+        <cve>CVE-2023-48795</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The SSH server is affected by a prefix truncation weakness.</synopsis>
+        <solution>Upgrade to OpenSSH 9.6 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.20.30">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.30</tag>
+        <tag name="host-fqdn">aus-eng-10.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635300</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635480</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.31">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.31</tag>
+        <tag name="host-fqdn">aus-eng-11.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635320</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635500</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.32">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.32</tag>
+        <tag name="host-fqdn">aus-eng-12.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635340</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635520</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.33">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.33</tag>
+        <tag name="host-fqdn">aus-eng-13.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635360</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635540</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="22" svc_name="ssh" protocol="tcp" severity="2" pluginID="187201" pluginName="OpenSSH &lt; 9.6 Multiple Vulnerabilities (Terrapin)" pluginFamily="General">
+        <cvss3_base_score>5.9</cvss3_base_score>
+        <cve>CVE-2023-48795</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The SSH server is affected by a prefix truncation weakness.</synopsis>
+        <solution>Upgrade to OpenSSH 9.6 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.20.34">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.34</tag>
+        <tag name="host-fqdn">aus-eng-14.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635380</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635560</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.35">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.35</tag>
+        <tag name="host-fqdn">aus-eng-15.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635400</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635580</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.36">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.36</tag>
+        <tag name="host-fqdn">aus-eng-16.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635420</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635600</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.37">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.37</tag>
+        <tag name="host-fqdn">aus-eng-17.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635440</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635620</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="22" svc_name="ssh" protocol="tcp" severity="2" pluginID="187201" pluginName="OpenSSH &lt; 9.6 Multiple Vulnerabilities (Terrapin)" pluginFamily="General">
+        <cvss3_base_score>5.9</cvss3_base_score>
+        <cve>CVE-2023-48795</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The SSH server is affected by a prefix truncation weakness.</synopsis>
+        <solution>Upgrade to OpenSSH 9.6 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.32.20.38">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.38</tag>
+        <tag name="host-fqdn">aus-eng-18.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635460</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635640</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.39">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.39</tag>
+        <tag name="host-fqdn">aus-eng-19.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635480</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635660</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.32.20.40">
+      <HostProperties>
+        <tag name="host-ip">10.32.20.40</tag>
+        <tag name="host-fqdn">aus-eng-20.corvane.example</tag>
+        <tag name="operating-system">Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635500</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635680</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>

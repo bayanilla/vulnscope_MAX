@@ -71,7 +71,8 @@ also need Zeek (`brew install zeek`, a Linux package, or `VULNSCOPE_ZEEK=/path/t
 
 `example_output/` holds a finished synthetic 250-host run: open `explorer.html`,
 `executive_summary.html` or `technical_report.html` in your browser. Four bundled samples can be
-analyzed from the upload page (select the folder, then **Analyze folder**) or the command line:
+analyzed from the upload page (select the folder, then **Analyze folder**) or the command line, and a
+fifth loads straight into **Compare reports**:
 
 ```sh
 python3 -m vulnflow analyze samples/scan_and_telemetry \
@@ -79,6 +80,7 @@ python3 -m vulnflow analyze samples/scan_and_telemetry \
 python3 -m vulnflow analyze samples/telemetry_only -o telemetry_output        # no scan, includes OT
 python3 -m vulnflow analyze samples/hosts_onprem_and_aws -o hosts_output       # 4,324 hosts, on-prem + AWS
 python3 -m vulnflow analyze samples/gootloader_seo_poisoning -o gootloader_output
+python3 -m vulnflow compare-sample      # two companies, seven site reports, compared (for serve's default folder)
 ```
 
 All sample data is fabricated. See [the sample guide](samples/README.md) and the
@@ -290,6 +292,12 @@ themselves are not changed. From the command line:
 python3 -m vulnflow compare vulnflow_runs/ -o compare_out --ioc-csv new_iocs.csv
 python3 -m vulnflow compare nov/out dec/out --network "dec/out=Plant 3"   # set a report's network
 ```
+
+To try it, `python3 -m vulnflow compare-sample` (in Docker, `docker compose run --rm vulnscope
+compare-sample`) loads seven sample reports from two fictional companies into the upload page and
+compares them: the Gootloader intrusion and two branch offices of the same company, and an AI-driven
+intrusion after Unit 42's Cairn report at four sites of the other. See
+[the Compare sample](samples/README.md#the-compare-sample-two-companies-seven-sites).
 
 Vulnerabilities are matched by Nessus plugin and IOCs by indicator, never by internal address,
 since the same private address in two networks is two different machines. A report and its

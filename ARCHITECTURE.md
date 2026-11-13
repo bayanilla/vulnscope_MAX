@@ -152,6 +152,7 @@ The command line works the same way, with container paths:
 docker compose run --rm vulnscope analyze /data/case1 -o /runs/case1
 docker compose run --rm vulnscope explore /data/case1 -o /runs/case1-explorer
 docker compose run --rm vulnscope analyze /opt/vulnscope/samples/gootloader_seo_poisoning -o /runs/demo
+docker compose run --rm vulnscope compare-sample        # seven sample reports + a comparison, on the upload page
 docker compose run --rm vulnscope zeek -C -r /data/capture.pcap local     # Zeek by itself
 ```
 

@@ -16,7 +16,7 @@ from collections import defaultdict
 from http.server import ThreadingHTTPServer
 from unittest import mock
 
-from vulnflow import cli, combine, compare, sample_gootloader, saved
+from vulnflow import cli, combine, compare, sample_compare, sample_gootloader, saved
 from vulnflow.correlate import Config
 from vulnflow.errors import UserError
 from vulnflow.ioc_archive import Matcher, read_archives
@@ -601,6 +601,83 @@ class CompareWebTests(unittest.TestCase):
         self.post([(f"run_{NOV}", "1")])
         self.assertEqual(self.request("GET", "/runs/comparisons/")[0], 404)
         self.assertNotIn('name="run_comparisons"', self.request("GET", "/compare")[1])
+
+
+class CompareSampleTests(unittest.TestCase):
+    """The two-company sample: Ridgeline (the Gootloader sample and two branch offices) and Corvane
+    (four sites, after Unit 42's Cairn report), loaded into an upload page's data folder and compared."""
+
+    def test_checked_in_folder_matches_the_generator(self):
+        root = os.path.join(os.path.dirname(__file__), "..", "samples", sample_compare.FOLDER)
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = sample_compare.generate(tmp)
+            made = {os.path.relpath(p, tmp) for p in paths}
+            have = {os.path.relpath(os.path.join(d, f), root) for d, _, files in os.walk(root) for f in files}
+            self.assertEqual(have, made)
+            for rel in made:
+                with open(os.path.join(tmp, rel), "rb") as a, open(os.path.join(root, rel), "rb") as b:
+                    self.assertEqual(a.read(), b.read(), rel)
+        self.assertEqual(sorted(os.listdir(root)), sorted(f for f, *_ in sample_compare.SITES if f != sample_gootloader.FOLDER))
+
+    def test_one_command_loads_and_compares_seven_reports(self):
+        data = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, data, True)
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch("vulnflow.article_preview.fetch_preview", side_effect=AssertionError("went online")), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            self.assertEqual(cli.main(["compare-sample", "--data-dir", data]), 0, err.getvalue())
+        runs = re.findall(r"/runs/([^/\s]+)/", out.getvalue())
+        cid = re.search(r"/compare/([^/\s]+)/", out.getvalue())[1]
+        self.assertEqual(len(runs), 7)
+        with open(os.path.join(data, "comparisons", cid, "comparison.json"), encoding="utf-8") as fh:
+            result = json.load(fh)
+        names = [r["name"] for r in result["reports"]]
+        self.assertEqual(sorted(names), sorted(name for _, name, _, _ in sample_compare.SITES))
+        self.assertEqual({r["network"] for r in result["reports"]}, {"Ridgeline", "Corvane"})
+        self.assertEqual(result["summary"]["found_by_hunt"], 1)
+        iocs, vulns = {i["value"]: i for i in result["iocs"]}, {v["plugin_id"]: v for v in result["vulns"]}
+        where = lambda item: {names[s["r"]] for s in item["seen"]}
+        # the Cairn attack egress at all four Corvane sites; Dresden was analyzed with the feed from
+        # before Unit 42's report, so only the re-hunt finds it there
+        egress = iocs[sample_compare.EGRESS]
+        self.assertEqual(where(egress), {"Corvane HQ", "Corvane Phoenix plant", "Corvane Austin design center",
+                                         "Corvane Dresden service center"})
+        self.assertEqual({names[s["r"]]: s["how"] for s in egress["seen"]}["Corvane Dresden service center"], ["re-hunt"])
+        self.assertNotIn(sample_compare.CAIRN_SERVER, iocs)          # the attacker's own server: nobody calls it
+        for domain in ("my-little-kitchen.com", "pocketofpreschool.com"):      # Gootloader lures in both companies
+            self.assertEqual(where(iocs[domain]), {"Ridgeline HQ", "Corvane Austin design center"})
+            self.assertEqual(iocs[domain]["networks"], 2)
+        self.assertEqual(where(iocs["91.215.85.143"]), {"Ridgeline HQ", "Ridgeline Denver office"})   # the copied beacon
+        self.assertEqual(where(vulns["62694"]), {"Corvane Phoenix plant", "Corvane Austin design center",
+                                                 "Corvane Dresden service center"})         # the VPN gateways' IKE
+        leads = {}
+        for run_id in runs:
+            res = saved.load_results(os.path.join(data, run_id, "out"))
+            leads[res["report"]["name"]] = res["summary"]["hosts_to_investigate"]
+        self.assertEqual(leads["Corvane HQ"], ["172.16.10.10", "172.16.10.20"])          # www01 and the partner portal
+        self.assertEqual(leads["Corvane Austin design center"], ["10.32.0.26"])           # the build server
+        self.assertEqual(leads["Corvane Dresden service center"], [])                     # only failed VPN logins
+        # the upload page lists the seven reports and opens the comparison
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(data, Config()))
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.server_close)
+        self.addCleanup(srv.shutdown)
+        for path, text in (("/compare", "Corvane Dresden service center"), (f"/compare/{cid}/", "comparison"),
+                           (f"/compare/{cid}/explorer.html", "All networks"), (f"/runs/{runs[0]}/", "Ridgeline")):
+            conn = http.client.HTTPConnection("127.0.0.1", srv.server_port, timeout=60)
+            conn.request("GET", path, headers={"Host": f"127.0.0.1:{srv.server_port}"})
+            resp = conn.getresponse()
+            body = resp.read().decode(errors="replace")
+            conn.close()
+            self.assertEqual(resp.status, 200, path)
+            self.assertIn(text, body, path)
+        # a second time adds nothing, unless asked
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(cli.main(["compare-sample", "--data-dir", data]), 0)
+        self.assertIn("already in", out.getvalue())
+        self.assertEqual(sorted(n for n in os.listdir(data) if n != "comparisons"), sorted(runs))
+        self.assertEqual(len([n for n in os.listdir(os.path.join(data, "comparisons")) if n != "index.json"]), 1)
 
 
 if __name__ == "__main__":

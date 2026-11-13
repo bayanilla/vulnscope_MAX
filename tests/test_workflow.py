@@ -501,12 +501,14 @@ class EndToEndTests(Base):
 
 
 class BundledSamplesTests(unittest.TestCase):
-    def test_generator_writes_four_distinct_input_folders(self):
+    def test_generator_writes_the_sample_folders(self):
         with tempfile.TemporaryDirectory() as root:
             paths = generate_bundles(root)
             self.assertEqual(sorted(os.listdir(root)),
-                             ["gootloader_seo_poisoning", "hosts_onprem_and_aws", "scan_and_telemetry", "telemetry_only"])
-            self.assertEqual(len(paths), 25)
+                             ["compare_two_companies", "gootloader_seo_poisoning", "hosts_onprem_and_aws",
+                              "scan_and_telemetry", "telemetry_only"])
+            self.assertEqual(len(paths), 67)
+            self.assertEqual(len(os.listdir(os.path.join(root, "compare_two_companies"))), 6)   # six sites
             self.assertTrue(os.path.isfile(os.path.join(root, "scan_and_telemetry", "quarterly_scan.nessus")))
             self.assertFalse(any(name.endswith((".nessus", "scan.csv"))
                                  for name in os.listdir(os.path.join(root, "telemetry_only"))))
@@ -516,7 +518,8 @@ class BundledSamplesTests(unittest.TestCase):
         from vulnflow.pipeline import input_files as _input_files
         root = os.path.join(os.path.dirname(__file__), "..", "samples")
         self.assertEqual(sorted(name for name in os.listdir(root) if os.path.isdir(os.path.join(root, name))),
-                         ["gootloader_seo_poisoning", "hosts_onprem_and_aws", "scan_and_telemetry", "telemetry_only"])
+                         ["compare_two_companies", "gootloader_seo_poisoning", "hosts_onprem_and_aws",
+                          "scan_and_telemetry", "telemetry_only"])
         with tempfile.TemporaryDirectory() as output:
             full_files = _input_files([os.path.join(root, "scan_and_telemetry")], output)
             network_files = _input_files([os.path.join(root, "telemetry_only")], output)
@@ -682,6 +685,46 @@ class BundledSamplesTests(unittest.TestCase):
             nm = netmap.NetMap([{"cidr": "10.0.0.0/8", "name": "Office", "type": "on-prem", "cloud": False},
                                 {"cidr": "10.60.0.0/16", "name": "AWS", "type": "aws", "cloud": True}])
             self.assertEqual((nm.name("10.60.1.1"), nm.name("10.1.1.1"), nm.name("8.8.8.8")), ("AWS", "Office", ""))
+
+
+class DockerEntrypointTests(unittest.TestCase):
+    """docker/entrypoint.py hands vulnflow's commands to ``python -m vulnflow`` and anything else to the shell."""
+
+    def entrypoint(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "vulnscope_entrypoint", os.path.join(os.path.dirname(__file__), "..", "docker", "entrypoint.py"))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def run_entrypoint(self, argv):
+        import sys
+        ep = self.entrypoint()
+        with patch.object(ep, "drop_privileges"), patch("os.umask"), patch("os.execv") as execv, \
+                patch("os.execvp") as execvp, patch.object(sys, "argv", ["entrypoint.py"] + argv), \
+                patch.dict(os.environ, {"VULNSCOPE_WORKDIR": "", "VULNSCOPE_HOME": ""}):
+            ep.main()
+        return execv.call_args[0][1][3:] if execv.called else ("shell", execvp.call_args[0][1])
+
+    def test_every_vulnflow_command_runs_in_the_container(self):
+        import contextlib
+        import io
+        from vulnflow.cli import main
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), self.assertRaises(SystemExit):
+            main(["--help"])
+        commands = set(re.search(r"\{([a-z,-]+)\}", out.getvalue())[1].split(","))
+        self.assertIn("compare-sample", commands)
+        self.assertLessEqual(commands, self.entrypoint().VULNFLOW_COMMANDS)
+
+    def test_compare_sample_loads_into_the_upload_pages_folder(self):
+        self.assertEqual(self.run_entrypoint(["compare-sample"]), ["compare-sample", "--data-dir=/runs/web"])
+        self.assertEqual(self.run_entrypoint(["compare-sample", "--data-dir", "/runs/x"]),
+                         ["compare-sample", "--data-dir", "/runs/x"])
+        self.assertEqual(self.run_entrypoint(["compare-sample", "--data-dir=/runs/x", "--again"]),
+                         ["compare-sample", "--data-dir=/runs/x", "--again"])
+        self.assertEqual(self.run_entrypoint(["ls", "/runs"]), ("shell", ["ls", "/runs"]))
 
 
 if __name__ == "__main__":

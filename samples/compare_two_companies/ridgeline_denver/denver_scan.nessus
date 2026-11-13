@@ -1,0 +1,877 @@
+<?xml version='1.0' encoding='utf-8'?>
+<NessusClientData_v2>
+  <Report name="Monthly scan - Denver office">
+    <ReportHost name="10.21.0.10">
+      <HostProperties>
+        <tag name="host-ip">10.21.0.10</tag>
+        <tag name="host-fqdn">den-dc03.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows Server 2019 Standard</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634400</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634580</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="389" svc_name="ldap" protocol="tcp" severity="2" pluginID="191001" pluginName="Active Directory LDAP Signing and Channel Binding Not Required" pluginFamily="General">
+        <cvss3_base_score>5.9</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>The domain controller accepts unsigned LDAP binds.</synopsis>
+        <solution>Require LDAP signing and channel binding.</solution>
+      </ReportItem>
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="4" pluginID="151440" pluginName="Windows Print Spooler Service Enabled (PrintNightmare, CVE-2021-34527)" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2021-34527</cve>
+        <exploit_available>true</exploit_available>
+        <exploit_framework_metasploit>true</exploit_framework_metasploit>
+        <synopsis>The Print Spooler service is affected by a remote code execution vulnerability.</synopsis>
+        <solution>Apply the July 2021 security updates or disable the Print Spooler service.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.0.20">
+      <HostProperties>
+        <tag name="host-ip">10.21.0.20</tag>
+        <tag name="host-fqdn">den-fs01.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows Server 2016 Standard</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634420</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634600</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="4" pluginID="151440" pluginName="Windows Print Spooler Service Enabled (PrintNightmare, CVE-2021-34527)" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2021-34527</cve>
+        <exploit_available>true</exploit_available>
+        <exploit_framework_metasploit>true</exploit_framework_metasploit>
+        <synopsis>The Print Spooler service is affected by a remote code execution vulnerability.</synopsis>
+        <solution>Apply the July 2021 security updates or disable the Print Spooler service.</solution>
+      </ReportItem>
+      <ReportItem port="3389" svc_name="msrdp" protocol="tcp" severity="2" pluginID="58453" pluginName="Terminal Services Doesn't Use Network Level Authentication (NLA) Only" pluginFamily="General">
+        <cvss3_base_score>4.0</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>The remote Terminal Services doesn't use NLA only.</synopsis>
+        <solution>Enable Network Level Authentication.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.21">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.21</tag>
+        <tag name="host-fqdn">den-ws-01.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634440</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634620</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.22">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.22</tag>
+        <tag name="host-fqdn">den-ws-02.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634460</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634640</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.23">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.23</tag>
+        <tag name="host-fqdn">den-ws-03.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634480</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634660</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.24">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.24</tag>
+        <tag name="host-fqdn">den-ws-04.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634500</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634680</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.25">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.25</tag>
+        <tag name="host-fqdn">den-ws-05.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634520</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634700</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.26">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.26</tag>
+        <tag name="host-fqdn">den-ws-06.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634540</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634720</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.27">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.27</tag>
+        <tag name="host-fqdn">den-ws-07.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634560</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634740</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.28">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.28</tag>
+        <tag name="host-fqdn">den-ws-08.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634580</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634760</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.29">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.29</tag>
+        <tag name="host-fqdn">den-ws-09.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634600</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634780</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.30">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.30</tag>
+        <tag name="host-fqdn">den-ws-10.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634620</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634800</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.31">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.31</tag>
+        <tag name="host-fqdn">den-ws-11.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634640</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634820</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.32">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.32</tag>
+        <tag name="host-fqdn">den-ws-12.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634660</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634840</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.33">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.33</tag>
+        <tag name="host-fqdn">den-ws-13.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634680</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634860</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.34">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.34</tag>
+        <tag name="host-fqdn">den-ws-14.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634700</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634880</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.35">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.35</tag>
+        <tag name="host-fqdn">den-ws-15.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634720</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634900</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.36">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.36</tag>
+        <tag name="host-fqdn">den-ws-16.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634740</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634920</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.37">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.37</tag>
+        <tag name="host-fqdn">den-ws-17.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634760</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634940</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.38">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.38</tag>
+        <tag name="host-fqdn">den-ws-18.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634780</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634960</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.39">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.39</tag>
+        <tag name="host-fqdn">den-ws-19.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634800</tag>
+        <tag name="HOST_END_TIMESTAMP">1792634980</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.40">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.40</tag>
+        <tag name="host-fqdn">den-ws-20.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634820</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635000</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.41">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.41</tag>
+        <tag name="host-fqdn">den-ws-21.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634840</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635020</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.42">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.42</tag>
+        <tag name="host-fqdn">den-ws-22.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634860</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635040</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.43">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.43</tag>
+        <tag name="host-fqdn">den-ws-23.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634880</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635060</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.44">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.44</tag>
+        <tag name="host-fqdn">den-ws-24.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634900</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635080</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.45">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.45</tag>
+        <tag name="host-fqdn">den-ws-25.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634920</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635100</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.46">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.46</tag>
+        <tag name="host-fqdn">den-ws-26.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634940</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635120</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.47">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.47</tag>
+        <tag name="host-fqdn">den-ws-27.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634960</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635140</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.48">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.48</tag>
+        <tag name="host-fqdn">den-ws-28.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792634980</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635160</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.49">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.49</tag>
+        <tag name="host-fqdn">den-ws-29.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635000</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635180</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.50">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.50</tag>
+        <tag name="host-fqdn">den-ws-30.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635020</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635200</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.51">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.51</tag>
+        <tag name="host-fqdn">den-ws-31.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635040</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635220</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.52">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.52</tag>
+        <tag name="host-fqdn">den-ws-32.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635060</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635240</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.53">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.53</tag>
+        <tag name="host-fqdn">den-ws-33.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635080</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635260</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="189385" pluginName="7-Zip &lt; 24.07 Code Execution" pluginFamily="General">
+        <cvss3_base_score>7.0</cvss3_base_score>
+        <cve>CVE-2024-11477</cve>
+        <exploit_available>false</exploit_available>
+        <synopsis>The archiver on the remote host is affected by a code execution vulnerability.</synopsis>
+        <solution>Upgrade to 7-Zip 24.07 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.54">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.54</tag>
+        <tag name="host-fqdn">den-ws-34.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635100</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635280</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.55">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.55</tag>
+        <tag name="host-fqdn">den-ws-35.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635120</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635300</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.56">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.56</tag>
+        <tag name="host-fqdn">den-ws-36.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635140</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635320</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.57">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.57</tag>
+        <tag name="host-fqdn">den-ws-37.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635160</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635340</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.58">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.58</tag>
+        <tag name="host-fqdn">den-ws-38.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635180</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635360</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.59">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.59</tag>
+        <tag name="host-fqdn">den-ws-39.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635200</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635380</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.10.60">
+      <HostProperties>
+        <tag name="host-ip">10.21.10.60</tag>
+        <tag name="host-fqdn">den-ws-40.ridgeline.example</tag>
+        <tag name="operating-system">Microsoft Windows 10 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635220</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635400</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="General">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="207053" pluginName="Microsoft Edge (Chromium) &lt; 129.0.2792.52 Multiple Vulnerabilities" pluginFamily="General">
+        <cvss3_base_score>8.8</cvss3_base_score>
+        <cve>CVE-2024-7965</cve>
+        <cve>CVE-2024-7971</cve>
+        <exploit_available>true</exploit_available>
+        <synopsis>The browser installed on the remote host is affected by multiple vulnerabilities.</synopsis>
+        <solution>Upgrade to Microsoft Edge version 129.0.2792.52 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.21.30.10">
+      <HostProperties>
+        <tag name="host-ip">10.21.30.10</tag>
+        <tag name="host-fqdn">den-prn-10.ridgeline.example</tag>
+        <tag name="operating-system">HP LaserJet</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635240</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635420</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.21.30.11">
+      <HostProperties>
+        <tag name="host-ip">10.21.30.11</tag>
+        <tag name="host-fqdn">den-prn-11.ridgeline.example</tag>
+        <tag name="operating-system">HP LaserJet</tag>
+        <tag name="HOST_START_TIMESTAMP">1792635260</tag>
+        <tag name="HOST_END_TIMESTAMP">1792635440</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>
