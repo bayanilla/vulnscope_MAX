@@ -410,16 +410,25 @@ def technical_report(res: dict) -> str:
 
 # ---------------------------------------------------------------- HTML
 THEMES = (
-    ("dark", "SOC Dark"), ("olive-drab", "Olive Drab"),
+    ("dark", "SOC Dark"), ("graphite", "Graphite"), ("amphibious", "Amphibious"), ("olive-drab", "Olive Drab"),
     ("matrix", "Matrix"), ("high-contrast", "High Contrast"), ("light", "Light"),
 )
+
+# Restrained themes share one structure (flat surfaces, one accent, one type scale); see html[data-calm] in CSS.
+CALM_THEMES = ("graphite", "amphibious", "olive-drab", "matrix", "high-contrast", "light")
 
 THEME_INIT = """<script>
 const supportedThemes = new Set(__THEMES__);
 let savedTheme = 'dark';
 try { savedTheme = localStorage.getItem('vulnflow-theme') || 'dark'; } catch (_) {}
-document.documentElement.dataset.theme = supportedThemes.has(savedTheme) ? savedTheme : 'dark';
-</script>""".replace("__THEMES__", json.dumps([value for value, _ in THEMES]))
+const calmThemes = new Set(__CALM__);
+function vfSetTheme(name) {
+  const root = document.documentElement;
+  root.dataset.theme = supportedThemes.has(name) ? name : 'dark';
+  root.toggleAttribute('data-calm', calmThemes.has(root.dataset.theme));
+}
+vfSetTheme(savedTheme);
+</script>""".replace("__THEMES__", json.dumps([value for value, _ in THEMES])).replace("__CALM__", json.dumps(list(CALM_THEMES)))
 
 
 def theme_control() -> str:
@@ -429,16 +438,18 @@ def theme_control() -> str:
             '<script>(function(){const s=document.getElementById("theme-choice");'
             'const root=document.documentElement;'
             's.value=[...s.options].some(o=>o.value===root.dataset.theme)?root.dataset.theme:"dark";'
-            's.addEventListener("change",()=>{root.dataset.theme=s.value;'
+            's.addEventListener("change",()=>{vfSetTheme(s.value);'
             'try{localStorage.setItem("vulnflow-theme",s.value)}catch(_){}})})();</script>')
 
 
 CSS = """
 :root,[data-theme="dark"]{--desktop:#020617;--bg:#020617;--fg:#f1f5f9;--muted:#cbd5e1;--line:#334155;--head:#1e293b;--accent:#22d3ee;--accent-text:#082f49;--code:#1e293b;--panel:#0f172a;--radius:10px;--bar:#020617;--shadow:none;--background-art:url('__DARK_TEXTURE__');--background-overlay:linear-gradient(#02061755,#020617aa);--body-tint:#020617dd}
-[data-theme="olive-drab"]{--desktop:#10150e;--bg:#10150e;--fg:#f0f0e9;--muted:#b7bcab;--line:#62613e;--head:#192017;--accent:#d2c681;--accent-text:#10150e;--code:#1d261b;--panel:#192017;--radius:4px;--bar:#10150e;--shadow:none;--background-art:url('__WORLD_TEXTURE__');--background-overlay:linear-gradient(#10150e33,#10150e99);--body-tint:#10150ed1}
-[data-theme="light"]{--desktop:#b9c4d1;--bg:#cfd8e3;--fg:#0f172a;--muted:#334155;--line:#a3b1c2;--head:#bfcad7;--accent:#1d4ed8;--accent-text:#fff;--code:#c2ccd8;--panel:#dbe2ea;--radius:10px;--bar:#c2ccd8;--shadow:0 12px 34px #47556922;--background-art:radial-gradient(at 8% 0%,#2f4b7c1a,transparent 48%),radial-gradient(at 95% 65%,#2f4b7c0b,transparent 50%),linear-gradient(115deg,transparent 38%,#2f4b7c06 49%,transparent 60%);--background-overlay:linear-gradient(#cfd8e355,#cfd8e355);--body-tint:#cfd8e3d9}
-[data-theme="high-contrast"]{--desktop:#000;--bg:#000;--fg:#fff;--muted:#f1f5f9;--line:#fff;--head:#111;--accent:#fde047;--accent-text:#000;--code:#111;--panel:#000;--radius:0;--bar:#000;--shadow:none;--background-art:none;--background-overlay:none;--body-tint:#000}
-[data-theme="matrix"]{--desktop:#020b04;--bg:#020b04;--fg:#86efac;--muted:#4ade80;--line:#166534;--head:#052e16;--accent:#22c55e;--accent-text:#000;--code:#052e16;--panel:#031508;--radius:4px;--bar:#001a08;--shadow:none;--background-art:url('__MATRIX_TEXTURE__');--background-overlay:linear-gradient(#020b0455,#020b04bb);--body-tint:#020b04d9}
+[data-theme="light"]{--desktop:#f7f7f5;--bg:#f7f7f5;--fg:#1b1c1e;--muted:#5c5e62;--line:#e2e2de;--head:#f0f0ed;--accent:#0f6f80;--accent-text:#ffffff;--code:#f0f0ed;--panel:#ffffff;--radius:4px;--bar:#ffffff;--shadow:none;--background-art:none;--background-overlay:none;--body-tint:#f7f7f5;--ctl:#ffffff;--ctl-line:#c9c9c4;--ctl-line-hi:#a3a39e;--hover:#ecece8;--accent-hi:#0b5a68;--sel:#e3f1f3}
+[data-theme="graphite"]{--desktop:#111214;--bg:#111214;--fg:#e6e6e3;--muted:#a0a19d;--line:#2b2d31;--head:#1b1c20;--accent:#45b0c2;--accent-text:#0c0d0e;--code:#1e2024;--panel:#17181b;--radius:4px;--bar:#0c0d0e;--shadow:none;--background-art:none;--background-overlay:none;--body-tint:#111214;--ctl:#1e2024;--ctl-line:#3a3c41;--ctl-line-hi:#505358;--hover:#24262a;--accent-hi:#62c1d1;--sel:#16292e}
+[data-theme="olive-drab"]{--desktop:#14160f;--bg:#14160f;--fg:#e8e7dc;--muted:#a5a794;--line:#33382a;--head:#1f2218;--accent:#c2b56e;--accent-text:#14160f;--code:#23271b;--panel:#1a1d14;--radius:4px;--bar:#0f110b;--shadow:none;--background-art:none;--background-overlay:none;--body-tint:#14160f;--ctl:#23271b;--ctl-line:#454b38;--ctl-line-hi:#5c6349;--hover:#2a2e20;--accent-hi:#d4c98a;--sel:#2e2d1a}
+[data-theme="matrix"]{--desktop:#0a0f0b;--bg:#0a0f0b;--fg:#cfe8d6;--muted:#86a892;--line:#1f2e23;--head:#131c15;--accent:#4ccf7a;--accent-text:#06110a;--code:#16211a;--panel:#0f1611;--radius:4px;--bar:#070b08;--shadow:none;--background-art:none;--background-overlay:none;--body-tint:#0a0f0b;--ctl:#16211a;--ctl-line:#2c4233;--ctl-line-hi:#3d5c47;--hover:#1a271e;--accent-hi:#6fdd95;--sel:#11301d}
+[data-theme="high-contrast"]{--desktop:#000000;--bg:#000000;--fg:#ffffff;--muted:#e0e0e0;--line:#7a7a7a;--head:#0d0d0d;--accent:#fde047;--accent-text:#000000;--code:#000000;--panel:#000000;--radius:0;--bar:#000000;--shadow:none;--background-art:none;--background-overlay:none;--body-tint:#000000;--ctl:#000000;--ctl-line:#ffffff;--ctl-line-hi:#fde047;--hover:#1a1a1a;--accent-hi:#fff27a;--sel:#333000}
+[data-theme="amphibious"]{--desktop:#0f1729;--bg:#0f1729;--fg:#f2ede1;--muted:#c8c0af;--line:#3a4a6b;--head:#1f3052;--accent:#ffc72c;--accent-text:#0f1729;--code:#26375a;--panel:#1b2a47;--radius:3px;--bar:#0f1729;--shadow:none;--background-art:none;--background-overlay:none;--body-tint:#0f1729;--ctl:#26375a;--ctl-line:#526484;--ctl-line-hi:#7186a8;--hover:#34466a;--accent-hi:#ffdc70;--sel:#2c3a52}
 html{background-color:var(--desktop);background-image:var(--background-overlay),var(--background-art);background-position:center;background-size:cover;background-attachment:fixed;color-scheme:dark}
 [data-theme="light"]{color-scheme:light}
 *{box-sizing:border-box}
@@ -455,14 +466,45 @@ th,td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-alig
 code{background:var(--code);padding:1px 4px;border-radius:3px}li{margin:.2rem 0}
 pre{background:var(--code);padding:10px;border-radius:var(--radius);overflow-x:auto}pre code{padding:0}
 blockquote{margin:.8rem 0;padding:.4rem .9rem;border-left:3px solid var(--accent);color:var(--muted)}
+/* Restrained themes (html[data-calm]: every theme except SOC Dark): flat neutral surfaces, one accent, one type scale (22/16/14/13/12), 4px grid; no textures, glows or shadows */
+[data-calm] body{font-size:14px;line-height:1.5;padding:24px}
+[data-calm] h1{font-size:22px;font-weight:600;letter-spacing:-.005em;margin:8px 0 16px}
+[data-calm] h2{font-size:16px;font-weight:600;margin-top:32px;padding-bottom:8px}
+[data-calm] h3{font-size:14px;font-weight:600;color:var(--fg);margin-top:24px}
+[data-calm] h4{font-size:13px;font-weight:600;color:var(--muted)}
+[data-calm] a{text-decoration:none}[data-calm] a:hover{text-decoration:underline}
+[data-calm] a:focus-visible,[data-calm] button:focus-visible,[data-calm] select:focus-visible,[data-calm] input:focus-visible,[data-calm] textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+[data-calm] .theme-bar{margin:-24px -24px 24px;padding:8px 16px;gap:8px}
+[data-calm] .theme-brand{font-weight:600;font-size:14px;letter-spacing:0}
+[data-calm] .theme-bar label{margin:0;font-size:12px;color:var(--muted);font-weight:400}
+[data-calm] .theme-bar select{font-size:13px;padding:4px 8px;background:var(--bg)}
+[data-calm] button{font-size:13px;font-weight:600;padding:7px 14px}
+[data-calm] button:hover{filter:none;background:var(--accent-hi);border-color:var(--accent-hi)}
+[data-calm] button.secondary,[data-calm] .ftools button{background:var(--head);color:var(--fg);border-color:var(--ctl-line);font-weight:500}
+[data-calm] button.secondary:hover,[data-calm] .ftools button:hover{background:var(--hover);border-color:var(--ctl-line-hi)}
+[data-calm] .ftools button[aria-pressed="true"]{background:var(--sel);color:var(--fg);border-color:var(--accent)}
+[data-calm] input[type=text],[data-calm] input[type=password],[data-calm] textarea,[data-calm] select{background:var(--bg);border-color:var(--ctl-line);font-size:13px}
+[data-calm] input[type=text],[data-calm] input[type=password],[data-calm] textarea{padding:7px 8px}
+[data-calm] label{font-size:13px;font-weight:600}[data-calm] .hint{font-size:12.5px}
+[data-calm] table{font-size:13px}
+[data-calm] th,[data-calm] td{border:0;border-bottom:1px solid var(--line);padding:7px 10px}
+[data-calm] th{font-weight:600;color:var(--muted)}
+[data-calm] code{font-size:12.5px}
+[data-calm] .hint{margin-top:6px}[data-calm] label{margin-top:20px}
+[data-calm] form{background:none;border:0;padding:0;margin:8px 0 24px}
+[data-calm] th{text-transform:none;letter-spacing:0;font-size:12px}
+[data-calm] #pk-list li::before{content:"";display:inline-block;width:14px;height:14px;margin-right:8px;vertical-align:-2px;background:var(--muted);-webkit-mask:var(--ico-folder) center/contain no-repeat;mask:var(--ico-folder) center/contain no-repeat}
+[data-calm]{--ico-folder:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linejoin='round'%3E%3Cpath d='M1.75 4.25v8h12.5v-6.5H8L6.5 4.25z'/%3E%3C/svg%3E")}
+[data-calm] blockquote{border-left-width:2px;border-left-color:var(--line)}
+[data-theme="amphibious"] .theme-bar{border-bottom:3px solid #ba0c2f}
+[data-theme="high-contrast"][data-calm] a{text-decoration:underline}
+[data-theme="high-contrast"][data-calm] th{color:var(--fg)}
+[data-theme="high-contrast"][data-calm] button.secondary,[data-theme="high-contrast"][data-calm] .ftools button{background:#000}
 [data-theme="matrix"] body{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
-[data-theme="high-contrast"] a{text-decoration:underline}
 @media(max-width:600px){body{padding:16px}.theme-bar{margin:-16px -16px 20px}.theme-brand{font-size:.9rem}.theme-bar select{max-width:145px}}
 @media print{html{background:#fff;color-scheme:light}body{box-shadow:none;max-width:none;padding:0;background:#fff;color:#000}.theme-bar{display:none}a{color:#000}}
 """
-CSS = (CSS.replace("__DARK_TEXTURE__", texture_data("signal"))
-          .replace("__WORLD_TEXTURE__", texture_data("world"))
-          .replace("__MATRIX_TEXTURE__", texture_data("matrix")))
+CSS = CSS.replace("__DARK_TEXTURE__", texture_data("signal"))
 
 
 def _inline(t: str) -> str:

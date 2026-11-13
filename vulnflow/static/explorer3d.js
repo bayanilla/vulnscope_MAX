@@ -84,7 +84,7 @@ void main() {
 
 // uMode 0: solid body (sphere, diamond, hollow ring, domain); 1: soft glow halo; 2: spark
 const BILLBOARD_FS = `
-uniform float uMode; uniform float uTime;
+uniform float uMode; uniform float uTime; uniform float uLight;
 varying vec2 vCorner; varying vec4 vColor; varying vec4 vStyle;
 void main() {
   vec2 p = vCorner; float r = length(p); vec3 col = vColor.rgb; float a = vColor.a;
@@ -92,7 +92,7 @@ void main() {
   if (uMode > 1.5) {                        // spark: white-hot core in the edge colour
     float g = exp(-r * r * 3.2);
     if (g < 0.01) discard;
-    gl_FragColor = vec4(mix(col, vec3(1.0), smoothstep(0.35, 0.0, r)), a * g);
+    gl_FragColor = vec4(mix(col, vec3(1.0), smoothstep(0.35, 0.0, r) * (1.0 - uLight)), a * g);
     return;
   }
   if (uMode > 0.5) {                        // halo
@@ -106,18 +106,18 @@ void main() {
   if (shape > 2.5) {                        // domain IOC: dark teal disc, bright rim
     if (r > 1.0) discard;
     float rim = smoothstep(0.72, 0.8, r);
-    gl_FragColor = vec4(mix(vec3(0.03, 0.16, 0.19), col, rim), a);
+    gl_FragColor = vec4(mix(mix(vec3(0.03, 0.16, 0.19), vec3(1.0), uLight), col, rim), a);
   } else if (shape > 1.5) {                 // not observed: dark disc, dashed grey rim
     if (r > 1.0) discard;
     float ang = atan(p.y, p.x);
     float dash = step(0.0, sin(ang * 10.0));
     float rim = smoothstep(0.74, 0.82, r) * dash;
-    gl_FragColor = vec4(mix(vec3(0.055, 0.086, 0.14), col, rim), a * mix(0.9, 1.0, rim));
+    gl_FragColor = vec4(mix(mix(vec3(0.055, 0.086, 0.14), vec3(1.0), uLight), col, rim), a * mix(0.9, 1.0, rim));
   } else if (shape > 0.5) {                 // outside address: diamond
     float d = (abs(p.x) + abs(p.y)) / 1.25;
     if (d > 1.0) discard;
     float edge = smoothstep(0.78, 0.86, d);
-    vec3 fill = hollow > 0.5 ? vec3(0.08, 0.12, 0.18) : col * (0.75 + 0.35 * (1.0 - d));
+    vec3 fill = hollow > 0.5 ? mix(vec3(0.08, 0.12, 0.18), vec3(1.0), uLight) : col * (0.75 + 0.35 * (1.0 - d));
     gl_FragColor = vec4(mix(fill, col * 1.1, edge), a * (1.0 - smoothstep(1.0 - aa, 1.0, d)));
   } else {                                  // host: lit sphere
     if (r > 1.0) discard;
@@ -194,6 +194,7 @@ function ribbons(scene, uniforms, order) {
   mesh.frustumCulled = false; mesh.renderOrder = order;
   scene.add(mesh);
   const api = {
+    gain: 1,   // brightness of traffic curves (quad); restrained themes turn it down
     begin() { pool.n = 0; ni = 0; },
     // a polyline from k points given by `at(i)` -> [x, y, z] in Explorer coordinates
     strip(k, at, width, col, alpha, dashed) {
@@ -235,7 +236,7 @@ function ribbons(scene, uniforms, order) {
       api.strip(segs + 1, i => {
         const t = i / segs, s = 1 - t, A = s * s, B = 2 * s * t, Cc = t * t;
         return [A * ax + B * cx + Cc * bx, A * ay + B * cy + Cc * by, A * az + B * cz + Cc * bz];
-      }, width, col, alpha, dashed);
+      }, width, col, alpha * api.gain, dashed);
       return pt;
     },
     circle(x, y, z, r, segs, width, col, alpha, dashed) {
@@ -254,9 +255,11 @@ function ribbons(scene, uniforms, order) {
 
 function nodeApi(sys) {
   const {pool, geom} = sys;
-  return {
+  const api = {
+    gain: 1,
     begin() { pool.n = 0; },
     add(x, y, z, size, col, alpha, shape, hollow, glow, minPx) {
+      alpha *= api.gain;
       if (alpha < 0.004) return;
       pool.reserve(1);
       const i = pool.n++, A = pool.arrays;
@@ -268,6 +271,7 @@ function nodeApi(sys) {
     end() { pool.flush(); geom.instanceCount = pool.n; },
     get count() { return pool.n; },
   };
+  return api;
 }
 
 // ---------------------------------------------------------------- environment
@@ -344,15 +348,15 @@ function nebulae(scene) {
 function floorGrid(scene) {
   const mat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    uniforms: {uCenter: {value: new THREE.Vector2()}, uRadius: {value: 3000}, uCell: {value: 120}, uTime: {value: 0}},
+    uniforms: {uCenter: {value: new THREE.Vector2()}, uRadius: {value: 3000}, uCell: {value: 120}, uTime: {value: 0}, uCol: {value: new THREE.Color(0.31, 0.55, 1.0)}},
     vertexShader: 'varying vec2 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xy; gl_Position = projectionMatrix * viewMatrix * w; }',
-    fragmentShader: `uniform vec2 uCenter; uniform float uRadius; uniform float uCell; uniform float uTime; varying vec2 vW;
+    fragmentShader: `uniform vec2 uCenter; uniform float uRadius; uniform float uCell; uniform float uTime; uniform vec3 uCol; varying vec2 vW;
       float line(vec2 p, float cell){ vec2 g = abs(fract(p / cell - 0.5) - 0.5) / fwidth(p / cell); return 1.0 - min(min(g.x, g.y), 1.0); }
       void main(){ float d = length(vW - uCenter) / uRadius; float fade = exp(-d * d * 2.2);
         float l = line(vW, uCell) * 0.55 + line(vW, uCell * 5.0) * 0.6;
         float pulse = 0.5 + 0.5 * sin(d * 18.0 - uTime * 0.8);
         float a = l * fade * (0.05 + 0.04 * pulse);
-        if (a < 0.002) discard; gl_FragColor = vec4(vec3(0.31, 0.55, 1.0), a); }`,
+        if (a < 0.002) discard; gl_FragColor = vec4(uCol, a); }`,
     extensions: {derivatives: true}});
   const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
   m.frustumCulled = false; m.renderOrder = -5;
@@ -369,12 +373,16 @@ function create(canvas, opts) {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, 1, 100000);
   const viewport = new THREE.Vector2(1, 1);
-  const shared = {uViewport: {value: viewport}, uPx: {value: 1}, uFade: {value: 2000}, uTime: {value: 0}};
+  const shared = {uViewport: {value: viewport}, uPx: {value: 1}, uFade: {value: 2000}, uTime: {value: 0}, uLight: {value: opts.light ? 1 : 0}};
   const bg = backdrop(scene, opts.bgIn, opts.bgOut);
   const stars = starfield(scene, 3200);
   const neb = nebulae(scene);
   const grid = floorGrid(scene);
+  // restrained themes: plain backdrop, no stars or nebula haze
+  if (opts.calm) { stars.points.visible = false; neb.visible = false; }
+  if (opts.calm) grid.mat.uniforms.uCol.value.setRGB(0.5, 0.51, 0.53);
   const halos = billboards(scene, 1, 3.4, THREE.AdditiveBlending, false, 1, shared);
+  if (opts.calm) halos.mesh.visible = false;
   const bodiesSys = billboards(scene, 0, 1.3, THREE.NormalBlending, true, 2, shared);
   // halos and bodies share instance buffers so each node is written once
   for (const name of ['iPos', 'iColor', 'iStyle', 'iSize']) halos.geom.setAttribute(name, bodiesSys.geom.getAttribute(name));
@@ -384,6 +392,12 @@ function create(canvas, opts) {
   const lines = ribbons(scene, shared, 0);
   const sparksSys = billboards(scene, 2, 1.0, THREE.AdditiveBlending, false, 4, shared);
   const nodesApi = nodeApi(bodiesSys), sparksApi = nodeApi(sparksSys);
+  if (opts.calm) { lines.gain = 0.55; sparksApi.gain = 0.4; }   // quieter traffic in the restrained themes
+  if (opts.light) {   // white canvas: additive light would vanish, so blend normally and keep lines strong enough to read
+    lines.gain = 0.85; sparksApi.gain = 0.7;
+    sparksSys.mesh.material.blending = THREE.NormalBlending;
+    grid.mat.blending = THREE.NormalBlending; grid.mat.uniforms.uCol.value.setRGB(0.25, 0.26, 0.28);
+  }
   const nodesEnd = nodesApi.end;
   nodesApi.end = () => { nodesEnd(); halos.geom.instanceCount = bodiesSys.pool.n; };
 
