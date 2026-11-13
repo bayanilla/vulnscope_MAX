@@ -2,6 +2,8 @@
 
 GET  /            upload form
 POST /analyze     run the workflow on the uploaded files
+POST /folder-kind JSON {path} -> {report}: a completed report's output folder, which
+                  /analyze-folder reopens without reanalyzing
 GET  /runs/<id>/  links to a run's reports; files under it are served read-only
 POST /runs/<id>/brief  generate the Security Assistant brief (when an LLM is configured)
 POST /runs/<id>/article-briefs  generate article briefs from matched sources
@@ -41,6 +43,7 @@ from .llm import DEFAULT_BASE_URLS, PROVIDER_ALIASES, PROVIDER_NAMES, Analyst, L
 from .article_brief import generate_article_briefs
 from .parsers import FORMATS
 from . import resources
+from . import saved
 from .pipeline import run
 from .radar import RadarError, lookup as radar_lookup
 from .report import CSS, THEME_INIT, md_body, save_article_briefs, theme_control
@@ -63,6 +66,7 @@ input[type=text]{{width:100%;max-width:520px;padding:6px}}
 #report-details textarea{{width:100%;max-width:640px;padding:6px;font:inherit;resize:vertical}}
 .pathrow{{display:flex;gap:8px;max-width:640px;align-items:center}} .pathrow input{{flex:1}} .pathrow button{{margin-top:0;white-space:nowrap}}
 button.secondary{{background:transparent;color:var(--fg);border:1px solid var(--line)}}
+.btnrow{{display:flex;gap:10px;flex-wrap:wrap;align-items:center}}
 #picker{{max-width:640px;margin-top:8px;border:1px solid var(--line);border-radius:var(--radius);padding:10px}}
 .pk-head,.pk-foot{{display:flex;gap:8px;align-items:center}} .pk-head button,.pk-foot button{{margin-top:0;padding:4px 12px;font-size:.9rem;white-space:nowrap}}
 .pk-foot{{margin-top:8px}} #pk-roots{{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}} #pk-roots:empty{{display:none}} #pk-roots button{{margin-top:0;padding:4px 12px;font-size:.9rem}} .pk-foot span{{flex:1}} #pk-where{{overflow-wrap:anywhere}}
@@ -106,7 +110,9 @@ folder name plus the date and time.</div></section>
 <div class="hint">{folder_hint}The files are read where they are, including subfolders; nothing is copied or uploaded. Hidden files are skipped.</div>
 <label for="nets2">Internal networks (optional)</label>
 <input id="nets2" type="text" name="internal_nets" placeholder="10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16">
-<button type="submit" id="analyze-folder">Analyze folder</button>
+<div class="btnrow"><button type="submit" id="analyze-folder">Analyze folder</button></div>
+<div class="hint">To see a completed report again, choose its output folder (the one with <code>results.json</code>
+and <code>explorer.html</code>): the button changes to Open report, and nothing is reanalyzed.</div>
 </form>
 <h2>Or upload files</h2>
 <form method="post" action="/analyze" enctype="multipart/form-data">
@@ -132,7 +138,7 @@ folder name plus the date and time.</div></section>
 <a href="/settings">Security Assistant settings</a> · <a href="/branding">Branding</a></p>
 <div id="busy" role="alertdialog" aria-modal="true" aria-labelledby="busy-title" aria-describedby="busy-hint" hidden>
 <div class="busy-card"><div class="busy-stage"><img class="busy-logo" src="{icon}" alt=""></div>
-<p class="busy-title" id="busy-title" role="status">Analyzing&hellip; <span class="busy-time" id="busy-time">0:00</span></p>
+<p class="busy-title" role="status"><span id="busy-title">Analyzing&hellip;</span> <span class="busy-time" id="busy-time">0:00</span></p>
 <p class="hint" id="busy-hint">Large folders can take several minutes. Keep this tab open; the report opens here when it's ready.</p></div></div>
 <script>
 (function () {{
@@ -140,6 +146,9 @@ folder name plus the date and time.</div></section>
   let timer = null;
   document.querySelectorAll('form[action="/analyze"],form[action="/analyze-folder"]').forEach(f => f.addEventListener("submit", e => {{
     if (busy.dataset.running) {{ e.preventDefault(); return; }}
+    const btn = f.querySelector("#analyze-folder"), opening = !!(btn && btn.dataset.report);
+    document.getElementById("busy-title").innerHTML = opening ? "Opening report&hellip;" : "Analyzing&hellip;";
+    document.getElementById("busy-hint").hidden = opening;
     const p = f.querySelector("#path");
     if (p && !p.value.trim()) return;  // no folder chosen: the folder form shows its own message
     // the report details sit outside both forms: send them with whichever form is submitted
@@ -208,7 +217,7 @@ folder name plus the date and time.</div></section>
     msg("Finding " + name + " ...");
     const d = await call("/locate-folder", {{name, samples, count: files.length}});
     if (d.error) {{ msg(d.error, true); return; }}
-    const ready = p => {{ $("path").value = p; box.hidden = true; msg("Folder set. Click Analyze folder."); $("analyze-folder").focus(); }};
+    const ready = p => {{ $("path").value = p; box.hidden = true; msg("Folder set."); checkKind(); $("analyze-folder").focus(); }};
     if (d.matches.length === 1) {{ ready(d.matches[0]); return; }}
     msg("Found " + d.matches.length + " folders named " + name + ". Pick one:");
     cur = null; $("pk-where").textContent = name; $("pk-up").disabled = true; $("pk-roots").innerHTML = "";
@@ -227,7 +236,7 @@ folder name plus the date and time.</div></section>
       $("browse").disabled = true;
       try {{
         const d = await call("/pick-folder", {{path: $("path").value}});
-        if (d.path) {{ $("path").value = d.path; box.hidden = true; return; }}
+        if (d.path) {{ $("path").value = d.path; box.hidden = true; checkKind(); return; }}
         if (d.cancelled) return;
       }} catch (e) {{}} finally {{ $("browse").disabled = false; }}
     }}
@@ -237,7 +246,19 @@ folder name plus the date and time.</div></section>
   $("path").form.addEventListener("submit", e => {{
     if (!$("path").value.trim()) {{ e.preventDefault(); msg("Choose a folder first: click Browse… and pick one, or type its full path.", true); $("path").focus(); }}
   }});
-  $("pk-use").onclick = () => {{ if (cur) $("path").value = cur; box.hidden = true; $("path").focus(); }};
+  $("pk-use").onclick = () => {{ if (cur) $("path").value = cur; box.hidden = true; checkKind(); $("path").focus(); }};
+  // A completed report's output folder is reopened rather than analyzed: the button says which.
+  let kindSeq = 0, kindTimer = null;
+  async function checkKind() {{
+    const path = $("path").value.trim(), seq = ++kindSeq, btn = $("analyze-folder");
+    let report = false;
+    if (path) {{ try {{ report = !!(await call("/folder-kind", {{path}})).report; }} catch (e) {{}} }}
+    if (seq !== kindSeq) return;
+    btn.textContent = report ? "Open report" : "Analyze folder";
+    if (report) btn.dataset.report = "1"; else delete btn.dataset.report;
+  }}
+  $("path").addEventListener("input", () => {{ clearTimeout(kindTimer); kindTimer = setTimeout(checkKind, 300); }});
+  checkKind();
   $("pk-cancel").onclick = () => {{ box.hidden = true; }};
 }})();
 </script>
@@ -430,6 +451,10 @@ form{{border:1px solid var(--line);border-radius:var(--radius);padding:16px;marg
 
 NATIVE_PICKER = sys.platform == "darwin" and shutil.which("osascript") is not None
 LOOPBACK_NAMES = ("127.0.0.1", "localhost", "[::1]")
+# Second CSP for pages of a reopened report (both policies apply). No allow-same-origin: scripts run,
+# but in an opaque origin, so they can't call this server's API or read its other pages.
+SAVED_SANDBOX = "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals"
+
 SECURITY_HEADERS = {
     # The pages carry their own inline scripts and styles; nothing loads from other origins.
     "Content-Security-Policy": ("default-src 'self'; script-src 'self' 'unsafe-inline'; "
@@ -730,25 +755,64 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                                                      "Nothing is sent; VulnScope only uses it to find the folder. ")
                                                     if CONTAINER_DATA else ""))
 
-        def _analyze_folder(self):
-            """Analyze a folder on the machine running the server, reading the files in place."""
+        def _folder_form(self):
+            """(form, folder, error response) for the folder form; folder is None when refused."""
             form = self._read_form()
             if form is None:
-                return self._send(400, "Bad request", "text/plain")
+                return None, None, self._send(400, "Bad request", "text/plain")
             if not secrets.compare_digest(form.get("csrf", ""), csrf):
-                return self._send(403, "Forbidden", "text/plain")
+                return None, None, self._send(403, "Forbidden", "text/plain")
             raw = form.get("path", "").strip().strip('"').strip("'")
             folder = os.path.realpath(os.path.expanduser(host_to_container(raw))) if raw else ""
             state["last_path"] = raw
-            report = state["last_report"] = runname.clean(form.get("report_name"), form.get("report_description"))
+            state["last_report"] = runname.clean(form.get("report_name"), form.get("report_description"))
+            if not raw:
+                return None, None, self._form("Choose a folder first: click Browse… and pick one, or type its full path.")
+            if not folder or not os.path.isdir(folder):
+                return None, None, self._form(
+                    f"Folder not found: {raw or '(empty)'}. Use the full path, for example "
+                    f"{browse_root() + '/case-logs' if CONTAINER_DATA else '~/Documents/case-logs'}.")
+            return form, folder, None
+
+        def _folder_kind(self):
+            """Whether a folder is a completed report's output folder (the page relabels its button)."""
+            body = self._read_json()
+            if body is None:
+                return self._json(403, {"error": "Forbidden"})
+            raw = str(body.get("path") or "").strip().strip('"').strip("'")
+            folder = os.path.realpath(os.path.expanduser(host_to_container(raw))) if raw else ""
+            return self._json(200, {"report": bool(folder) and os.path.isdir(folder) and saved.is_report_folder(folder)})
+
+        def _open_report(self, folder):
+            """Rebuild a completed report's pages from its output folder, without reanalyzing."""
+            run_root = None
+            try:
+                res, data = saved.load_folder(folder)
+                run_id = runname.new_run(data_dir, (res.get("report") or {}).get("name", ""))
+                run_root = os.path.join(data_dir, run_id)
+                saved.write(res, data, os.path.join(run_root, "out"), folder, state.get("last_path", ""))
+            except saved.SavedRunError as exc:
+                if run_root:
+                    shutil.rmtree(run_root, ignore_errors=True)
+                return self._form(str(exc))
+            except Exception:
+                traceback.print_exc()
+                if run_root:
+                    shutil.rmtree(run_root, ignore_errors=True)
+                return self._form("The saved report could not be opened; see the server console for details.")
+            self._send(303, "", headers={"Location": f"/runs/{run_id}/"})
+
+        def _analyze_folder(self):
+            """Analyze a folder on the machine running the server, reading the files in place."""
+            form, folder, refused = self._folder_form()
+            if folder is None:
+                return refused
+            if saved.is_report_folder(folder):            # a completed report: reopen it, don't analyze it
+                return self._open_report(folder)
+            report = state["last_report"]
             if resources.busy():
                 return self._form("Another analysis is already running on this machine. "
                                   "Wait for it to finish and try again.")
-            if not raw:
-                return self._form("Choose a folder first: click Browse… and pick one, or type its full path.")
-            if not folder or not os.path.isdir(folder):
-                return self._form(f"Folder not found: {raw or '(empty)'}. Use the full path, for example "
-                                  f"{browse_root() + '/case-logs' if CONTAINER_DATA else '~/Documents/case-logs'}.")
             files = _input_files([folder], data_dir)
             files = [f for f in files if not os.path.realpath(f).startswith(os.path.realpath(data_dir) + os.sep)]
             if not files:
@@ -846,10 +910,19 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
             if not m[2]:
                 return self._run_index(m[1], run_dir)
             target = os.path.realpath(os.path.join(run_dir, m[2]))
-            if not target.startswith(run_dir + os.sep) or not os.path.isfile(target):
-                return self._send(404, "Not found", "text/plain")
+            marker = saved.read_marker(os.path.dirname(run_dir))
+            if not (target.startswith(run_dir + os.sep) and os.path.isfile(target)):
+                # a reopened report's raw data stays in its folder (allow-listed names only)
+                target = saved.source_file(marker, m[2]) if marker is not None else None
+                if not target:
+                    return self._send(404, "Not found", "text/plain")
+            extra = None
+            if marker is not None:
+                # Pages of a reopened report carry text from files outside this server's control:
+                # run them in an opaque origin so crafted content can't read or drive the rest of it.
+                extra = {"Content-Security-Policy": SAVED_SANDBOX}
             with open(target, "rb") as fh:
-                self._send(200, fh.read(), TYPES.get(os.path.splitext(target)[1], "application/octet-stream"))
+                self._send(200, fh.read(), TYPES.get(os.path.splitext(target)[1], "application/octet-stream"), extra)
 
         def _run_index(self, run_id, run_dir):
             if not os.path.isdir(run_dir):
@@ -870,6 +943,10 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                      ("Industrial protocol events (JSONL)", "normalized/ot_events.jsonl"),
                      ("Executive summary (Markdown)", "executive_summary.md"),
                      ("Technical report (Markdown)", "technical_report.md")]
+            reopened = saved.read_marker(os.path.dirname(run_dir))
+            if reopened is not None:      # list only what the rebuilt run or the report folder still has
+                links = [(t, p) for t, p in links
+                         if os.path.exists(os.path.join(run_dir, p)) or saved.source_file(reopened, p)]
             if os.path.exists(os.path.join(run_dir, "ai_analyst_brief.html")):
                 links.insert(2, ("Security Assistant brief", "ai_analyst_brief.html"))
             if os.path.exists(os.path.join(run_dir, "ai_chat_log.md")):
@@ -926,6 +1003,14 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 pass
             chat_style = f"<style>{_chat_asset('analyst_chat.css')}{RESULTS_CHAT_CSS}</style>" if ai else ""
             chat_script = f"<script>{_chat_asset('analyst_chat.js')}</script>" if ai else ""
+            if reopened is not None:
+                made = html.escape(str(reopened.get("generated", "")))
+                where = html.escape(str(reopened.get("shown") or reopened.get("source", "")))
+                items = (f'<p role="note">Saved report reopened from <code>{where}</code> (analysis made {made}); '
+                         'nothing was reanalyzed and the folder was not changed.'
+                         + ("" if reopened.get("explorer") else
+                            " That folder has no <code>explorer.html</code>, so the Explorer and Timeline can't be shown.")
+                         + "</p>" + items)
             status = ('<p role="status"><strong>No vulnerability data available; vulnerability status unknown.</strong> '
                       'Network observations and IOC matches are leads for review.</p>' if telemetry_only else '')
             name, about = report.get("name") or "", report.get("description") or ""
@@ -1215,6 +1300,8 @@ def make_handler(data_dir: str, base_cfg: Config, llm_cfg: LLMConfig | None = No
                 return self._ai(m[1], m[2])
             if self.path == "/analyze-folder":
                 return self._analyze_folder()
+            if self.path == "/folder-kind":
+                return self._folder_kind()
             if self.path == "/browse":
                 return self._browse()
             if self.path == "/pick-folder":
