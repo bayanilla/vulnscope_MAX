@@ -15,13 +15,13 @@ from ..branding import icon_data_uri, product_name
 from ..errors import UserError
 from ..parsers import FORMATS
 from ..pipeline import input_files, run
-from ..report import CSS, THEME_INIT, theme_control
+from ..report import CSS, HTML_OPEN, THEME_INIT, theme_control
 from . import folders
 from .pages import asset, busy_overlay, error_html, page_config
 
 ANALYZE_HINT = "Large folders can take several minutes. Keep this tab open; the report opens here when it's ready."
 
-FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+FORM = """{html_open}<head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>{product_name}</title><link rel="icon" href="{icon}">
 {theme_init}<style>{css}{forms_css}</style></head><body>{theme_ui}
 <h1>Analyze files with {product_name}</h1>
@@ -96,7 +96,7 @@ def page(req, error: str = ""):
     app = req.app
     container = bool(folders.CONTAINER_DATA)
     req.send(200, FORM.format(
-        css=CSS, forms_css=asset("forms.css"), theme_init=THEME_INIT, theme_ui=theme_control(),
+        css=CSS, forms_css=asset("forms.css"), html_open=HTML_OPEN, theme_init=THEME_INIT, theme_ui=theme_control(),
         product_name=html.escape(product_name()), icon=icon_data_uri(), error=error_html(error),
         formats=", ".join(FORMATS) + ", pcap/pcapng (converted with Zeek)", csrf=app.csrf,
         analyze_hint=html.escape(ANALYZE_HINT),

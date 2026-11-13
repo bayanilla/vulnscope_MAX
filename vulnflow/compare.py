@@ -572,7 +572,7 @@ def page(result: dict) -> str:
     """The comparison as one self-contained page (data, styles and script inline)."""
     import html
     from .branding import icon_data_uri, product_name
-    from .report import CSS, THEME_INIT, theme_control
+    from .report import CSS, HTML_OPEN, THEME_INIT, theme_control
     static = os.path.join(os.path.dirname(__file__), "static")
 
     def read(name):
@@ -582,7 +582,7 @@ def page(result: dict) -> str:
             "iocs": [{**r, "seen": [{**s, "related": s["related"][:SAMPLE_HOSTS]} for s in r["seen"]]} for r in result["iocs"]],
             "vulns": [{**r, "seen": [{**s, "related": s["related"][:SAMPLE_HOSTS]} for s in r["seen"]]} for r in result["vulns"]]}
     blob = json.dumps(slim, separators=(",", ":")).replace("<", "\\u003c")
-    return ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+    return (f"{HTML_OPEN}<head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
             f"<title>Compare reports · {html.escape(product_name())}</title><link rel=\"icon\" href=\"{icon_data_uri()}\">"
             f"{THEME_INIT}<style>{CSS}{read('compare.css')}</style></head><body>{theme_control()}"

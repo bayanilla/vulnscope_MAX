@@ -6,7 +6,7 @@ import json
 import os
 
 from ..branding import icon_data_uri, product_name
-from ..report import CSS, THEME_INIT, theme_control
+from ..report import CSS, HTML_OPEN, THEME_INIT, theme_control
 
 STATIC = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 
@@ -25,7 +25,7 @@ def asset(name: str) -> str:
 
 def page(title: str, body: str, head: str = "") -> str:
     """A complete page in the report look: theme, branding icon and the light/dark switch."""
-    return (f"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
+    return (f"{HTML_OPEN}<head><meta charset=\"utf-8\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
             f"<title>{html.escape(title)} · {html.escape(product_name())}</title><link rel=\"icon\" href=\"{icon_data_uri()}\">"
             f"{THEME_INIT}<style>{CSS}</style>{head}</head>"
