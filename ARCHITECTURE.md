@@ -92,6 +92,7 @@ Folder path, Browse, upload, or command line
 | `vulnflow/web/handler.py`, `routes.py`, `multipart.py` | Loopback HTTP server: Host/Origin/CSRF checks, security headers and streamed uploads in one request handler; a route table sends each path to the page module that serves it |
 | `vulnflow/web/` page modules | `upload.py` (Analyze), `folders.py` (Browse and folder paths), `runs.py` (results pages, Security Assistant, briefs, Radar), `settings.py`, `branding_page.py`, `compare_page.py` |
 | `vulnflow/compare.py` | Compare reports: counts per report and network from saved `results.json` files; looks for IOCs again in saved normalized data with the analysis' matcher |
+| `vulnflow/combine.py` | All networks on one Explorer map: merges the compared reports' saved Explorer data, one island per report, with the shared IOCs and vulnerabilities highlighted |
 | `vulnflow/errors.py` | `UserError`: a problem the person can fix, whose message is shown. Any other exception is a bug: the page says the step failed and the traceback goes to the server console |
 | `vulnflow/pipeline.py`, `cli.py` | Orchestration and the `vulnflow` command line |
 | `docker/`, `Dockerfile`, `compose.yaml` | Container image with Zeek, entry point and folder sharing |
@@ -240,6 +241,17 @@ listing many reports doesn't reread them. A comparison page shows text from the 
 which may be reopened from folders the server doesn't control, so it is served sandboxed like a
 reopened report. Tradeoff: a search over saved flows rereads `flows.csv` for every comparison; a
 persistent index across reports would be faster but is another store to secure and keep in step.
+
+The comparison's **all-networks Explorer** (`combine.py`) is the ordinary Explorer page drawing
+merged data: each report's saved Explorer data (lifted from its `explorer.html` and checked as a
+reopened report's is) becomes an island, with internal ids suffixed `@<island>` so that equal
+private addresses in two networks stay two hosts, and outside addresses merged. `explorer.js` sees
+a `combined` block in the data and switches on what only this map needs (islands, the Shared items
+panel, three highlight levels); everything else is the same code as a single report's Explorer.
+Tradeoff: building from the saved Explorer data rather than the flows keeps a comparison quick and
+needs no reanalysis, but the map can only show what each report's Explorer kept (its riskiest
+2,000 hosts, its cut-down lists), and it is capped and trimmed again (`combine.MAX_NODES`) so that
+many networks still load as one page.
 
 ## Contracts and limits
 

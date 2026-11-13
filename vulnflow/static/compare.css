@@ -51,3 +51,8 @@ td > .badge:first-child{margin-left:0}
 .cmp-pick label.check{display:flex;gap:8px;align-items:flex-start;font-weight:400}
 .cmp-pick label.check input{margin-top:.3rem}
 @media(max-width:600px){.cmp-strip{max-width:140px}.cmp-ind{min-width:160px}}
+/* the link to the all-networks Explorer (combine.py) */
+.cmp-explorer{margin:6px 0 18px;padding:12px 14px;border:1px solid var(--accent);border-radius:var(--radius);background:var(--panel)}
+.cmp-explorer-link{font-weight:700;font-size:1.05rem}
+.cmp-explorer-link::after{content:" \2192"}
+.cmp-explorer .hint{margin:.35rem 0 0}

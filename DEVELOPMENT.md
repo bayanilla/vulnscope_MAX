@@ -26,7 +26,7 @@ python3 -m unittest discover -s tests
 | `test_article_brief.py`, `test_radar.py` | Article briefs and Radar lookups with stubbed services |
 | `test_branding.py` | Branding page, password lock, logo validation |
 | `test_saved.py`, `test_report_name.py` | Reopening a saved report; report names, networks and timestamped run folders |
-| `test_compare.py` | Compare reports: counts per report and network, the re-hunt over saved data, command line and page |
+| `test_compare.py` | Compare reports: counts per report and network, the re-hunt over saved data, the all-networks Explorer (islands, shared-item highlights, fair trimming), command line and page |
 | `test_web_errors.py` | Which analysis errors the upload page shows, and which go to the server console |
 
 ## Samples

@@ -267,9 +267,24 @@ vulnerabilities appear in more than one saved report, and in how many networks.
    filled when the analysis found it, striped when only the new search did. Click a row for the
    hosts in each report.
 
+**All networks in one Explorer.** **Open all networks in the Explorer** at the top of a comparison
+draws every compared report on one Explorer map. Each report is an island (a dashed ring) with its
+own subnets and hosts; outside addresses are merged onto the arc overhead, with beams down to each
+network they reached. Hosts with an IOC match or a vulnerability stay bright and the rest are
+dimmed. Hosts with an IOC or vulnerability that more than one report has get a magenta ring, with a
+beacon when only a few are lit. **Shared items** lists those IOCs and vulnerabilities: pick one to
+light up only its hosts, in every network, or tick **Only items in more than one network**. When
+the shared items would light up more than 400 hosts, the map opens with only the shared IOCs lit. A
+host's card names its network and report, lists what it shares with other reports, and links to
+that report's own Explorer, which has Attack paths, the Timeline and the full lists. To stay quick
+the map draws up to 3,000 hosts: hosts with shared items first, then the other IOC and
+vulnerability hosts, then the rest, taken in turn from each report.
+
 Comparisons are saved in the data folder under `comparisons/<time>/` with `ioc_overlap.csv`,
-`vulnerability_overlap.csv` (one row per item and report) and `comparison.json`, and are listed
-under **Earlier comparisons**. The reports themselves are not changed. From the command line:
+`vulnerability_overlap.csv` (one row per item and report), `comparison.json`, and the map as
+`explorer.html` with its data in `explorer.json` (the hosts, subnets, traffic and highlights of
+every network, for your own tools). They are listed under **Earlier comparisons**. The reports
+themselves are not changed. From the command line:
 
 ```sh
 python3 -m vulnflow compare vulnflow_runs/ -o compare_out --ioc-csv new_iocs.csv
