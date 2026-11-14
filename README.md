@@ -160,6 +160,9 @@ CSVs (nfdump, AWS VPC Flow Logs, SIEM exports), Nessus `.nessus` or CSV, and:
   `package`) in the folder, uploaded, or passed with `--ioc-csv`. Exact matches are reported.
 - **Network map.** An optional `network_map.csv` (`cidr,name,type`) marks cloud networks such as
   AWS VPCs. Without it nothing changes.
+- **Known scanners.** An optional `known_scanners.csv` (`address,name`, one address or range per
+  line) lists scanners you run yourself. Hosts whose traffic looks like scanning are always
+  reported; the ones on this list are labelled "expected" instead of "review".
 
 [Methods](METHODS.md#inputs-and-normalization) lists every format, how it is detected, and what
 each source can and cannot contribute. Force a format with `--format file.csv=paloalto` if

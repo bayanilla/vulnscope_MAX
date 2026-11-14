@@ -1544,6 +1544,7 @@ function renderPanel(id) {
     (d.ev ? `<span class="tag ${d.ev}">${d.ev === 'likely' ? 'LIKELY EXPLOITATION' : 'LEAD'}</span>` : '') + `</div></div>` +
     `<div class="stats"><div class="stat red"><b>${F.attackers_total}</b><span>outside addresses (N/S)${nAlert ? `, ${nAlert} with IPS alerts` : ''}</span></div>` +
     `<div class="stat pink"><b>${F.peers_total}</b><span>internal hosts (E/W)${telemetryOnly ? '' : ` · ${F.blast.high} high, ${F.blast.medium} med`}</span></div></div>` +
+    (F.probed_only ? `<p class="direction-note">Also probed ${F.probed_only.toLocaleString()} internal address${F.probed_only === 1 ? '' : 'es'} that never answered (not counted as hosts).</p>` : '') +
     (state.history.length ? `<p style="margin:10px 0 0"><button id="btn-back">← Back to ${esc(shown(state.history[state.history.length - 1]))}</button></p>` : '') +
     (COMBINED ? sharedSection(id, d) : '') +
     `<p class="direction-note">Recorded direction: source/originator → destination/responder. Ports are source → destination; ? means the log did not provide a port. Logged application labels appear only when supplied.</p>` +

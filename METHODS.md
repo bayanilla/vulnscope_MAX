@@ -105,6 +105,24 @@ paragraphs and saves a short overview (a source preview, not an AI brief); see
 `--article-preview-cache previews.json` reuses saved overviews offline. The legacy `--ioc-archive`
 flag remains available.
 
+### Hosts and scanners
+
+An internal address counts as a host when it started a session or answered one (the session
+completed, it refused with a reset, or it sent data back). Addresses that were only probed and
+never answered are reported as a separate count and are not drawn in the Explorer.
+
+A host is reported as a scanner when it tried at least 100 different address and port pairs and at
+least 70% of its sessions never completed, or when a Zeek `Scan::` notice names it. A
+`known_scanners.csv` in the input folder (or `--known-scanners FILE`) lists the scanners you
+expect; they are still reported, labelled "expected". The Nessus scanner address found in a scan is
+always expected. Detection labels hosts only: it does not change scores or remove their sessions.
+
+```csv
+address,name
+10.20.0.15,Nessus
+10.30.0.0/28,Monitoring probes
+```
+
 ### Network map
 
 A `network_map.csv` in the input folder (or `--network-map FILE`) names ranges and marks cloud

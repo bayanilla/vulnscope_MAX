@@ -191,6 +191,11 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
             if len(ot_by_host[host]) < MAX_OT_EVENTS_PER_HOST:
                 ot_by_host[host].append(row)
 
+    # Addresses that were only probed and never answered are not hosts: they are counted per host
+    # ("probed, no answer") instead of being drawn as peers.
+    answering = ds.flow_store().answering_ips()
+    traffic_scanners = {e["ip"]: e for e in res["summary"].get("traffic_scanners") or ()}
+
     def ext(ip):
         try:
             return not net.internal(ip)
@@ -253,7 +258,11 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         worst = max((r["severity"] for r in fl), default=-1)
         ev = ("likely" if any(i["confidence"] == "corroborated" for r in fl for i in r["indicators"])
               else "lead" if any(r["indicators"] for r in fl) else "")
-        name = (h or {}).get("hostname", "") or ("Vulnerability scanner" if ip in scanners else "")
+        sc = traffic_scanners.get(ip)
+        name = (h or {}).get("hostname", "") or ("Vulnerability scanner" if ip in scanners else
+                                                 "" if not sc else
+                                                 "Expected scanner" + (f": {sc['name']}" if sc["name"] else "")
+                                                 if sc["expected"] else "Scanner (review)")
         nodes[ip] = {"id": ip, "name": name, "scanned": ip in ds.scanned_hosts,
                      "observed": h is not None,
                      "subnet": _subnet(ip), "sev": SEV.get(worst, ""), "pri": (h or {}).get("priority", ""),
@@ -320,9 +329,12 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         n_ext = len(atk)
 
         # east/west: every internal peer in either direction (failed attempts too), then onward peers
-        peers = []
+        peers, probed_only = [], 0
         for other in (out_of.get(ip, set()) | in_to.get(ip, set())):
             if ext(other):
+                continue
+            if other not in answering and other not in hostinfo and other not in ds.scanned_hosts:
+                probed_only += 1
                 continue
             o, i = pairs.get((ip, other)), pairs.get((other, ip))
             ok = bool((o and o.established) or (i and i.established))
@@ -359,6 +371,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
             node(p["ip"])
         focus[ip] = {
             "attackers": atk, "attackers_total": n_ext, "peers": peers, "peers_total": n_peers, "hop2": h2,
+            "probed_only": probed_only,
             "ot_events": ot_by_host.get(ip, []), "ot_events_total": ot_counts[ip],
             "findings": [{"pri": r["priority"], "score": r["score"], "name": r["plugin_name"],
                           "port": r["port"], "proto": r["proto"], "sev": r["severity_name"], "cvss": r["cvss"],
@@ -378,6 +391,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     # priorities or scores) do not fall back to address order and drop alerted hosts and PLCs.
     ev_rank = {"likely": 0, "lead": 1}
     alerted = {ip for t in ds.threats for ip in (t.src_ip, t.dst_ip)}
+    alerted |= {ip for ip, e in traffic_scanners.items() if not e["expected"]}
     ot_hosts = {ip for ip, c in ot_counts.items() if c}
 
     def activity(n):

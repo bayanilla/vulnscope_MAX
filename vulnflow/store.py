@@ -190,6 +190,13 @@ class Store:
         writer.flush()
         self.finalize_flows(skew_seconds=None)
 
+    def answering_ips(self) -> set[str]:
+        """Addresses that exist: they started a session, or answered one (completed, refused with a
+        reset, or sent data back). An address that was only probed and never answered is left out."""
+        return {r[0] for r in self.con.execute("""
+            SELECT src_ip FROM flows
+            UNION SELECT dst_ip FROM flows WHERE established OR action = 'reject' OR bytes_in > 0""").fetchall()}
+
     def insert_rows(self, table: str, columns: dict[str, str], rows) -> None:
         """Create ``table`` and bulk-load rows through a CSV file (fast, needs no numpy/arrow)."""
         cols = ", ".join(f"{k} {v}" for k, v in columns.items())

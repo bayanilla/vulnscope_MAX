@@ -57,6 +57,43 @@ def _svc(r) -> str:
     return "host-level" if r["port"] == 0 else f"{r['port']}/{r['proto']}" + (f" ({r['service']})" if r["service"] else "")
 
 
+def _hosts_seen(cov: dict) -> str:
+    """'N internal hosts sent or answered traffic', plus the addresses that were only probed."""
+    n, dead = cov["telemetry_internal_hosts"], cov.get("probed_only_addresses", 0)
+    text = f"{n:,} internal {'host' if n == 1 else 'hosts'} sent or answered traffic."
+    if dead:
+        text += (f" {dead:,} more internal {'address was' if dead == 1 else 'addresses were'} only probed "
+                 "and never answered; they are not counted as hosts.")
+    return text
+
+
+def _scanner_lines(res: dict, technical: bool, heading: str = "## Scanning hosts") -> list[str]:
+    """Hosts whose traffic looks like scanning. Expected scanners (your list, or the Nessus scanner)
+    are named as such; the rest are left for review."""
+    found = res["summary"].get("traffic_scanners") or []
+    if not found:
+        return []
+    total = res["summary"].get("traffic_scanners_total", len(found))
+    unknown = [e for e in found if not e["expected"]]
+    L = [heading, "",
+         f"{total} {'host' if total == 1 else 'hosts'} probed many addresses or ports with mostly failed "
+         f"sessions. {len(unknown)} {'is' if len(unknown) == 1 else 'are'} not on your list of expected "
+         "scanners and should be reviewed: a scan can be an administrator's tool, a misconfigured "
+         "system or an intruder mapping the network.", ""]
+    shown = found if technical else found[:10]
+    L += ["| Host | Status | Kind | Sessions | Addresses | Ports | Failed |", "|---|---|---|---:|---:|---:|---:|"]
+    for e in shown:
+        status = ("Expected" + (f": {_c(e['name'])}" if e["name"] else "")) if e["expected"] else "**Review**"
+        where = "" if e["internal"] else " (outside)"
+        failed = "from a Zeek notice" if e["failed_pct"] is None else f"{e['failed_pct']}%"
+        L.append(f"| {_c(e['ip'])}{where} | {status} | {e['kind']} | {e['sessions']:,} | {e['hosts']:,} | "
+                 f"{e['ports']:,} | {failed} |")
+    if total > len(shown):
+        L += ["", f"{total - len(shown)} more {'is' if total - len(shown) == 1 else 'are'} listed in "
+                  + ("results.json." if technical else "the technical report.")]
+    return L + [""]
+
+
 def _report_intro(res: dict) -> list[str]:
     """The analyst's report name and description, under the page title (nothing when not given)."""
     r = res.get("report") or {}
@@ -83,7 +120,7 @@ def _telemetry_report(res: dict, technical: bool) -> str:
              f"Observed window: {s['window_start'] or 'unknown'} to {s['window_end'] or 'unknown'}.", "",
              "## Network observations", "",
              f"{s['hosts_with_findings']} hosts have scored vulnerability findings. "
-             f"{res['coverage']['telemetry_internal_hosts']} internal addresses were observed. "
+             f"{_hosts_seen(res['coverage'])} "
              "Observed connections show activity and reachability, not whether a service is vulnerable.", ""]
     if technical:
         lines += ["## Inputs and data quality", "",
@@ -96,6 +133,7 @@ def _telemetry_report(res: dict, technical: bool) -> str:
         for host in res["hosts"]:
             lines.append(f"| {_c(host['host'])} | {host['inbound_flows']} | {host['outbound_flows']} |")
         lines += [""]
+    lines += _scanner_lines(res, technical)
     lines += ["## IPS/IDS leads", "",
               "Alerts describe sensor detections. A blocked alert is a stopped attempt; an unblocked alert "
               "does not prove exploitation.", ""]
@@ -380,7 +418,7 @@ def technical_report(res: dict) -> str:
         L.append("")
     L += ["## 5. Coverage gaps", "",
           f"{cov['scanned_and_seen']} of {cov['scanned_hosts']} scanned hosts appear in telemetry; "
-          f"{cov['telemetry_internal_hosts']} internal addresses were seen in total.", ""]
+          f"{_hosts_seen(cov)}", ""]
     if cov["scanned_not_seen"]:
         L += ["**Scanned but not seen in telemetry** (exposure unknown; check sensor placement): "
               + ", ".join(cov["scanned_not_seen"]), ""]
@@ -390,6 +428,7 @@ def technical_report(res: dict) -> str:
         for g in cov["active_servers_not_scanned"][:25]:
             L.append(f"| {g['ip']} | {_c(', '.join(g['services']))} | {g['sessions']} |")
         L.append("")
+    L += _scanner_lines(res, True, "**Scanning hosts**")
     L += ["## 6. Output files", "",
           "- `executive_summary.md/.html`: leadership summary",
           "- `technical_report.md/.html`: this report",
