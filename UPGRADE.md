@@ -12,6 +12,12 @@ the same.
 - Packet capture input, Filebeat/Kibana exports of Zeek logs, and an optional network map.
 - Explorer: 3D overview, Attack paths, Timeline, and a host list grouped by subnet.
 - Built-in offline Security Assistant as the default; Branding page with password lock.
+- Host counts include only internal addresses that sent or answered traffic. Addresses that were
+  only probed are a separate count, so host counts can be much lower than before on scanned networks.
+  Scanning hosts are detected and listed, and the reports warn about packet loss and one-way
+  sensors.
+- Zui/Brim exports are read, and every pull request is tested in CI, including an accuracy check
+  on Brim's public sample captures.
 
 VulnScope remains a proof of concept. It reads existing files; it does not scan targets or make
 enforcement decisions.
