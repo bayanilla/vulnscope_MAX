@@ -29,7 +29,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SINGLE_SAMPLES = ["scan_and_telemetry", "telemetry_only", "gootloader_seo_poisoning", "hosts_onprem_and_aws"]
+SINGLE_SAMPLES = ["scan_and_telemetry", "telemetry_only", "gootloader_seo_poisoning", "hosts_onprem_and_aws",
+                  "artex_ai_agentic_intrusion", "cyberstrike_ai_fortigate_intrusion"]
 SETTLE_MS = 1500      # time for a view to build and draw a few frames
 # Chromium's software GL prints performance notes as console warnings; only errors count.
 

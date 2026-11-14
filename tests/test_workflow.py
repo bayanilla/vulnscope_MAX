@@ -524,9 +524,10 @@ class BundledSamplesTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             paths = generate_bundles(root)
             self.assertEqual(sorted(os.listdir(root)),
-                             ["compare_two_companies", "gootloader_seo_poisoning", "hosts_onprem_and_aws",
+                             ["artex_ai_agentic_intrusion", "compare_two_companies", "cyberstrike_ai_fortigate_intrusion",
+                              "gootloader_seo_poisoning", "hosts_onprem_and_aws",
                               "scan_and_telemetry", "telemetry_only"])
-            self.assertEqual(len(paths), 67)
+            self.assertEqual(len(paths), 85)
             self.assertEqual(len(os.listdir(os.path.join(root, "compare_two_companies"))), 6)   # six sites
             self.assertTrue(os.path.isfile(os.path.join(root, "scan_and_telemetry", "quarterly_scan.nessus")))
             self.assertFalse(any(name.endswith((".nessus", "scan.csv"))
@@ -537,7 +538,8 @@ class BundledSamplesTests(unittest.TestCase):
         from vulnflow.pipeline import input_files as _input_files
         root = os.path.join(os.path.dirname(__file__), "..", "samples")
         self.assertEqual(sorted(name for name in os.listdir(root) if os.path.isdir(os.path.join(root, name))),
-                         ["compare_two_companies", "gootloader_seo_poisoning", "hosts_onprem_and_aws",
+                         ["artex_ai_agentic_intrusion", "compare_two_companies", "cyberstrike_ai_fortigate_intrusion",
+                              "gootloader_seo_poisoning", "hosts_onprem_and_aws",
                           "scan_and_telemetry", "telemetry_only"])
         with tempfile.TemporaryDirectory() as output:
             full_files = _input_files([os.path.join(root, "scan_and_telemetry")], output)
@@ -668,6 +670,76 @@ class BundledSamplesTests(unittest.TestCase):
         payload = next(a for a in tl["alerts"] if a[3].startswith("Gootloader"))
         self.assertAlmostEqual(payload[0], (first[payload[3]] - t0).total_seconds() / 3600, places=3)
         self.assertTrue(tl["ioc_lookups"])
+
+    def _agentic_sample(self, mod):
+        """Checked-in folder matches the generator; analyze it and return (results, explorer data, dataset)."""
+        from vulnflow.pipeline import input_files as _input_files
+        root = os.path.join(os.path.dirname(__file__), "..", "samples", mod.FOLDER)
+        with tempfile.TemporaryDirectory() as tmp:
+            for path in mod.generate(os.path.join(tmp, "fresh")):
+                with open(path, "rb") as a, open(os.path.join(root, os.path.basename(path)), "rb") as b:
+                    self.assertEqual(a.read(), b.read(), os.path.basename(path))
+            files = _input_files([root], tmp)
+            res, paths = run(files, os.path.join(tmp, "out"), article_previews=True)
+            with open(paths["explorer.html"], encoding="utf-8") as fh:
+                page = fh.read()
+            with open(paths["technical_report.md"], encoding="utf-8") as fh:
+                report = fh.read()
+        data = json.loads(re.search(r'<script id="vf-data" type="application/json">(.*?)</script>', page, re.S)[1])
+        files = {i["file"] for i in res["inputs"]}
+        self.assertIn("README.md", os.listdir(root))
+        self.assertFalse(files & {"README.md", "article_previews.json"})     # notes, not telemetry
+        self.assertTrue(all(not i["dropped"] for i in res["inputs"]), res["inputs"])
+        self.assertEqual(len(data["timeline"]["alerts"]), res["summary"]["threat_alerts"])
+        for m in res["ioc_matches"]:                  # overviews come from the folder's own cache
+            self.assertEqual(set(m["article_previews"]), set(m["articles"]), m["value"])
+        return res, data, report
+
+    def test_artex_sample_tells_the_story(self):
+        from vulnflow import sample_artex as a
+        res, data, report = self._agentic_sample(a)
+        self.assertEqual(res["coverage"]["scanned_hosts"], 92)
+        self.assertEqual(res["summary"]["hosts_corroborated"], [a.PORTAL])
+        self.assertTrue({a.SSO, a.CRM, a.DC1} <= set(res["summary"]["hosts_to_investigate"]))
+        matched = {(m["type"], m["value"]): m["hosts"] for m in res["ioc_matches"]}
+        self.assertTrue({("ip", ip) for ip in a.OPERATORS} | {("domain", "webhook.site")} <= set(matched))
+        self.assertIn(a.PORTAL, matched[("ip", a.OPS_SHELL)])
+        portal = next(f for f in res["findings"] if f["host"] == a.PORTAL and f["plugin_id"] == "900101")
+        kinds = {i["type"] for i in portal["indicators"]}
+        self.assertTrue({"threat_alert", "return_connection", "exfil", "corroborated"} <= kinds)
+        self.assertIn("portal01", report)
+        self.assertTrue(data["timeline"]["ioc_lookups"])
+        # agent fingerprints are in the logs an analyst greps
+        root = os.path.join(os.path.dirname(__file__), "..", "samples", a.FOLDER)
+        with open(os.path.join(root, "http.log")) as fh:
+            http = fh.read()
+        for text in ("norma/0.4", "artex-enrich/1.0", "/reports/cl1217.jsp", "/reports/z1219.jsp", "ArtexProbe"):
+            self.assertIn(text, http)
+        with open(os.path.join(root, "ssl.log")) as fh:
+            self.assertIn("api.deepseek.com", fh.read())
+
+    def test_cyberstrike_sample_tells_the_story(self):
+        from datetime import timedelta
+        from vulnflow import sample_cyberstrike as c
+        res, data, report = self._agentic_sample(c)
+        self.assertEqual(res["coverage"]["scanned_hosts"], 79)
+        self.assertEqual(res["summary"]["hosts_corroborated"], [c.WEB])
+        self.assertTrue({c.FW, c.BACKUP, c.DC1} <= set(res["summary"]["hosts_to_investigate"]))
+        matched = {(m["type"], m["value"]): m["hosts"] for m in res["ioc_matches"]}
+        self.assertTrue({("ip", ip) for ip in c.OPERATORS} <= set(matched))
+        self.assertEqual(matched[("cve", "CVE-2024-40711")], [c.BACKUP])
+        web = next(f for f in res["findings"] if f["host"] == c.WEB and f["plugin_id"] == "910203")
+        self.assertTrue({"threat_alert", "return_connection", "new_lateral", "corroborated"}
+                        <= {i["type"] for i in web["indicators"]})
+        # the implant checks in every 5 s with no jitter
+        root = os.path.join(os.path.dirname(__file__), "..", "samples", c.FOLDER)
+        with open(os.path.join(root, "conn.log")) as fh:
+            ts = [float(line.split("\t")[0]) for line in fh
+                  if not line.startswith("#") and line.split("\t")[2] == c.WEB and line.split("\t")[4] == c.CSAI]
+        gaps = {round(b - a, 3) for a, b in zip(ts, ts[1:]) if b - a < 60}
+        self.assertEqual(gaps, {5.0})
+        with open(os.path.join(root, "http.log")) as fh:
+            self.assertIn("CyberStrikeAI-WebShell/1.0", fh.read())
 
     def test_network_map_is_optional(self):
         """Without a network map, results, reports and the Explorer carry no network fields."""

@@ -525,8 +525,9 @@ def generate(outdir: str, seed: int = 7) -> list[str]:
 def generate_bundles(outdir: str, seed: int = 7) -> list[str]:
     """Write the scan-backed example, a matching network-only example, the large
     4,324-host on-prem + AWS example, the Gootloader intrusion replay and the two-company
-    Compare sample (whose Ridgeline head office is the Gootloader replay)."""
-    from . import sample_compare, sample_gootloader, sample_hosts
+    Compare sample (whose Ridgeline head office is the Gootloader replay), and the two agentic
+    offensive framework samples (Artex AI, CyberStrike AI)."""
+    from . import sample_artex, sample_compare, sample_cyberstrike, sample_gootloader, sample_hosts
     full = generate(os.path.join(outdir, "scan_and_telemetry"), seed)
     telemetry_dir = os.path.join(outdir, "telemetry_only")
     os.makedirs(telemetry_dir, exist_ok=True)
@@ -540,4 +541,6 @@ def generate_bundles(outdir: str, seed: int = 7) -> list[str]:
     hosts = sample_hosts.generate(os.path.join(outdir, sample_hosts.FOLDER))
     goot = sample_gootloader.generate(os.path.join(outdir, sample_gootloader.FOLDER))
     two = sample_compare.generate(os.path.join(outdir, sample_compare.FOLDER))
-    return full + copied + hosts + goot + two
+    artex = sample_artex.generate(os.path.join(outdir, sample_artex.FOLDER))
+    cyber = sample_cyberstrike.generate(os.path.join(outdir, sample_cyberstrike.FOLDER))
+    return full + copied + hosts + goot + two + artex + cyber

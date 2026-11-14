@@ -1,0 +1,14 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	notice
+#open	2026-10-19-00-00-00
+#fields	ts	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	note	msg	src	dst	p	actions
+#types	time	string	addr	port	addr	port	string	string	addr	addr	port	set[enum]
+1792379640.000000	A000000f10	104.194.150.21	-	10.50.1.10	443	HTTP::Agentic_Tool_Mix	104.194.150.21 used 3 tool families (norma, curl, python) and 140 requests in one minute (Elastic agentic-framework hunt)	104.194.150.21	10.50.1.10	443	Notice::ACTION_LOG
+1792383300.000000	A00000189c	144.172.64.60	-	10.50.1.11	443	HTTP::Password_Spray	144.172.64.60 sent 600 failed logins for 12 accounts to /api/auth/login in 10 minutes (median gap 1 s)	144.172.64.60	10.50.1.11	443	Notice::ACTION_LOG
+1792396342.644655	A000001f2b	10.50.1.10	-	10.50.0.10	88	Kerberos::TGS_Burst	10.50.1.10 requested 27 RC4 service tickets for 27 SPNs in 23 s	10.50.1.10	10.50.0.10	88	Notice::ACTION_LOG
+1792401240.000000	A000001f56	10.50.1.10	-	10.50.1.25	25	SMTP::Mass_Submission	10.50.1.10 submitted 1,312 messages to 1,300 internal recipients in 4 minutes	10.50.1.10	10.50.1.25	25	Notice::ACTION_LOG
+1792429560.000000	A0000031d8	10.50.40.10	-	10.50.0.45	8080	HTTP::Bulk_Pagination	10.50.40.10 paged through /api/v1/accounts 785 times in 45 minutes	10.50.40.10	10.50.0.45	8080	Notice::ACTION_LOG
+#close	2026-10-21-00-00-00

@@ -1,0 +1,14 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	notice
+#open	2026-11-02-00-00-00
+#fields	ts	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	note	msg	src	dst	p	actions
+#types	time	string	addr	port	addr	port	string	string	addr	addr	port	set[enum]
+1793583300.000000	S000000e70	212.11.64.250	-	172.16.10.1	10443	SSL::Fixed_Interval_Short_Sessions	212.11.64.250 opened 600 short TLS sessions to the SSL-VPN in 15 min at exactly 1.5 s (consistent with sslvpn-login-fail on the FortiGate)	212.11.64.250	172.16.10.1	10443	Notice::ACTION_LOG
+1793586000.000000	S0000010c9	212.11.64.250	-	172.16.10.1	10443	SSL::Fixed_Interval_Short_Sessions	212.11.64.250 opened 600 short TLS sessions to the SSL-VPN in 15 min at exactly 1.5 s (consistent with sslvpn-login-fail on the FortiGate)	212.11.64.250	172.16.10.1	10443	Notice::ACTION_LOG
+1793588700.000000	S000001322	212.11.64.250	-	172.16.10.1	10443	SSL::Fixed_Interval_Short_Sessions	212.11.64.250 opened 600 short TLS sessions to the SSL-VPN in 15 min at exactly 1.5 s (consistent with sslvpn-login-fail on the FortiGate)	212.11.64.250	172.16.10.1	10443	Notice::ACTION_LOG
+1793613152.000000	S000001c96	192.0.2.199	-	172.16.10.20	80	HTTP::Webshell_UA	POST /uploads/SystemUpdate.aspx with User-Agent CyberStrikeAI-WebShell/1.0 and form field 'pass'; response contains :OSPROBE_WINDOWS:END	192.0.2.199	172.16.10.20	80	Notice::ACTION_LOG
+1793614320.000000	S000002d5f	172.16.10.20	-	212.11.64.250	8443	SSL::Fixed_Interval_Beacon	172.16.10.20 contacted 212.11.64.250:8443 120 times in 10 min at exactly 5.0 s (no jitter)	172.16.10.20	212.11.64.250	8443	Notice::ACTION_LOG
+#close	2026-11-04-00-00-00

@@ -97,7 +97,7 @@ also need Zeek (`brew install zeek`, a Linux package, or `VULNSCOPE_ZEEK=/path/t
 ### Try it without your own data
 
 `example_output/` holds a finished synthetic 250-host run: open `explorer.html`,
-`executive_summary.html` or `technical_report.html` in your browser. Four bundled samples can be
+`executive_summary.html` or `technical_report.html` in your browser. Six bundled samples can be
 analyzed from the upload page (select the folder, then **Analyze folder**) or the command line, and a
 fifth loads straight into **Compare reports**:
 
@@ -107,6 +107,8 @@ python3 -m vulnflow analyze samples/scan_and_telemetry \
 python3 -m vulnflow analyze samples/telemetry_only -o telemetry_output        # no scan, includes OT
 python3 -m vulnflow analyze samples/hosts_onprem_and_aws -o hosts_output       # 4,324 hosts, on-prem + AWS
 python3 -m vulnflow analyze samples/gootloader_seo_poisoning -o gootloader_output
+python3 -m vulnflow analyze samples/artex_ai_agentic_intrusion -o artex_output          # ARTEX agentic framework
+python3 -m vulnflow analyze samples/cyberstrike_ai_fortigate_intrusion -o cyberstrike_output  # CyberStrikeAI
 python3 -m vulnflow compare-sample      # two companies, seven site reports, compared (for serve's default folder)
 ```
 

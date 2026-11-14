@@ -1,0 +1,26 @@
+{
+  "https://brandefense.io/security-news/cyberstrikeai-attacks-explained/": {
+    "title": "CyberStrikeAI attacks explained",
+    "overview": "Brandefense explains how the open-source CyberStrikeAI platform, which chains 100+ security tools under an LLM agent, was tied to AI-assisted attacks on FortiGate appliances."
+  },
+  "https://www.elastic.co/security-labs/threat-command/agentic-offensive-frameworks-detection-artex": {
+    "title": "Detecting agentic offensive frameworks: ARTEX and friends",
+    "overview": "Elastic Security Labs lists CyberStrikeAI's operator console, implant builder and WebShell manager: User-Agent 'Mozilla/5.0 (compatible; CyberStrikeAI-WebShell/1.0)' with a 'pass' field, an OSPROBE echo, 'SystemUpdate' persistence, five-second check-ins without jitter, and proxy, User-Agent and Tor fallbacks when blocked."
+  },
+  "https://blog.talosintelligence.com/artex-and-beyond/": {
+    "title": "ARTEX and beyond",
+    "overview": "Cisco Talos saw CyberStrikeAI co-deployed with ARTEX on the same infrastructure, alongside scanners such as Fscan and C2 such as VShell and AdaptixC2."
+  },
+  "https://unit42.paloaltonetworks.com/artex-and-ai-powered-red-teaming-tools/": {
+    "title": "ARTEX and AI-powered red teaming tools",
+    "overview": "Unit 42 counted 1,323 internet-facing CyberStrikeAI hosts in October 2026 and describes agent timing such as short request bursts and fast retries."
+  },
+  "https://aws.amazon.com/blogs/security/ai-augmented-threat-actor-accesses-fortigate-devices-at-scale/": {
+    "title": "AI-augmented threat actor accesses FortiGate devices at scale",
+    "overview": "Amazon Threat Intelligence reports 600+ FortiGate devices in 55 countries reached through exposed management ports (443, 8443, 10443, 4443) and weak or stolen credentials, followed by gogo, Nuclei, DCSync, pass-the-hash and attacks on Veeam (CVE-2023-27532, CVE-2024-40711)."
+  },
+  "https://www.team-cymru.com/post/tracking-cyberstrikeai-usage": {
+    "title": "Tracking CyberStrikeAI usage",
+    "overview": "Team Cymru tied the FortiGate campaign address 212.11.64.250 to a 'CyberStrikeAI' banner on port 8080 and tracked 21 CyberStrikeAI server addresses between January and February 2026."
+  }
+}

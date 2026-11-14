@@ -39,6 +39,10 @@ def run(paths: list[str], outdir: str, cfg: Config | None = None,
     scanner_files = [path for path in paths if scanners.is_list_file(path)] + ([cfg.known_scanners] if cfg.known_scanners else [])
     cfg.known_scanner_list = [e for path in scanner_files for e in scanners.read(path)]
     paths = [path for path in paths if not scanners.is_list_file(path)]
+    previews = [path for path in paths if os.path.basename(path) == PREVIEW_CACHE]
+    if previews and article_preview_cache is None:
+        article_preview_cache = previews[0]           # a sample folder carries its own article overviews
+    paths = [path for path in paths if not _not_telemetry(path)]
     archive_paths = [path for path in paths if is_archive(path)]
     overrides = overrides or {}
     captures = [path for path in paths if path not in archive_paths and _is_capture(path, overrides)]
@@ -73,6 +77,16 @@ def run(paths: list[str], outdir: str, cfg: Config | None = None,
             raise
         finally:
             ds.close()
+
+
+PREVIEW_CACHE = "article_previews.json"
+NOTES = ("readme.md", "readme.txt")
+
+
+def _not_telemetry(path: str) -> bool:
+    """A folder's README and its saved article overviews are not telemetry."""
+    name = os.path.basename(path)
+    return name == PREVIEW_CACHE or name.lower() in NOTES
 
 
 def input_files(paths: list[str], outdir: str) -> list[str]:
