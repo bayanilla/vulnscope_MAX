@@ -22,6 +22,7 @@ and correlates with DuckDB.
 ## Contents
 
 - [Start VulnScope](#start-vulnscope)
+  - [Update VulnScope (Docker)](#update-vulnscope-docker)
 - [Analyze your logs and scans](#analyze-your-logs-and-scans)
 - [Explore hosts](#explore-hosts)
 - [Ask the Security Assistant](#ask-the-security-assistant)
@@ -51,6 +52,32 @@ Open **http://127.0.0.1:8080/**. Results go to `VULNSCOPE_RUNS` (default `./vuln
 Stop it with `docker compose down`. For enclaves with no internet, build an offline bundle on a
 connected computer and load it on the other side; see
 [Air-gapped networks](ARCHITECTURE.md#air-gapped-networks-and-enclaves).
+
+### Update VulnScope (Docker)
+
+The image holds a copy of the code taken when it was built, so restarting Docker or the container
+keeps running the old version. To update, rebuild:
+
+```sh
+cd vulnscope_max                       # the folder you cloned
+git pull --ff-only origin main         # get the new version
+docker compose up -d --build           # rebuild the image and restart (a minute or two)
+```
+
+Then reload the page in the browser and **run Analyze again** on your data. Each run's
+`explorer.html` and reports keep the version they were made with, so older runs do not pick up new
+features or fixes. Your `.env`, run folders, settings and branding are not touched.
+
+To check that it worked, `docker compose ps` should show the container as `Up` (not
+`Restarting`), and `docker compose logs --tail 30` shows recent errors.
+
+| Problem | What to do |
+|---|---|
+| `git pull` refuses: "Your local changes would be overwritten" | Someone edited files in the folder. `git status` lists them. Keep a copy with `git stash` (put it back later with `git stash pop`), or discard them with `git checkout -- <file>`, then pull again. `.env` is not tracked, so your settings are safe. |
+| macOS: `docker: command not found` or `docker-credential-desktop` not found | Docker Desktop's tools are not on your PATH. Run `export PATH="$PATH:/Applications/Docker.app/Contents/Resources/bin"`, or add that line to `~/.zshrc`. |
+| The page looks unchanged after updating | You restarted without `--build`, or are looking at an old run. Rebuild as above, reload, and analyze again. |
+| Explorer, theme or view choices look different | The browser remembers them per address (`127.0.0.1:8080` and `127.0.0.1:8100` are separate). Pick them again, or clear the site's data. |
+| Air-gapped bundle | Build a new bundle on a connected computer, `docker load` the new image, unpack the new source over the old folder (keep your `.env`), then `docker compose up -d --no-build`. See [Air-gapped networks](ARCHITECTURE.md#air-gapped-networks-and-enclaves). |
 
 ### With Python
 
