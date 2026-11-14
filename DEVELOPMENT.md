@@ -42,7 +42,8 @@ failing step's log is one click away under **Details**.
 | `test_pcap.py`, `test_filebeat.py` | Packet capture conversion; Filebeat CSV/NDJSON back to Zeek |
 | `test_capture_accuracy.py` | Mid-stream sessions, answered pings, broadcasts, capture loss, Zui/Brim exports, Suricata mid-stream flows |
 | `test_explore.py`, `test_visual.py` | Explorer data, drawing limits, HTML output |
-| `test_security.py`, `test_multipart.py` | Host/Origin/CSRF checks, Browse confinement, upload parsing, `.gz` limits |
+| `test_security.py`, `test_multipart.py` | Host/Origin/CSRF checks on every state-changing route (DNS rebinding), API-key endpoint rules and the unfamiliar-endpoint warning, Browse confinement, upload parsing, `.gz` limits |
+| `test_scanners.py` | Hosts vs probed-only addresses, scanner detection, `known_scanners.csv`, probed ranges, firewall blocks, the one-way sensor warning |
 | `test_llm.py`, `test_offline_assistant.py` | Provider adapters, redaction, grounding; the built-in assistant |
 | `test_article_brief.py`, `test_radar.py` | Article briefs and Radar lookups with stubbed services |
 | `test_branding.py` | Branding page, password lock, logo validation |

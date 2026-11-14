@@ -10,11 +10,11 @@ standard.
 flowchart LR
     subgraph INPUTS["Your files, read-only"]
         PCAP["Packet captures<br/>.pcap / .pcapng"]
-        ZLOGS["Zeek logs<br/>TSV / JSON"]
+        ZLOGS["Zeek logs<br/>TSV / JSON / Zui export"]
         FB["Filebeat exports<br/>Kibana CSV / NDJSON"]
         FW["Palo Alto, Suricata,<br/>flow CSVs, VPC Flow Logs"]
         SCAN["Nessus scans"]
-        IOC["IOC CSV,<br/>network_map.csv"]
+        IOC["IOC CSV, network_map.csv,<br/>known_scanners.csv"]
     end
 
     subgraph APP["VulnScope"]
@@ -76,13 +76,14 @@ Folder path, Browse, upload, or command line
 
 | Module | Knowledge hidden behind its interface |
 | --- | --- |
-| `vulnflow/parsers/` | Format detection and per-source field rules: Zeek TSV/JSON, Palo Alto, Suricata, generic flows, Nessus, Filebeat ECS reversal |
+| `vulnflow/parsers/` | Format detection and per-source field rules: Zeek TSV/JSON and Zui/Brim exports, Palo Alto, Suricata, generic flows, Nessus, Filebeat ECS reversal |
 | `vulnflow/pcap.py` | Finding Zeek, running it on a capture into a temporary folder, reporting unreadable captures |
 | `vulnflow/normalize.py`, `schema.py` | Canonical `Flow`, `ThreatEvent`, `Finding` and Zeek/OT event records; IP, protocol and time normalization |
 | `vulnflow/store.py` | Batched Parquet writing, cross-sensor de-duplication and DuckDB queries |
 | `vulnflow/resources.py` | DuckDB memory, thread and spill sizing; one-job-at-a-time slot; limit-hit messages |
 | `vulnflow/correlate.py` | Exposure, blast radius, indicator grading, scoring weights and coverage |
 | `vulnflow/netmap.py` | Optional network map parsing and on-prem/cloud labeling |
+| `vulnflow/scanners.py` | Scanner detection from traffic, the optional `known_scanners.csv`, the one-way sensor check |
 | `vulnflow/ioc_archive.py`, `article_preview.py`, `article_brief.py` | IOC CSV matching, source previews, optional OpenAI article briefs |
 | `vulnflow/report.py`, `diagram.py`, `visual.py`, `explore.py` | Report shape and wording, themes, the hostile activity diagram, Explorer data |
 | `vulnflow/static/` | Explorer, 3D, Attack paths and Timeline views (three.js bundled) |
@@ -209,7 +210,11 @@ the Security Assistant on the built-in offline provider (or a model on your own 
   one-time link with a random access token, and every visitor needs that link. Traffic is plain
   HTTP, so prefer an SSH tunnel (`ssh -L 8080:127.0.0.1:8080 host`) or your SSO proxy.
 - A saved API key is reused only for the same provider and endpoint URL; changing the endpoint asks
-  for the key again. Keys are never sent over plain HTTP to another machine.
+  for the key again. Keys are never sent over plain HTTP to another machine. The settings page
+  warns when the endpoint is neither OpenAI's API nor this machine.
+- `tests/test_security.py` pins these checks: a foreign Host is refused on every state-changing
+  route, a cross-site Origin is refused even with a valid token, posts without a token change
+  nothing, and the Docker published port is accepted. CI runs them on every pull request.
 - Branding changes need the Branding password. Five wrong attempts start a lockout that doubles with
   each further miss; an unlock lasts 30 minutes in that browser. Only a salted scrypt hash is kept.
   Logos are checked by content (PNG, JPEG, GIF, WebP; SVG refused) and embedded as `data:` images,

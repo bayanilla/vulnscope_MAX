@@ -188,14 +188,18 @@ inside. The view switcher offers:
   first and second pivot). **Simulate fix** is a what-if that shows how much path risk fixing or
   isolating one host would remove; nothing on the network changes.
 - **Timeline** (I key, or `explorer.html#timeline`), a tunnel through time where every flow is a
-  chord at the moment it happened, with alerts as rings and IOC lookups as pink dots.
+  chord at the moment it happened, with alerts as rings and IOC lookups as pink dots. Alerts the
+  log gave no time are listed apart under **Alerts with no time** rather than placed at a guess.
 
 Click a host, or pick it from the host list (grouped by subnet, riskiest first; **By subnet**
-switches to a flat list), and the camera flies to it. The left side shows outside addresses that
+switches to a flat list), and the camera flies to it. A subnet's header also counts the addresses
+there that were probed and never answered; they are not hosts and are not drawn. Hosts whose
+traffic looks like scanning are named **Scanner (review)** or **Expected scanner**. The left side shows outside addresses that
 exchanged traffic with it; the right side shows internal peers with an estimated likelihood that
 a compromise could spread there. The panel lists every recorded IP with session counts and
 connection tuples. **Focus** pivots to a peer; Esc or **← All hosts** goes back. The **?** at the
-right of the top buttons explains the current view. Deep links work:
+right of the top buttons explains the current view in a note centered under the picture; the note
+also opens by itself for 15 seconds when a view opens. Deep links work:
 `explorer.html#host=10.0.1.10`.
 
 Drawing limits keep large runs responsive; [Methods](METHODS.md#explorer-drawing-and-sampling)
@@ -219,6 +223,8 @@ To use a model instead, open **Security Assistant settings** and pick a provider
 
 No vendor is preselected. With a hosted provider, correlated results (not raw logs) leave your
 network; **Redact IPs and hostnames** replaces them with tokens and refuses to send if any survive.
+If the endpoint is neither OpenAI's API nor this computer, the settings page warns that questions,
+run data and the key will go to that server; keep it only if you set it up.
 The same commands work from the terminal (`brief`, `ask`, `analyze --llm`); see
 [Methods](METHODS.md#security-assistant) for flags and safeguards.
 
@@ -255,6 +261,18 @@ service should be reachable.
 Absence of traffic means "not observed by these sensors". Scanned hosts never seen on the wire,
 and active servers never scanned, are listed as coverage gaps rather than scored as safe. An IOC
 match is a lead for review, not proof of compromise.
+
+**What counts as a host.** A host is an internal address that started a session or answered one.
+Addresses a scanner probed that never answered are counted on a separate line (with the most
+probed ranges, and how many a firewall log shows as blocked) and listed in
+`normalized/probed_addresses.csv`, so a large scan no longer inflates the host count. A
+**Scanning hosts** section lists hosts that probed many addresses or ports with mostly failed
+sessions; those not in your `known_scanners.csv`, and not the Nessus scanner, are marked **Review**.
+Detection only labels hosts; it does not change scores.
+
+**Check the sensor.** The reports warn when Zeek estimated 1% or more packet loss, or when fewer
+than 2% of sessions show any answer (the sensor probably sees one direction only). Either way,
+hosts and sessions may be missing; fix the capture before relying on counts.
 
 ## Save and share results
 
@@ -353,7 +371,8 @@ the Explorer, Attack paths and Timeline follow it. Comparisons and reopened repo
 choice, so they open in Graphite. Ones made before this version open in SOC Dark; reopen the report
 or compare again to update them. Every theme except SOC Dark uses the same restrained layout (flat
 surfaces, one accent colour, colour reserved for alerts, vulnerable paths and severity); they differ
-only in palette. Light also draws the Explorer on a white canvas.
+only in palette. Light also draws the Explorer on a white canvas with its own clearer severity
+colours, steel blue for hosts connecting out and stronger lines.
 
 ## Privacy and practical limits
 

@@ -31,7 +31,7 @@ skipped. Zeek and Palo Alto files can be plain or `.gz`.
 | Alerts | Zeek `notice.log` (TSV or JSON) | Notices about hosts become IPS/IDS alerts used as exploitation evidence. `CaptureLoss::` notices and `capture_loss.log` are a sensor-quality signal instead: the reports warn when Zeek estimated 1% or more packet loss. Zeek's bookkeeping logs (`loaded_scripts`, `stats`, `packet_filter`, `reporter`, ...) are skipped. |
 | Context | Other Zeek streams (TSV or JSON, including `.log.gz`) | `#path` identifies TSV streams; JSON uses `_path` or the filename. DNS, HTTP, SMTP, files, custom streams and others are preserved in `normalized/zeek_events.jsonl` with typed fields and per-stream counts. They do not create extra sessions. |
 | Industrial telemetry | Zeek Modbus, DNP3, BACnet, S7, EtherNet/IP, CIP, OPC UA logs | Preserved in `normalized/ot_events.jsonl` with protocol, operation, endpoints and direction when available. Observed operations do not become alerts automatically. |
-| Telemetry + alerts | Palo Alto TRAFFIC and THREAT logs | Web UI / Panorama CSV export (header row) or raw syslog CSV in PAN-OS field order. Zones `untrust/outside/internet/external/wan` count as external. Timestamps are assumed UTC. |
+| Telemetry + alerts | Palo Alto TRAFFIC and THREAT logs | Web UI / Panorama CSV export (header row) or raw syslog CSV in PAN-OS field order. Zones `untrust/outside/internet/external/wan` count as external. Timestamps are assumed UTC. Each row takes the first time column that has a value (Start Time, Generate Time, Receive Time, Time Logged), so THREAT rows with an empty Start Time keep their time. |
 | Telemetry + alerts + context | Zui / Brim export (JSON array or JSON lines, plain or `.gz`) | Records tagged by `_path` are read like Zeek JSON (nested `id` objects, ISO times); brimcap's Suricata `alert` records become alerts. |
 | Telemetry + alerts | Suricata EVE JSON | `flow` events become sessions, `alert` events become alerts. A TCP flow Suricata joined mid-stream with a service port (below 1024) as the client and a high port as the server is turned round, as Zeek does, so a server's reply is not read as an inbound session. |
 | Telemetry | Generic flow CSV / TSV / space-delimited | nfdump CSV, AWS VPC Flow Logs, SIEM exports. Columns are matched by common names (`src_ip`, `sa`, `srcaddr`, ...). |
@@ -160,7 +160,8 @@ For each vulnerability:
   - *Lead:* a return connection from the host to an outside address that reached the vulnerable
     service; new lateral connections or uploads over 20 MB after that contact; an unblocked
     IPS/IDS alert on the vulnerable service; or a flagged host newly connecting to another host's
-    vulnerable service (possible spread).
+    vulnerable service (possible spread). IPS/IDS leads name the internal source of an
+    internal-to-internal alert as well as its target.
   - *Corroborated:* an unblocked alert on the vulnerable service **and** post-contact behavior from
     the host itself. Reports call this "likely exploitation". Without THREAT, notice or EVE alerts,
     nothing gets past "lead".
@@ -190,10 +191,20 @@ isolated, so no path passes through it; patching one CVE may cut fewer paths.
 
 **Drawing limits.** In host focus, the first 24 peers per side are drawn large and labeled, and up
 to 400 per side are drawn; the panel reaches every recorded IP. The 3D overview draws at most
-2,000 hosts (the riskiest), 200 risky paths and 48 outside addresses; subnet totals still count
-every host. The Timeline draws up to 20,000 flows; larger runs keep every blocked flow and every
-flow to or from an alert or IOC address (up to half of that) and fill the rest with a fixed random
-sample, and the view says so.
+2,000 hosts, 200 risky paths and 48 outside addresses; subnet totals still count every host.
+Hosts are ranked by risk, then by IPS/IDS alerts, industrial (OT) traffic and activity, so on a
+telemetry-only run the alerted hosts and PLCs are kept; the Explorer opens on the top-ranked
+host. An outside address counts as reaching in on an alert only when it was the alert's source,
+not when an internal client's alert names an outside server. Addresses that were only probed are
+not drawn (see [Hosts and scanners](#hosts-and-scanners)).
+
+**Timeline.** Every flow and alert is drawn at its own time. Internal hosts the overview leaves
+out are drawn on their subnet's lane, so their flows still appear. Up to 20,000 flows are drawn;
+larger runs first take flows to or from an alert or IOC address, then blocked flows (together up to
+half), then a random sample of the rest, each sampled over the whole run rather than the earliest
+part, and the view shows each window's real flow count next to the sample. Up to 200 alerts and
+400 IOC lookups are thinned evenly over the run, unblocked alerts first. Alerts with no time of
+their own are listed apart under **Alerts with no time**.
 
 ## Security Assistant
 
@@ -223,6 +234,8 @@ python3 -m vulnflow article-briefs out --llm-provider openai --llm-model gpt-4.1
   including Nessus free text. The outgoing text is checked again and the request is refused if any
   address or known hostname survived. Answers are mapped back locally. Article briefs need exact
   IOCs, so redaction must be off for them.
+- **Unfamiliar endpoints.** When the `openai` or `local` endpoint is neither `api.openai.com` nor
+  this machine, the settings page warns that questions, run data and the key go to that host.
 - **Audit trail.** Every question and answer is appended to `ai_chat_log.md` in the run folder.
 - **Built-in offline assistant.** `offline` (older name `mock`) uses fixed rules and templates over
   the results. It can't reason beyond the data; choose a model for open-ended questions.
@@ -282,7 +295,9 @@ Compare reports reads finished report folders and changes none of them.
 | Article previews | 60 pages per run, 800 KB each |
 | Article briefs | 20 articles per run, 18,000 characters each |
 | Explorer | 2,000 hosts, 200 risky paths, 48 outside addresses in the 3D overview; 400 peers per side in focus |
-| Timeline | 20,000 flows drawn |
+| Timeline | 20,000 flows, 200 alerts and 400 IOC lookups drawn |
+| Scanner detection | 100 address/port pairs with 70% failed sessions; 200 scanners listed in `results.json` |
+| Sensor warnings | Packet loss of 1% or more; fewer than 2% of sessions answered (at least 500 sessions) |
 
 A run that needs more memory or disk than it was given stops with a message naming the limit it
 hit and how far it can be raised. [Configured limits](docs/LIMITS.md) lists every bound and where

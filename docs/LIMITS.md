@@ -26,6 +26,10 @@ Numeric bounds in one place. Each row names where the value is set; change it th
 | Explorer overview | 2,000 / 200 / 48 | hosts (riskiest) / risky paths / outside addresses drawn | `vulnflow/explore.py`, `vulnflow/static/explorer.js` |
 | Attack paths | 9 | ranked lines | `vulnflow/static/attackpaths.js` |
 | Timeline | 20,000 | flows drawn; 200 alerts, 400 IOC lookups | `vulnflow/explore.py` |
+| Explainer note | 15 s | the **?** note opens by itself when a view opens | `vulnflow/static/explorer.js` |
+| Scanner detection | 100 / 70% / 200 | address/port pairs tried / sessions failed / scanners listed | `vulnflow/scanners.py` |
+| One-way sensor warning | 2% / 500 | sessions with any answer / minimum sessions | `vulnflow/scanners.py` |
+| Packet-loss warning | 1% | Zeek's estimated capture loss | `vulnflow/report.py` |
 | Branding name | 40 | characters before "VulnScope" | `vulnflow/branding.py` |
 | Branding logo | 512 KB, 2,048 px | file size, longest side | `vulnflow/branding.py` |
 | Branding unlock | 30 min, 5 attempts | unlock lifetime; free attempts before a doubling lockout | `vulnflow/web/branding_page.py` |
