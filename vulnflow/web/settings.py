@@ -54,13 +54,22 @@ def _page(req, nxt: str, error: str = "", code: int = 200):
     if not cfg.provider:
         options = '<option value="" selected>Choose a provider</option>' + options
     status = (f'<p><strong>Current:</strong> {html.escape(cfg.label())}, API key {cfg.masked_key()}.</p>'
-              if cfg.ready else "<p><strong>Current:</strong> none selected.</p>")
+              if cfg.ready else "<p><strong>Current:</strong> none selected.</p>") + _endpoint_warning(cfg)
     body = SETTINGS.format(
         css=FORM_PAGE_CSS, status=status, error=error_html(error), csrf=req.app.csrf, next=html.escape(nxt),
         options=options, model=html.escape(cfg.model), base_url=html.escape(cfg.base_url),
         key_hint="key is set; leave blank to keep it" if cfg.api_key else "paste key",
         redact=" checked" if cfg.redact else "")
     req.send(code, page("Security Assistant settings", body))
+
+
+def _endpoint_warning(cfg: LLMConfig) -> str:
+    host = cfg.unfamiliar_endpoint() if cfg.ready else ""
+    if not host:
+        return ""
+    return ('<p class="warn" style="color:#b9770e"><strong>Check this endpoint:</strong> questions, run data'
+            f'{" and the API key" if cfg.api_key else ""} go to <b>{html.escape(host)}</b>, which is not '
+            "OpenAI's API or this machine. Keep it only if you set it up and trust that server.</p>")
 
 
 def save(req):

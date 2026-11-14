@@ -116,6 +116,78 @@ class WebSecurityTests(unittest.TestCase):
             status, _, _ = self._save(s, provider="openai", model="m")      # default endpoint may use it
             self.assertEqual(status, 303)
 
+    def test_rebound_page_cannot_change_settings_or_branding(self):
+        """A website whose name now points at 127.0.0.1 (DNS rebinding) is refused before any route runs,
+        even when it somehow holds a valid CSRF token, so it can't redirect the AI endpoint."""
+        cfg = LLMConfig(provider="openai", model="m", api_key="sk-typed-1234").resolved()
+        s = self.server(llm_cfg=cfg)
+        token = s.token()
+        evil = f"evil.example:{s.port}"
+        form = urllib.parse.urlencode({"csrf": token, "action": "save", "provider": "openai", "model": "m",
+                                       "base_url": "https://attacker.example/v1", "api_key": "sk-attacker-0000"})
+        hdr = {"Content-Type": "application/x-www-form-urlencoded", "Origin": f"http://{evil}"}
+        for path in ("/settings", "/branding", "/branding/unlock", "/analyze-folder", "/compare"):
+            self.assertEqual(s.request("POST", path, form, hdr, host=evil)[0], 421, path)
+        for path in ("/settings", "/branding", "/compare/", "/runs/0123456789abcdef/results.json"):
+            self.assertEqual(s.request("GET", path, host=evil)[0], 421, path)
+        self.assertNotIn("attacker", s.request("GET", "/settings")[1])
+
+    def test_cross_site_post_is_refused_even_with_token(self):
+        cfg = LLMConfig(provider="openai", model="m", api_key="sk-typed-1234").resolved()
+        s = self.server(llm_cfg=cfg)
+        form = urllib.parse.urlencode({"csrf": s.token(), "action": "save", "provider": "openai", "model": "m",
+                                       "base_url": "https://attacker.example/v1", "api_key": "sk-attacker-0000"})
+        for origin in ("https://evil.example", "null", f"http://localhost:{s.port + 1}"):
+            status, _, _ = s.request("POST", "/settings", form, {
+                "Content-Type": "application/x-www-form-urlencoded", "Origin": origin})
+            self.assertEqual(status, 403, origin)
+        self.assertNotIn("attacker", s.request("GET", "/settings")[1])
+        # the page's own origin still works
+        status, _, _ = s.request("POST", "/settings", form.replace("sk-attacker-0000", "sk-mine-0000"), {
+            "Content-Type": "application/x-www-form-urlencoded", "Origin": f"http://127.0.0.1:{s.port}"})
+        self.assertEqual(status, 303)
+
+    def test_settings_post_without_token_changes_nothing(self):
+        cfg = LLMConfig(provider="openai", model="m", api_key="sk-typed-1234").resolved()
+        s = self.server(llm_cfg=cfg)
+        for csrf in ("", "wrong"):
+            form = urllib.parse.urlencode({"csrf": csrf, "action": "save", "provider": "openai", "model": "m",
+                                           "base_url": "https://attacker.example/v1", "api_key": "sk-x-0000"})
+            status, _, _ = s.request("POST", "/settings", form, {"Content-Type": "application/x-www-form-urlencoded"})
+            self.assertEqual(status, 403)
+        self.assertIn("api.openai.com", s.request("GET", "/settings")[1])
+
+    def test_unfamiliar_endpoint_is_flagged_on_the_settings_page(self):
+        s = self.server(llm_cfg=LLMConfig(provider="openai", model="m", api_key="sk-typed-1234").resolved())
+        self.assertNotIn("Check this endpoint", s.request("GET", "/settings")[1])
+        status, _, _ = self._save(s, provider="openai", model="m", base_url="https://llm.example.net/v1",
+                                  api_key="sk-other-5678")
+        self.assertEqual(status, 303)
+        page = s.request("GET", "/settings")[1]
+        self.assertIn("Check this endpoint", page)
+        self.assertIn("llm.example.net", page)
+        self.assertIn("the API key", page)
+        self._save(s, provider="local", model="llama3.1", base_url="http://localhost:11434/v1")
+        self.assertNotIn("Check this endpoint", s.request("GET", "/settings")[1])
+
+    def test_docker_published_port_is_accepted_and_others_refused(self):
+        """In the container the browser uses the published port (e.g. 127.0.0.1:8100), not the server's own."""
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(
+            os.path.join(self.tmp, "runs"), Config(), None,
+            allowed_hosts=("127.0.0.1:8100", "localhost:8100", "[::1]:8100")))
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.server_close)
+        self.addCleanup(srv.shutdown)
+        for host, want in (("127.0.0.1:8100", 200), ("localhost:8100", 200), ("[::1]:8100", 200),
+                           ("evil.example:8100", 421), ("127.0.0.1.nip.io:8100", 421), ("", 421)):
+            conn = http.client.HTTPConnection("127.0.0.1", srv.server_port, timeout=10)
+            conn.putrequest("GET", "/", skip_host=True)
+            if host:
+                conn.putheader("Host", host)
+            conn.endheaders()
+            self.assertEqual(conn.getresponse().status, want, host)
+            conn.close()
+
     def test_key_is_never_sent_over_plain_http_to_another_machine(self):
         with self.assertRaises(LLMError):
             LLMConfig(provider="openai", model="m", api_key="k", base_url="http://203.0.113.5/v1").resolved()

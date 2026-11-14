@@ -36,6 +36,7 @@ PROVIDER_ALIASES = {"mock": OFFLINE}
 # Only suggested where a vendor has an obvious current default; otherwise the analyst names the model.
 SUGGESTED_MODELS = {"anthropic": "claude-opus-5-5", "local": "llama3.1", OFFLINE: "built-in"}
 DEFAULT_BASE_URLS = {"openai": "https://api.openai.com/v1", "local": "http://localhost:11434/v1"}
+KNOWN_ENDPOINT_HOSTS = frozenset({"api.openai.com"})
 KEY_ENV = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}
 MAX_FINDINGS_IN_CONTEXT = 150
 LOCAL_FINDINGS_IN_CONTEXT = 10
@@ -127,6 +128,16 @@ class LLMConfig:
         where = f" at {self.base_url}" if self.provider in ("openai", "local") else ""
         return f"{PROVIDER_NAMES.get(self.provider, self.provider)} / {self.model}{where}" + \
             (" (redacted)" if self.redact else "")
+
+    def unfamiliar_endpoint(self) -> str:
+        """The endpoint's host name when it is neither OpenAI's API nor this machine; "" otherwise.
+        Such an endpoint receives the API key and the run data, so the settings page says so."""
+        if self.provider not in ("openai", "local") or not self.base_url:
+            return ""
+        host = (urllib.parse.urlsplit(self.base_url).hostname or self.base_url).lower()
+        if host in KNOWN_ENDPOINT_HOSTS or _is_loopback(host):
+            return ""
+        return host
 
     def destination(self) -> str:
         if self.provider == "anthropic":
