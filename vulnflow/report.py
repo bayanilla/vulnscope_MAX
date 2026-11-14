@@ -101,7 +101,7 @@ def _telemetry_report(res: dict, technical: bool) -> str:
               "does not prove exploitation.", ""]
     if res["telemetry_leads"]:
         for lead in res["telemetry_leads"]:
-            side = (" (as the source, towards an outside address)" if lead.get("role") == ["source"] else
+            side = (" (as the source)" if lead.get("role") == ["source"] else
                     " (as target and as source)" if len(lead.get("role", [])) > 1 else "")
             lines.append(f"- **{_c(lead['host'])}**{side}: {lead['unblocked']} unblocked, "
                          f"{lead['blocked']} blocked alert(s); signatures: "
