@@ -109,7 +109,12 @@ flag remains available.
 
 An internal address counts as a host when it started a session or answered one (the session
 completed, it refused with a reset, or it sent data back). Addresses that were only probed and
-never answered are reported as a separate count and are not drawn in the Explorer.
+never answered are reported as a separate count, per subnet and per scanner, and are not drawn in
+the Explorer. Each one is listed in `normalized/probed_addresses.csv` with who probed it and
+whether a firewall log shows the traffic was blocked. A firewall block does not make an address
+a host, because firewalls also log blocks for empty addresses. Zeek alone cannot tell a silent
+drop from an empty address. When fewer than 2% of sessions show any answer, the reports warn that
+the sensor probably sees one direction only.
 
 A host is reported as a scanner when it tried at least 100 different address and port pairs and at
 least 70% of its sessions never completed, or when a Zeek `Scan::` notice names it. A

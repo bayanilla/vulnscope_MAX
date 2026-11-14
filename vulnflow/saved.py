@@ -107,6 +107,7 @@ def explorer_data(text: str, res: dict) -> dict:
 # Files served from the original folder when the rebuilt run doesn't have its own copy.
 SOURCE_FILES = ("correlated_findings.csv", "hostile_activity.svg", "ai_analyst_brief.html", "ai_chat_log.md",
                 "normalized/flows.csv", "normalized/findings.csv", "normalized/threats.csv",
+                "normalized/probed_addresses.csv",
                 "normalized/zeek_events.jsonl", "normalized/ot_events.jsonl")
 
 

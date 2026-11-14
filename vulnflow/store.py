@@ -192,10 +192,39 @@ class Store:
 
     def answering_ips(self) -> set[str]:
         """Addresses that exist: they started a session, or answered one (completed, refused with a
-        reset, or sent data back). An address that was only probed and never answered is left out."""
+        reset, or sent data back). An address that was only probed and never answered is left out,
+        also when a firewall blocked the probe: a firewall logs a deny for an empty address too."""
         return {r[0] for r in self.con.execute("""
             SELECT src_ip FROM flows
-            UNION SELECT dst_ip FROM flows WHERE established OR action = 'reject' OR bytes_in > 0""").fetchall()}
+            UNION SELECT dst_ip FROM flows
+                  WHERE established OR action = 'reject' OR bytes_in > 0""").fetchall()}
+
+    def probed_rows(self):
+        """One row per address that was probed and never answered: (address, probing sources,
+        ports tried, attempts, blocked by a firewall, first, last). Sources and ports are capped."""
+        return self.con.execute("""
+            WITH live AS (SELECT src_ip AS ip FROM flows
+                          UNION SELECT dst_ip FROM flows
+                                WHERE established OR action = 'reject' OR bytes_in > 0)
+            SELECT dst_ip, list_sort(list(DISTINCT src_ip))[:10], count(DISTINCT src_ip),
+                   list_sort(list(DISTINCT dst_port) FILTER (dst_port IS NOT NULL))[:20],
+                   count(*), bool_or(action = 'deny'), min(ts), max(ts)
+            FROM flows WHERE dst_ip NOT IN (SELECT ip FROM live)
+            GROUP BY dst_ip ORDER BY dst_ip""").fetchall()
+
+    def firewall_blocked_ips(self) -> set[str]:
+        """Addresses a firewall log shows traffic to being blocked (Zeek cannot tell a silent drop
+        from an empty address, so this only comes from firewall logs)."""
+        return {r[0] for r in self.con.execute(
+            "SELECT DISTINCT dst_ip FROM flows WHERE action = 'deny'").fetchall()}
+
+    def answered_share(self) -> tuple[int, int]:
+        """(sessions, sessions with any answer). When almost nothing is answered, the sensor is
+        probably seeing one direction of the traffic only."""
+        n, a = self.con.execute("""
+            SELECT count(*), count(*) FILTER (established OR action = 'reject' OR bytes_in > 0)
+            FROM flows""").fetchone()
+        return int(n or 0), int(a or 0)
 
     def insert_rows(self, table: str, columns: dict[str, str], rows) -> None:
         """Create ``table`` and bulk-load rows through a CSV file (fast, needs no numpy/arrow)."""

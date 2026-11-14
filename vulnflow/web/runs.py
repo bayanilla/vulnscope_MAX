@@ -132,6 +132,7 @@ def index(req, run_id: str, run_dir: str):
              ("Normalized flows (CSV)", "normalized/flows.csv"),
              (("Normalized findings (CSV; unavailable)" if telemetry_only else "Normalized findings (CSV)"), "normalized/findings.csv"),
              ("IPS/IDS alerts (CSV)", "normalized/threats.csv"),
+             ("Probed addresses that never answered (CSV)", "normalized/probed_addresses.csv"),
              ("Zeek stream events (JSONL)", "normalized/zeek_events.jsonl"),
              ("Industrial protocol events (JSONL)", "normalized/ot_events.jsonl"),
              ("Executive summary (Markdown)", "executive_summary.md"),

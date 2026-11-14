@@ -63,7 +63,20 @@ def _hosts_seen(cov: dict) -> str:
     text = f"{n:,} internal {'host' if n == 1 else 'hosts'} sent or answered traffic."
     if dead:
         text += (f" {dead:,} more internal {'address was' if dead == 1 else 'addresses were'} only probed "
-                 "and never answered; they are not counted as hosts.")
+                 "and never answered; they are not counted as hosts and are listed in "
+                 "`normalized/probed_addresses.csv`.")
+        blocked = cov.get("probed_blocked_addresses", 0)
+        if blocked:
+            text += (f" For {blocked:,} of them a firewall log shows the traffic was blocked, so a host "
+                     "may exist behind the firewall.")
+        top = cov.get("probed_only_subnets") or []
+        if top:
+            text += (" Most probed: " + ", ".join(f"{sn} ({n})" for sn, n in top[:5])
+                     + (f" and {len(top) - 5} more ranges" if len(top) > 5 else "") + ".")
+    if cov.get("one_way_capture_suspected"):
+        text += (f" **Check the sensor:** only {cov.get('sessions_answered_pct')}% of sessions show any answer, "
+                 "which usually means it sees one direction of the traffic. Hosts that exist may be "
+                 "missing from this report.")
     return text
 
 
@@ -735,6 +748,23 @@ def write_all(res: dict, ds, outdir: str) -> dict[str, str]:
         for f in ds.flows:
             cw.writerow(csv_row((f.ts.isoformat() if f.ts else "") if c == "ts" else getattr(f, c) for c in cols))
     paths["normalized/flows.csv"] = p
+
+    # every internal address that was probed and never answered: not a host, but nothing is dropped
+    from .correlate import _Net
+    from .store import utc
+    net = _Net(res["config"]["internal_nets"])
+    p = os.path.join(outdir, "normalized", "probed_addresses.csv")
+    with open(p, "w", newline="", encoding="utf-8") as fh:
+        cw = csv.writer(fh)
+        cw.writerow(["address", "probed_by", "sources", "ports_tried", "attempts", "blocked_by_firewall",
+                     "first_seen", "last_seen"])
+        for ip, srcs, n_src, ports, n, blocked, first, last in ds.flow_store().probed_rows():
+            if ip in ds.scanned_hosts or not net.internal(ip):
+                continue
+            cw.writerow(csv_row([ip, " ".join(srcs), n_src, " ".join(str(x) for x in ports), n,
+                                 "yes" if blocked else "no",
+                                 utc(first).isoformat() if first else "", utc(last).isoformat() if last else ""]))
+    paths["normalized/probed_addresses.csv"] = p
 
     p = os.path.join(outdir, "normalized", "findings.csv")
     with open(p, "w", newline="", encoding="utf-8") as fh:

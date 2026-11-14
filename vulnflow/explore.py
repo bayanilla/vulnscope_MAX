@@ -14,7 +14,7 @@ from __future__ import annotations
 import ipaddress
 import json
 import os
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime
 
 from .correlate import LATERAL_PORTS, Config, _Net
@@ -329,12 +329,14 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         n_ext = len(atk)
 
         # east/west: every internal peer in either direction (failed attempts too), then onward peers
-        peers, probed_only = [], 0
+        peers, probed_only, probed_blocked = [], Counter(), 0
         for other in (out_of.get(ip, set()) | in_to.get(ip, set())):
             if ext(other):
                 continue
             if other not in answering and other not in hostinfo and other not in ds.scanned_hosts:
-                probed_only += 1
+                probed_only[_subnet(other)] += 1
+                tried = pairs.get((ip, other))
+                probed_blocked += bool(tried and tried.blocked)
                 continue
             o, i = pairs.get((ip, other)), pairs.get((other, ip))
             ok = bool((o and o.established) or (i and i.established))
@@ -371,7 +373,10 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
             node(p["ip"])
         focus[ip] = {
             "attackers": atk, "attackers_total": n_ext, "peers": peers, "peers_total": n_peers, "hop2": h2,
-            "probed_only": probed_only,
+            "probed_only": sum(probed_only.values()), "probed_blocked": probed_blocked,
+            # where this host's unanswered probing went: [subnet, addresses], most probed first
+            "probed_ranges": [[sn, n] for sn, n in sorted(probed_only.items(), key=lambda kv: (-kv[1], kv[0]))[:12]],
+            "probed_ranges_total": len(probed_only),
             "ot_events": ot_by_host.get(ip, []), "ot_events_total": ot_counts[ip],
             "findings": [{"pri": r["priority"], "score": r["score"], "name": r["plugin_name"],
                           "port": r["port"], "proto": r["proto"], "sev": r["severity_name"], "cvss": r["cvss"],
@@ -433,6 +438,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         "focus": {ip: f for ip, f in focus.items() if ip in kept}, "ioc_matches": res.get("ioc_matches", []), **overview,
         "ioc_counts": {host: len(ids) for host, ids in ioc_by_host.items()},
         "article_briefs": res.get("article_briefs", {}),
+        "probed_subnets": dict(res["coverage"].get("probed_only_subnets") or ()),
         "start": (keep[0] if telemetry_only and keep else res["hosts"][0]["host"] if res["hosts"] else None),
         "timeline": timeline,
     }

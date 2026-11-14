@@ -265,6 +265,8 @@ Each run writes to its output folder (`vulnflow_runs/<id>/out/` on the upload pa
 - **CSV and JSON:** `correlated_findings.csv` for ticketing; `results.json` for automation.
 - **Normalized inputs:** `normalized/flows.csv`, `findings.csv`, `threats.csv` (IPS/IDS alerts),
   `zeek_events.jsonl`, `ot_events.jsonl`. [Compare reports](#compare-reports) searches them again.
+  `normalized/probed_addresses.csv` lists every internal address that was probed and never
+  answered (who probed it, ports, attempts, whether a firewall blocked it); these are not hosts.
 - **Hostile activity diagram** as `hostile_activity.svg`.
 - **Security Assistant** brief and an audit log of every question and answer (`ai_chat_log.md`),
   when used.

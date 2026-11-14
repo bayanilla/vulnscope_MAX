@@ -27,7 +27,18 @@ from .errors import UserError
 
 FILENAME = "known_scanners.csv"
 MIN_TARGETS, MIN_FAILED, MAX_LISTED = 100, 0.7, 200
+# Fewer than 2% of at least 500 sessions answered: the sensor probably sees one direction only.
+ONE_WAY_MIN_SESSIONS, ONE_WAY_MAX_ANSWERED = 500, 0.02
 _HEAD = {"address", "ip", "cidr", "range", "scanner", "host"}
+
+
+def subnet(ip: str) -> str:
+    """The /24 (IPv4) or /64 (IPv6) an address is in, as the Explorer groups hosts."""
+    try:
+        a = ipaddress.ip_address(ip)
+    except ValueError:
+        return "other"
+    return str(ipaddress.ip_network(f"{ip}/{24 if a.version == 4 else 64}", strict=False))
 
 
 def is_list_file(path: str) -> bool:

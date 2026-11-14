@@ -635,11 +635,22 @@ class Correlator:
         alert_ips = {ip for t in ds.threats for ip in (t.src_ip, t.dst_ip) if self.net.internal(ip)}
         live = self.live_ips | (alert_ips if not vulnerability_data_available else set())
         probed_only = self.internal_ips - live - scanned
+        probed_subnets = Counter(scanners.subnet(ip) for ip in probed_only)
+        n_sessions, n_answered = self.store.answered_share()
         sessions = {ip: sum(n for _, n in svcs) for ip, svcs in servers.items()}
         not_scanned = sorted(set(servers) - scanned, key=lambda ip: (-sessions[ip], ip))
         coverage = {
             "scanned_hosts": len(scanned), "telemetry_internal_hosts": len(live),
             "probed_only_addresses": len(probed_only),
+            # of those, addresses a firewall log shows traffic to being blocked
+            "probed_blocked_addresses": len(probed_only & self.store.firewall_blocked_ips()),
+            # where the unanswered probing went: [subnet, addresses], most probed first
+            "probed_only_subnets": [[sn, n] for sn, n in sorted(probed_subnets.items(),
+                                                                 key=lambda kv: (-kv[1], kv[0]))[:200]],
+            "sessions_answered_pct": round(100 * n_answered / n_sessions, 1) if n_sessions else None,
+            # almost nothing answered: the sensor probably sees only one direction of the traffic
+            "one_way_capture_suspected": n_sessions >= scanners.ONE_WAY_MIN_SESSIONS
+                                         and n_answered < scanners.ONE_WAY_MAX_ANSWERED * n_sessions,
             "scanned_and_seen": len(scanned & (internal_seen | seen_scanned)),
             "scanned_not_seen": sorted(scanned - internal_seen - seen_scanned),
             "active_servers_not_scanned": [

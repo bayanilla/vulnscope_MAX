@@ -81,6 +81,40 @@ class ScannerTests(unittest.TestCase):
         self.assertEqual(next(n for n in data["nodes"] if n["id"] == SCANNER)["name"], "Scanner (review)")
         self.assertEqual(data["start"], SCANNER)
 
+    def test_probed_ranges_and_firewall_blocks_are_shown_without_becoming_hosts(self):
+        ds = Dataset(flows=_flows() + [Flow(T0, SCANNER, f"10.9.3.{i}", 22, "tcp", action="deny", established=False)
+                                       for i in range(1, 6)])
+        res = correlate(ds, Config())
+        cov = res["coverage"]
+        self.assertEqual((cov["telemetry_internal_hosts"], cov["probed_only_addresses"],
+                          cov["probed_blocked_addresses"]), (6, 153, 5))
+        self.assertEqual(cov["probed_only_subnets"], [["10.9.2.0/24", 148], ["10.9.3.0/24", 5]])
+        text = report.executive_summary(res)
+        self.assertIn("Most probed: 10.9.2.0/24 (148), 10.9.3.0/24 (5).", text)
+        self.assertIn("For 5 of them a firewall log shows the traffic was blocked", text)
+        data = explore.build(res, ds)
+        f = data["focus"][SCANNER]
+        self.assertEqual((f["probed_only"], f["probed_blocked"], f["probed_ranges"]),
+                         (153, 5, [["10.9.2.0/24", 148], ["10.9.3.0/24", 5]]))
+        self.assertEqual(data["probed_subnets"], {"10.9.2.0/24": 148, "10.9.3.0/24": 5})
+        self.assertNotIn("10.9.3.1", {n["id"] for n in data["nodes"]})
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = report.write_all(res, ds, tmp)
+            with open(paths["normalized/probed_addresses.csv"]) as fh:
+                rows = fh.read().splitlines()
+        self.assertEqual(len(rows), 154)
+        self.assertIn(f"10.9.3.1,{SCANNER},1,22,1,yes,", rows[-5])
+        self.assertIn(f"10.9.2.1,{SCANNER},1,22 445,2,no,", rows[1])
+
+    def test_one_way_capture_is_called_out(self):
+        _, res = self._run()
+        self.assertFalse(res["coverage"]["one_way_capture_suspected"])
+        ds = Dataset(flows=[Flow(T0, ADMIN, f"10.9.{i % 200}.{i % 250 + 1}", 443, "tcp", established=False)
+                            for i in range(600)])
+        res = correlate(ds, Config())
+        self.assertTrue(res["coverage"]["one_way_capture_suspected"])
+        self.assertIn("Check the sensor", report.executive_summary(res))
+
     def test_known_scanners_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "known_scanners.csv")
