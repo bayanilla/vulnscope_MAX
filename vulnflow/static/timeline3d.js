@@ -62,7 +62,7 @@ const cam = {theta: -1, phi: 1.22, r: 1000, tx: 0, ty: -12, tz: 0, spin: true, p
 const LEN = 900, SX = LEN / HRS, X0 = -LEN / 2, R = 70, RX = 112;
 const tx = h => X0 + h * SX;
 const labels = [], pick = [];
-let hostA, extA, allLines, winLines, winRings = [], lanes;
+let hostA, extA, allLines, flagLines, winLines, winRings = [], lanes;
 
 function laneLayout() {
   // lanes are the 14 subnets with the most hosts drawn here (network-view hosts and the rest), then "other subnets"
@@ -127,7 +127,7 @@ function build() {
   for (let h = first, k = 0; h <= HRS; h += step, k++) { circle(R, tx(h), COL.day, .6);
     if (k % every === 0) label(when(h).toUTCString().slice(0, 11), tx(h), -R - 22, 0, 'day'); }
   allLines = segs(f => !(f[4] & 2), .16);
-  segs(f => f[4] & 2, 1);
+  flagLines = segs(f => f[4] & 2, 1);
   // IPS alerts as rings around the tunnel; IOC domain lookups as dots on the host's lane
   const ringGeo = new THREE.TorusGeometry(R + 4, 1.1, 6, 96).rotateY(Math.PI / 2);
   const am = new THREE.InstancedMesh(ringGeo, new THREE.MeshBasicMaterial(), Math.max(1, T.alerts.length)); am.count = T.alerts.length;
@@ -317,5 +317,17 @@ addEventListener('keydown', e => {
   else if ((e.key === 'p' || e.key === 'P') && !document.getElementById('btn-paths').hidden) showView('paths');
 }, true);
 if (/[?&#]timeline\b/.test(location.search + location.hash)) open();
-window.VFTimeline = {open, close, isOpen: () => isOpen};
+// stats(): read-only counts for the browser smoke test (scripts/smoke): flows in the data, chords drawn, and
+// chord ends that landed on no position (a host reference the lanes could not place)
+function stats() {
+  const out = {flows: T.flows.length, drawn: 0, misplaced: 0};
+  for (const l of [allLines, flagLines]) {
+    if (!l) continue;
+    const a = l.geometry.getAttribute('position').array;
+    out.drawn += a.length / 6;
+    for (const v of a) if (!Number.isFinite(v)) out.misplaced++;
+  }
+  return out;
+}
+window.VFTimeline = {open, close, isOpen: () => isOpen, stats};
 })();

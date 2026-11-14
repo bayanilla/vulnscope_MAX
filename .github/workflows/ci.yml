@@ -1,5 +1,8 @@
-# Runs on every pull request and every push to main. Three jobs run side by side:
+# Runs on every pull request and every push to main. Five jobs run side by side:
+#   hygiene       scripts/check_repo.py: no local branding, captures, executables, keys or files over 5 MB
 #   tests         the unit test suite on Python 3.10 (oldest supported) and 3.13 (the Docker image's)
+#   explorer      scripts/smoke/explorer_smoke.py: opens each sample's Explorer in headless Chromium, walks
+#                 3D, focus, Flat, Attack paths and Timeline, fails on page errors or hosts/flows not drawn
 #   docker-image  builds the Docker image and analyzes a bundled sample inside it
 #   accuracy      runs the image on Brim's public sample captures and logs and compares every
 #                 number with ground truth computed separately (scripts/accuracy/)
@@ -22,6 +25,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/check_repo.py
+
   tests:
     name: Tests (Python ${{ matrix.python }})
     runs-on: ubuntu-latest
@@ -43,6 +54,33 @@ jobs:
       - run: python -m pip install --disable-pip-version-check -r requirements.txt
       - name: Run tests
         run: python -m unittest discover -s tests
+
+  explorer:
+    name: Explorer pages open and draw (headless Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VULNFLOW_LLM_PROVIDER: offline
+      VULNSCOPE_OFFLINE: "1"             # no article previews from the network
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: python -m pip install --disable-pip-version-check -r requirements.txt playwright==1.63.0
+      - run: python -m playwright install --with-deps chromium
+      - name: Open every view of each sample's Explorer
+        run: python scripts/smoke/explorer_smoke.py --samples smoke-work
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: explorer-screenshots
+          path: smoke-work/smoke-shots/
+          retention-days: 7
 
   docker-image:
     name: Docker image builds and runs
