@@ -24,11 +24,13 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 #subtitle{color:var(--muted);font-size:12px;margin-top:4px}
 #report-name{color:var(--fg);font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:none;border-left:1px solid var(--line);
 padding-left:9px;margin-left:3px;max-width:min(360px,40vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:auto;cursor:default}
-#about{position:fixed;top:var(--about-top,62px);right:var(--about-right,18px);z-index:6;width:max-content;max-width:min(440px,calc(100vw - 36px));
+#about{position:fixed;left:var(--about-left,18px);right:var(--about-right,18px);bottom:var(--about-bottom,64px);margin:0 auto;z-index:6;width:max-content;
+max-width:min(620px,calc(100vw - var(--about-left,18px) - var(--about-right,18px)));
 font-size:12.5px;line-height:1.45;color:#c4d2e4;background:rgba(10,18,32,.9);border:1px solid var(--line);border-top:2px solid var(--cyan);
 border-radius:8px;padding:7px 11px;backdrop-filter:blur(8px);box-shadow:0 8px 30px rgba(0,0,0,.45);animation:aboutIn .25s ease-out}
 #about[hidden]{display:none}#about b{color:var(--fg);font-weight:600}
-@keyframes aboutIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes aboutIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+#about:not([hidden])~#hint{opacity:0}
 #about-toggle{width:34px;padding:6px 0;font-weight:700;color:var(--cyan)}
 #about-toggle[aria-expanded="true"]{border-color:var(--cyan);background:rgba(46,230,214,.16)}
 #controls{position:fixed;top:14px;right:18px;display:flex;gap:8px;z-index:3}

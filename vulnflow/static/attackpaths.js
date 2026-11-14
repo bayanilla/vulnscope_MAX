@@ -142,12 +142,13 @@ const cutBy = c => c.hops.find(ip => state.cut.has(ip));
 root.innerHTML = `<div class="ap-app">
   <header class="ap-top">${BRAND_LOGO.startsWith('data:image/') ? `<img class="ap-logo${BRAND_SMALL ? ' logo-small' : ''}" src="${esc(BRAND_LOGO)}" alt="" aria-hidden="true">` : ''}<div class="ap-brand"><b>Attack <em>paths</em></b><span>${esc(BRAND)} · most likely ways in</span></div>
     <div class="ap-kpis" id="ap-kpis"></div>
-    <div class="ap-seg" role="group" aria-label="View"><button type="button" data-view="flat" title="Flat network view (2)">Flat</button><button type="button" data-view="3d" title="3D network view (3)">3D</button><button type="button" class="on" aria-current="true" title="Attack paths (Esc to go back)">Attack paths</button><button type="button" data-view="timeline" title="Flows over time (I)" hidden>Timeline</button></div><span class="ap-qwrap"><button type="button" class="ap-qbtn" id="ap-about-toggle" aria-controls="ap-about" aria-expanded="false" aria-label="What am I looking at?" title="What am I looking at? (?)">?</button><p class="ap-about" id="ap-about" hidden>Each colored line is one likely way in, read left to right: an internet origin (◆), the entry host, then up to two pivots inside. Rows are subnets; line 1 is the most likely. Ranked estimates of where to look first, not confirmed compromise.</p></span></header>
+    <div class="ap-seg" role="group" aria-label="View"><button type="button" data-view="flat" title="Flat network view (2)">Flat</button><button type="button" data-view="3d" title="3D network view (3)">3D</button><button type="button" class="on" aria-current="true" title="Attack paths (Esc to go back)">Attack paths</button><button type="button" data-view="timeline" title="Flows over time (I)" hidden>Timeline</button></div><span class="ap-qwrap"><button type="button" class="ap-qbtn" id="ap-about-toggle" aria-controls="ap-about" aria-expanded="false" aria-label="What am I looking at?" title="What am I looking at? (?)">?</button></span></header>
   <div class="ap-brief" id="ap-brief"></div>
   <main class="ap-main">
     <section class="ap-col ap-lines"><h3>Most likely ways in</h3><div id="ap-lines"></div></section>
     <section class="ap-mapwrap" id="ap-mapwrap"><svg id="ap-map"></svg>
       <div class="ap-legend"><span><i style="width:18px;height:5px;border-radius:3px;background:var(--ap-crit)"></i>attack line</span><span><svg width="14" height="14"><rect x="1" y="1" width="12" height="12" rx="6" fill="var(--ap-card)" stroke="var(--ap-ink)" stroke-width="2.4"/></svg>host · capsule = shared by lines</span><span><svg width="14" height="14"><path d="M7 1 13 7 7 13 1 7Z" fill="var(--ap-ink)"/></svg>internet origin</span><span>dots per row: every host in the subnet, by priority</span></div>
+      <p class="ap-about" id="ap-about" hidden>Each colored line is one likely way in, read left to right: an internet origin (◆), the entry host, then up to two pivots inside. Rows are subnets; line 1 is the most likely. Ranked estimates of where to look first, not confirmed compromise.</p>
     </section>
     <section class="ap-col ap-detail" id="ap-detail"></section>
   </main>
@@ -158,9 +159,9 @@ root.innerHTML = `<div class="ap-app">
     <div class="ap-timeline"><div class="ap-hd"><h3>When the internet touched the entry hosts</h3><span class="ap-sub" id="ap-tlsub"></span></div><svg id="ap-tl" height="112"></svg></div>
   </footer></div>`;
 
-// the short explanation under the heading opens for 20 s when this view opens, then folds back into the ?
+// the short explanation under the map opens for 15 s when this view opens, then folds back into the ?
 let aboutTimer = 0;
-function setAbout(o) { clearTimeout(aboutTimer); q('about').hidden = !o; q('about-toggle').setAttribute('aria-expanded', String(o)); if (o) aboutTimer = setTimeout(() => setAbout(false), 20000); }
+function setAbout(o) { clearTimeout(aboutTimer); q('about').hidden = !o; q('about-toggle').setAttribute('aria-expanded', String(o)); if (o) aboutTimer = setTimeout(() => setAbout(false), 15000); }
 function toggleAbout() { setAbout(q('about').hidden); }
 q('about-toggle').onclick = toggleAbout;
 q('about').addEventListener('mouseenter', () => clearTimeout(aboutTimer));
