@@ -5,6 +5,7 @@ import gzip
 import io
 import ipaddress
 import os
+import re
 from datetime import datetime, timezone
 from functools import lru_cache
 
@@ -61,6 +62,9 @@ def clean_proto(value) -> str:
     return s if s in ("tcp", "udp") else (s or "other")
 
 
+_TZ_NO_COLON = re.compile(r"([+-]\d{2})(\d{2})$")
+
+
 def parse_ts(value) -> datetime | None:
     """Parse epoch seconds/ms or common text timestamps; result is UTC."""
     if value is None:
@@ -76,7 +80,8 @@ def parse_ts(value) -> datetime | None:
     except ValueError:
         pass
     try:
-        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        # Python 3.10's fromisoformat needs "+00:00", not "Z" or Suricata's "+0000".
+        dt = datetime.fromisoformat(_TZ_NO_COLON.sub(r"\1:\2", s.replace("Z", "+00:00")))
         return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
     except ValueError:
         pass
