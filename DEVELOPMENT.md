@@ -15,6 +15,17 @@ python3 -m unittest discover -s tests
 
 `tests/test_pcap.py` runs Zeek when it is installed and skips those cases otherwise.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`:
+
+- **Tests**: the suite above on Python 3.10 (the oldest supported) and 3.13 (the Docker image's).
+- **Docker image**: builds the image (linux/amd64), checks Zeek and DuckDB are inside, analyzes the
+  Gootloader sample in the container and checks the upload page answers.
+
+It needs no secrets, API key or model. A PR shows a green check or a red cross for each job; the
+failing step's log is one click away under **Details**.
+
 | Test file | Covers |
 | --- | --- |
 | `test_workflow.py` | Parsing, normalization, correlation, scoring and reports end to end; the bundled samples; the Docker entry point |

@@ -257,7 +257,12 @@ def main(argv=None) -> int:
     sub.add_parser("branding-password",
                    help="print a hash for a new Branding page password (set it as VULNSCOPE_BRANDING_PASSWORD_HASH)")
 
-    args = ap.parse_args(argv)
+    args, extra = ap.parse_known_args(argv)
+    # Before Python 3.12, `ask OUT --once a question` leaves the words after --once unparsed.
+    if extra and args.cmd == "ask" and not any(e.startswith("-") for e in extra):
+        args.question += extra
+    elif extra:
+        ap.error("unrecognized arguments: " + " ".join(extra))
     if args.cmd == "branding-password":
         import getpass
         from .branding import PASSWORD_ENV, hash_password
