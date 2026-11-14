@@ -19,7 +19,17 @@ python3 -m unittest discover -s tests
 
 `.github/workflows/ci.yml` runs on every pull request and every push to `main`:
 
+- **Repository hygiene**: `scripts/check_repo.py` fails on local branding (`branding.json`, `.vulnscope/`),
+  `.env` files, packet captures, executables and archives (by name and by their first bytes), private or
+  API keys, files over 5 MB, and images outside `screenshots/`, `vulnflow/static/` and `example_output/`.
+  Run it before committing, or install it as a pre-commit hook (the script's header shows how).
 - **Tests**: the suite above on Python 3.10 (the oldest supported) and 3.13 (the Docker image's).
+- **Explorer pages**: `scripts/smoke/explorer_smoke.py --samples WORK` analyzes the bundled samples, an
+  edge case (IOCs with no article link) and the two-company comparison, opens each `explorer.html` in
+  headless Chromium and walks 3D, a focused host, Flat, Attack paths and Timeline. It fails on any page
+  error, when 3D draws fewer hosts than the data holds, or when the Timeline draws fewer flows than it
+  has. Screenshots of every view are kept with the run. Locally: `pip install playwright` and
+  `python -m playwright install chromium` first (about 3 minutes).
 - **Docker image**: builds the image (linux/amd64), checks Zeek and DuckDB are inside, analyzes the
   Gootloader sample in the container and checks the upload page answers.
 - **Accuracy on Brim sample data**: `scripts/accuracy/run.sh` downloads Brim's public captures and
@@ -80,7 +90,8 @@ a compiled wheel. Both linux/amd64 and linux/arm64 builds are supported.
 
 ## Local data that must stay local
 
-Never commit private inputs, credentials, unredacted exports or local branding. `.gitignore`
+Never commit private inputs, credentials, unredacted exports or local branding; `scripts/check_repo.py`
+enforces the mechanical part in CI. `.gitignore`
 excludes `.env`, `vulnscope-out/`, `vulnflow_runs/`, `.vulnscope/` and `branding.json`; keep test
 branding in `~/.vulnscope` (or `$VULNSCOPE_HOME`), not in the repository. Never print or log a
 configured API key or the Branding password while debugging.

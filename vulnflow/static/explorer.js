@@ -1767,6 +1767,8 @@ if (m && D.focus[decodeURIComponent(m[1])]) {
   if (state.motion) setTimeout(() => focus(decodeURIComponent(m[1])), 900); else { focus(decodeURIComponent(m[1])); snap(); }
 }
 // lets the Attack paths view (attackpaths.js) hand a host back to this view
-window.VFExplorer = {focus: id => focus(id), overview: () => overview(), set3d: on => set3d(on, true), is3d: () => !!R3, can3d, markSeg};
+// stats(): read-only counts for the browser smoke test (scripts/smoke): hosts in the data and, in 3D, host bodies drawn
+const stats = () => Object.assign({hosts: D.nodes.length, mode: state.mode, is3d: !!R3}, R3 && R3.stats ? R3.stats() : {});
+window.VFExplorer = {focus: id => focus(id), overview: () => overview(), set3d: on => set3d(on, true), is3d: () => !!R3, can3d, markSeg, stats};
 requestAnimationFrame(frame);
 })();

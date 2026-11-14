@@ -477,7 +477,13 @@ function create(canvas, opts) {
     bg.uniforms.uIn.value.set(inner); bg.uniforms.uOut.value.set(outer); renderer.setClearColor(new THREE.Color(outer), 1);
   }
   canvas.addEventListener('webglcontextlost', ev => { ev.preventDefault(); if (opts.onLost) opts.onLost(); });
-  return {setSize, setCamera, project, unproject, render, setTheme, lines, nodes: nodesApi, sparks: sparksApi, rgb,
+  // Read-only counts for the browser smoke test (scripts/smoke): how many host bodies were added and how many
+  // three.js will actually draw. three.js draws min(instanceCount, _maxInstanceCount), so a gap means hosts are lost.
+  function stats() {
+    const g = bodiesSys.pool.geom, cap = g._maxInstanceCount;
+    return {bodies: bodiesSys.pool.n, bodiesDrawable: Math.min(g.instanceCount, cap === undefined ? Infinity : cap)};
+  }
+  return {setSize, setCamera, project, unproject, render, setTheme, lines, nodes: nodesApi, sparks: sparksApi, rgb, stats,
     get maxTexture() { return gl.getParameter(gl.MAX_TEXTURE_SIZE); }};
 }
 
