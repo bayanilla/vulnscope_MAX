@@ -35,7 +35,10 @@ COPY samples /opt/vulnscope/samples
 COPY docker/entrypoint.py /opt/vulnscope/entrypoint.py
 COPY README.md METHODS.md ARCHITECTURE.md DEVELOPMENT.md API.md UPGRADE.md LICENSE THIRD_PARTY_NOTICES.md /opt/vulnscope/
 COPY docs /opt/vulnscope/docs
-RUN python3 -m compileall -q /opt/vulnscope/vulnflow
+# Files keep their permissions from the checkout; make them readable by the non-root user even
+# if some were saved as owner-only (mode 600), which otherwise crash-loops the container.
+RUN chmod -R a+rX /opt/vulnscope \
+ && python3 -m compileall -q /opt/vulnscope/vulnflow
 
 # /data  your logs, scans and captures (mount read-only)
 # /runs  results, temporary Parquet/DuckDB/Zeek files and settings (mount a disk with room)

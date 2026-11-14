@@ -38,8 +38,9 @@ git pull --ff-only origin main
 python3 -m pip install -r requirements.txt
 ```
 
-With Docker: `git pull --ff-only origin main && docker compose up -d --build`. For an offline
-bundle, load the newer image and run `docker compose up -d --no-build`.
+With Docker: `git pull --ff-only origin main && docker compose up -d --build`, then analyze again.
+A plain restart keeps the old version. Step-by-step instructions, fixes for common problems and
+offline bundles are in [Update VulnScope (Docker)](README.md#update-vulnscope-docker).
 
 Restarting clears API keys held in server memory. Run folders, settings and branding stay on disk.
 Reports made by an earlier version stay as they were; analyze the inputs again to get new features.
