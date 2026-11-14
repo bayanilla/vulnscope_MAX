@@ -1,7 +1,10 @@
-# Runs on every pull request and every push to main. Two jobs run side by side:
+# Runs on every pull request and every push to main. Three jobs run side by side:
 #   tests         the unit test suite on Python 3.10 (oldest supported) and 3.13 (the Docker image's)
 #   docker-image  builds the Docker image and analyzes a bundled sample inside it
-# Nothing here needs secrets, an API key or a model; the tests use synthetic data only.
+#   accuracy      runs the image on Brim's public sample captures and logs and compares every
+#                 number with ground truth computed separately (scripts/accuracy/)
+# Nothing here needs secrets, an API key or a model. The Brim files are downloaded on the CI
+# machine, pinned to exact commits and SHA-256 checked; they are never committed or put in the image.
 name: CI
 
 on:
@@ -73,3 +76,35 @@ jobs:
           docker run -d --name vs -p 127.0.0.1:8080:8080 vulnscope-max:ci
           for i in $(seq 30); do curl -fs -o /dev/null http://127.0.0.1:8080/ && exit 0; sleep 2; done
           docker logs vs; exit 1
+
+  accuracy:
+    name: Accuracy on Brim sample data
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (linux/amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: vulnscope-max:ci
+          cache-from: type=gha
+      - name: Cache the Brim files (verified again after restore)
+        uses: actions/cache@v4
+        with:
+          path: brim-data
+          key: brim-${{ hashFiles('scripts/accuracy/brim_manifest.txt') }}
+      - name: Download, analyze and compare
+        run: scripts/accuracy/run.sh brim-data accuracy-work
+      - name: Keep the outputs when a check fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accuracy-results
+          path: |
+            accuracy-work/runs/*.log
+            accuracy-work/runs/*/results.json
+          retention-days: 7

@@ -22,6 +22,15 @@ python3 -m unittest discover -s tests
 - **Tests**: the suite above on Python 3.10 (the oldest supported) and 3.13 (the Docker image's).
 - **Docker image**: builds the image (linux/amd64), checks Zeek and DuckDB are inside, analyzes the
   Gootloader sample in the container and checks the upload page answers.
+- **Accuracy on Brim sample data**: `scripts/accuracy/run.sh` downloads Brim's public captures and
+  logs (9 PCAPs from brimcap and Zui, the WRCCDC 2018 Zeek logs as TSV and JSON, a Zui JSON export),
+  runs the image on each, runs Suricata on one capture, and compares every count with ground truth
+  that `scripts/accuracy/groundtruth.py` computes from the raw logs without any VulnScope code (the
+  PCAPs get their reference logs from a separate Zeek). The files are pinned to exact upstream commits
+  and checked against the SHA-256 hashes in `brim_manifest.txt`; they are downloaded on the CI machine
+  only and never committed or put in the image. None of them contains malware: the captures are
+  ordinary web browsing and the WRCCDC data is Zeek logs, which hold no file contents. Run it locally
+  with `scripts/accuracy/run.sh /tmp/brim-data /tmp/brim-work` (needs Docker; about 10 minutes).
 
 It needs no secrets, API key or model. A PR shows a green check or a red cross for each job; the
 failing step's log is one click away under **Details**.
@@ -31,6 +40,7 @@ failing step's log is one click away under **Details**.
 | `test_workflow.py` | Parsing, normalization, correlation, scoring and reports end to end; the bundled samples; the Docker entry point |
 | `test_scale.py`, `test_resources.py` | Streaming, Parquet/DuckDB de-duplication, memory/thread/disk sizing |
 | `test_pcap.py`, `test_filebeat.py` | Packet capture conversion; Filebeat CSV/NDJSON back to Zeek |
+| `test_capture_accuracy.py` | Mid-stream sessions, answered pings, broadcasts, capture loss, Zui/Brim exports, Suricata mid-stream flows |
 | `test_explore.py`, `test_visual.py` | Explorer data, drawing limits, HTML output |
 | `test_security.py`, `test_multipart.py` | Host/Origin/CSRF checks, Browse confinement, upload parsing, `.gz` limits |
 | `test_llm.py`, `test_offline_assistant.py` | Provider adapters, redaction, grounding; the built-in assistant |
