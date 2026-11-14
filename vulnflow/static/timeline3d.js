@@ -233,7 +233,7 @@ function resize() { if (!renderer) return; renderer.setPixelRatio(Math.min(2, de
 addEventListener('resize', () => { if (!root.hidden) resize(); });
 
 // ---------------------------------------------------------------- note, open and close, switching views
-const ABOUT_MS = 20000; let aboutTimer = 0;
+const ABOUT_MS = 15000; let aboutTimer = 0;
 function closeAbout() { clearTimeout(aboutTimer); $('tl-about').hidden = true; $('tl-about-toggle').setAttribute('aria-expanded', 'false'); }
 // the note sits centered under the tunnel: above the legend, left of the side panel and camera buttons
 function placeAbout() {

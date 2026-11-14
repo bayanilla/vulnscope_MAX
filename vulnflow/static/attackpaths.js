@@ -159,9 +159,9 @@ root.innerHTML = `<div class="ap-app">
     <div class="ap-timeline"><div class="ap-hd"><h3>When the internet touched the entry hosts</h3><span class="ap-sub" id="ap-tlsub"></span></div><svg id="ap-tl" height="112"></svg></div>
   </footer></div>`;
 
-// the short explanation under the heading opens for 20 s when this view opens, then folds back into the ?
+// the short explanation under the map opens for 15 s when this view opens, then folds back into the ?
 let aboutTimer = 0;
-function setAbout(o) { clearTimeout(aboutTimer); q('about').hidden = !o; q('about-toggle').setAttribute('aria-expanded', String(o)); if (o) aboutTimer = setTimeout(() => setAbout(false), 20000); }
+function setAbout(o) { clearTimeout(aboutTimer); q('about').hidden = !o; q('about-toggle').setAttribute('aria-expanded', String(o)); if (o) aboutTimer = setTimeout(() => setAbout(false), 15000); }
 function toggleAbout() { setAbout(q('about').hidden); }
 q('about-toggle').onclick = toggleAbout;
 q('about').addEventListener('mouseenter', () => clearTimeout(aboutTimer));
