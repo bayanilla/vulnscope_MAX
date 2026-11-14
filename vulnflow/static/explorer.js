@@ -26,7 +26,7 @@ const iocButton = (type, value, label = value) => {
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // backdrop follows the report theme picked on the vulnflow pages (same browser storage when served);
 // Light draws the graph on a white canvas with darker line and label colours (LIGHT below)
-const BACKDROP = {dark: ['#16223a', '#020617'], light: ['#ffffff', '#f3f3f0'],
+const BACKDROP = {dark: ['#16223a', '#020617'], light: ['#ffffff', '#fafafa'],
   graphite: ['#1b1c20', '#111214'], 'olive-drab': ['#1f2218', '#14160f'], matrix: ['#131c15', '#0a0f0b'], 'high-contrast': ['#0d0d0d', '#000000'], amphibious: ['#1f3052', '#0f1729']};
 const SLATE = ['#3a4a60', '#283548'];
 // Graphite is the default theme (DEFAULT_THEME in report.py), also where the browser's choice can't be read
@@ -49,13 +49,15 @@ const CALM_MAP = {'#ff3b5c': '#e5534b', '#ff8a3d': '#d98845', '#ffd23f': '#c9a54
   '#e4ecfa': '#d8d9d6', '#d6e4f5': '#dcdcd8', '#7f95b3': '#8e8f8b', '#a9bcd6': '#b4b5b1', '#e6f1ff': '#f0f0ee',
   '#6f86a6': '#85868a', '#8fa3c0': '#9a9b97', '#9fb3cc': '#a0a19d', '#ff8095': '#e8837c', '#ffb27a': '#e0a273'};
 if (CALM) CALM_MAP['#2ee6d6'] = CALM_ACCENT[themeName];
-if (LIGHT) Object.assign(CALM_MAP, {'#ff3b5c': '#c62828', '#ff8a3d': '#c2570c', '#ffd23f': '#a87b08', '#4dabf7': '#2f6fc4', '#8da2b5': '#6b6d71',
-  '#ffc857': '#a6a8ab', '#b98cff': '#6d5fb0', '#8892a6': '#b3b5b8', '#5b6b82': '#c4c6c8',
-  '#ff2e88': '#b0486a', '#ffb020': '#a87b08', '#6ea8ff': '#b0b2b5', '#78aaff': '#b0b2b5',
+// Light: clean mid-bright colours for what needs attention (they hold 3:1 on white without going muddy),
+// steel blue for hosts connecting out, neutral grays for everything else, near-black labels.
+if (LIGHT) Object.assign(CALM_MAP, {'#ff3b5c': '#da3737', '#ff8a3d': '#f0782f', '#ffd23f': '#e0a100', '#4dabf7': '#3d85f0', '#8da2b5': '#8e9196',
+  '#ffc857': '#8e9196', '#b98cff': '#5b7ba8', '#8892a6': '#a6a8ab', '#5b6b82': '#a6a8ab',
+  '#ff2e88': '#bc1e70', '#ffb020': '#c98a00', '#6ea8ff': '#8e9196', '#78aaff': '#a6a8ab',
   '#e4ecfa': '#4a4c50', '#d6e4f5': '#1b1c1e', '#7f95b3': '#5c5e62', '#a9bcd6': '#3a3c40', '#e6f1ff': '#000000',
-  '#6f86a6': '#6b6d71', '#8fa3c0': '#5c5e62', '#9fb3cc': '#5c5e62', '#ff4fd8': '#a8327f', '#ffb8f3': '#a8327f', '#ff8095': '#c62828', '#ffb27a': '#c2570c'});
+  '#6f86a6': '#5c5e62', '#8fa3c0': '#5c5e62', '#9fb3cc': '#5c5e62', '#ff4fd8': '#a8327f', '#ffb8f3': '#a8327f', '#ff8095': '#a71627', '#ffb27a': '#9e3a16'});
 // outline behind canvas labels, and the fill of hollow markers: the page colour
-const LABEL_HALO = LIGHT ? 'rgba(255,255,255,.9)' : 'rgba(3,6,12,.85)', HOLLOW = LIGHT ? '#ffffff' : null;
+const LABEL_HALO = LIGHT ? BG_IN + 'e6' : 'rgba(3,6,12,.85)', HOLLOW = LIGHT ? '#ffffff' : null;
 const C = h => (CALM && CALM_MAP[h.toLowerCase()]) || h;
 document.documentElement.style.setProperty('--bg', BG_OUT);
 const SEV = {Critical: C('#ff3b5c'), High: C('#ff8a3d'), Medium: C('#ffd23f'), Low: C('#4dabf7'), Info: C('#8da2b5'), '': C('#8da2b5')};
@@ -781,8 +783,11 @@ const qb = (c, t) => { const u = 1 - t, A = u * u, B = 2 * u * t, C = t * t;
 const HALO = RGB(C('#78aaff')), CLOUD_RGB = RGB(CLOUD_COL), SHARED_RGB = RGB(SHARED);
 const RISK2 = RGB(C('#ff2e88')), RISK1 = RGB(C('#ffb020')), BUNDLE = RGB(C('#6ea8ff')), BUNDLE_LAT = RGB(C('#ff8a3d')),
   RING = RGB(C('#2ee6d6')), P_CRIT = RGB(C('#ff3b5c')), P_HIGH = RGB(C('#ff8a3d'));
-const BEAM_ALPHA = {alert: 0.85, vuln: 0.13, reached: 0.08, outbound: 0.08, attempt: 0.04, blocked: 0.035};
-const OUT_BEAM = RGB(RETURN), OUT_ALPHA = 0.15;
+// On Light's white canvas lines don't add up to light, so faint ones wash out: thin traffic is drawn more
+// opaque there, and rings, pillars and the internet arc get LK times their usual strength.
+const BEAM_ALPHA = LIGHT ? {alert: 0.9, vuln: 0.34, reached: 0.24, outbound: 0.24, attempt: 0.14, blocked: 0.12}
+  : {alert: 0.85, vuln: 0.13, reached: 0.08, outbound: 0.08, attempt: 0.04, blocked: 0.035};
+const OUT_BEAM = RGB(RETURN), OUT_ALPHA = LIGHT ? 0.3 : 0.15, LK = LIGHT ? 1.7 : 1;
 // which way a host's traffic with an outside address went: in, out or both (older data has no 4th field)
 const beamDir = t => t[3] || (t[1] === 'outbound' ? 'out' : 'in');
 // Overview: subnet platforms on one plane, hosts as pillars whose height is risk, traffic between
@@ -796,8 +801,8 @@ function overviewScene(L, T, cm, cs, cdz) {
   clusters.forEach(c => {
     const si = subnetInfo.get(c.subnet), lt = litSubnets.has(c.subnet), col = lt ? SHARED_RGB : si && si.likely ? P_CRIT : si && si.p1 ? P_HIGH : HALO;
     const on = !hc || hc === c;
-    L.circle(c.x * cs, c.y * cs, cdz, c.r, 80, hc === c ? 2.2 : lt ? 2 : 1.4, col, cm * (on ? (lt ? 0.75 : 0.5) : 0.18), false);
-    L.circle(c.x * cs, c.y * cs, cdz, c.r * 0.97, 80, 0.8, HALO, cm * 0.12, true);
+    L.circle(c.x * cs, c.y * cs, cdz, c.r, 80, hc === c ? 2.2 : lt ? 2 : 1.4, col, Math.min(1, LK * cm * (on ? (lt ? 0.75 : 0.5) : 0.18)), false);
+    L.circle(c.x * cs, c.y * cs, cdz, c.r * 0.97, 80, 0.8, HALO, LK * cm * 0.12, true);
     const cn = subnetNet(c.subnet);
     if (cn && cn.cloud) L.circle(c.x * cs, c.y * cs, cdz, c.r * 1.08, 80, 1.6, CLOUD_RGB, cm * (on ? 0.7 : 0.25), true);
   });
@@ -810,7 +815,7 @@ function overviewScene(L, T, cm, cs, cdz) {
   subLinks.forEach(l => {
     const a = l.a, b = l.b, ax = a.x * cs, ay = a.y * cs, bx = b.x * cs, by = b.y * cs, len = Math.hypot(bx - ax, by - ay);
     const lat = l.lw / Math.max(1, l.w), on = !hc || hc === a || hc === b;
-    const al = cm * (on ? 0.22 + 0.4 * Math.sqrt(l.w / maxW) : 0.06);
+    const al = Math.min(1, LK * cm * (on ? 0.22 + 0.4 * Math.sqrt(l.w / maxW) : 0.06));
     const col = lat > 0.25 ? BUNDLE_LAT : BUNDLE, c = [ax, ay, cdz, (ax + bx) / 2, (ay + by) / 2, cdz - 60 - len * 0.32, bx, by, cdz];
     L.quad(c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], 24, 1 + Math.min(7, Math.log2(1 + l.w) * 0.6), col, al, false);
     if (on) flows.push({c, col, al: al * 1.3, size: 3 + Math.min(3, Math.log10(1 + l.w)), speed: 0.05 + (l.w / maxW) * 0.08});
@@ -819,7 +824,7 @@ function overviewScene(L, T, cm, cs, cdz) {
   nodes.forEach(n => {
     if (n.ext || n.domain || n.a < 0.02) return;
     const base = n.z - n.oz, w = n.d.pri === 'P1' ? 3.2 : n.d.observed ? 2 : 1, on = lit.has(n.id);
-    L.strip(2, i => [n.x, n.y, i ? n.z : base], w + (on ? 1.2 : 0), RGB(n.color), n.a * cm * (hn === n ? 0.95 : on ? 0.8 : 0.5), false);
+    L.strip(2, i => [n.x, n.y, i ? n.z : base], w + (on ? 1.2 : 0), RGB(n.color), Math.min(1, LK * n.a * cm * (hn === n ? 0.95 : on ? 0.8 : 0.5)), false);
   });
   // beacons over lit hosts when there are few of them, taller the more reports the item is in
   if (lit.size && lit.size <= BEACON_MAX) {
@@ -846,8 +851,8 @@ function overviewScene(L, T, cm, cs, cdz) {
   if (inetNodes.length) {
     const arcAt = (f, dz) => { const ang = arcCenter(view.yaw) - (f - 0.5) * ARC;
       return [ring.cx + ring.R * 1.08 * Math.cos(ang), ring.cy + ring.R * 1.08 * Math.sin(ang), ring.z + dz]; };
-    L.strip(61, i => arcAt(i / 60, -14), 1.1, RING, cm * 0.25, true);
-    L.strip(61, i => arcAt(i / 60, 66), 0.7, RING, cm * 0.1, false);
+    L.strip(61, i => arcAt(i / 60, -14), LIGHT ? 1.5 : 1.1, RING, LK * cm * 0.25, true);
+    L.strip(61, i => arcAt(i / 60, 66), 0.7, RING, LK * cm * 0.1, false);
     inetNodes.forEach(n => {
       if (n.a < 0.02) return;
       n.info.targets.forEach(t => {
@@ -1635,7 +1640,7 @@ if (COMBINED) {
 }
 function aboutKey() { return state.mode === 'focus' ? 'focus:' + state.focus : R3 ? '3d' : 'flat'; }
 function aboutHtml() {
-  if (state.mode !== 'focus') return ABOUT[R3 ? '3d' : 'flat'];
+  if (state.mode !== 'focus') { const t = ABOUT[R3 ? '3d' : 'flat']; return LIGHT ? t.replace('violet beams', 'blue beams') : t; }
   const d = D.nodes.find(n => n.id === state.focus) || {};
   return ABOUT.focus(d.name ? d.name.split('.')[0] + ' (' + shown(state.focus) + ')' : shown(state.focus));
 }
@@ -1677,7 +1682,7 @@ if (!state.motion) $('btn-motion').setAttribute('aria-pressed', 'false');
 $('legend').innerHTML =
   `<span class="only3d m">Drag: rotate and tilt · right-drag or Shift-drag: pan · Q / E: rotate · T top · Y tilted · U low · R reset (low, turning)</span>` +
   `<span class="only3d">${telemetryOnly ? 'Pillar height: outside exposure' : 'Pillar height: risk score'}</span>` +
-  `<span class="only3d"><i style="background:${C('#2ee6d6')}"></i>Arc above: top outside addresses, beams down to hosts they reached, violet beams up from hosts that called out</span>` +
+  `<span class="only3d"><i style="background:${C('#2ee6d6')}"></i>Arc above: top outside addresses, beams down to hosts they reached, ${LIGHT ? 'blue' : 'violet'} beams up from hosts that called out</span>` +
   `<span class="only3d"><i style="background:${C('#6ea8ff')}"></i><i style="background:${C('#ff8a3d')};width:12px"></i>Traffic between subnets (orange: mostly admin protocols)</span>` +
   `<span class="only3d"><i style="background:${C('#ff2e88')}"></i><i style="background:${C('#ffb020')};width:12px"></i>Risky host paths: admin protocol into P1 or flagged host / either one</span>` +
   (NETS.some(n => n.cloud) ? `<span><i style="background:repeating-linear-gradient(90deg,${CLOUD_COL} 0 6px,transparent 6px 9px)"></i>${CALM ? '' : '☁ '}Cloud network (from the network map)</span>` : '') +
