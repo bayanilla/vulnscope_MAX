@@ -7,6 +7,7 @@ import shutil
 import tempfile
 import threading
 import unittest
+from datetime import datetime, timezone
 from unittest.mock import patch
 import urllib.parse
 import urllib.request
@@ -110,6 +111,24 @@ class ParserTests(Base):
         f = ds.flows[0]
         self.assertEqual((f.src_ip, f.dst_ip, f.dst_port, f.action, f.src_zone), ("203.0.113.9", "10.1.1.5", 443, "allow", "untrust"))
         self.assertEqual(ds.stats[0].dropped["SYSTEM log type not used"], 1)
+
+    def test_paloalto_csv_threat_rows_take_receive_time(self):
+        # web UI exports leave Start Time empty on THREAT rows; Receive Time is the alert's time
+        csv_text = ("Receive Time,Type,Source address,Destination address,Destination Port,Action,Start Time,Threat/Content Name\n"
+                    "2026/10/12 05:36:45,THREAT,192.0.2.216,10.10.3.31,3389,reset-both,,RDP exploit\n"
+                    "2026/10/13 20:23:51,TRAFFIC,192.0.2.216,10.10.3.31,3389,deny,2026/10/13 20:23:50,\n")
+        ds = load([self.write("pa.csv", csv_text)])
+        self.assertEqual(len(ds.threats), 1)
+        self.assertEqual(ds.threats[0].ts, datetime(2026, 10, 12, 5, 36, 45, tzinfo=timezone.utc))
+        self.assertEqual(ds.flows[0].ts, datetime(2026, 10, 13, 20, 23, 50, tzinfo=timezone.utc))   # Start Time still wins
+
+    def test_sample_firewall_log_has_only_valid_addresses(self):
+        import ipaddress
+        p = next(x for x in self.samples if x.endswith("paloalto_traffic.csv"))
+        with open(p, newline="") as fh:
+            for row in csv.DictReader(fh):
+                ipaddress.ip_address(row["Source address"])
+                ipaddress.ip_address(row["Destination address"])
 
     def test_threat_sources(self):
         pan = ("<14>Oct 16 03:12:00 fw01 1,2026/10/16 03:12:00,0164,THREAT,vulnerability,2560,2026/10/16 03:12:00,"

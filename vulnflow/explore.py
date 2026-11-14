@@ -24,8 +24,9 @@ STATIC = os.path.join(os.path.dirname(__file__), "static")
 MAX_HOP2, MAX_NODES = 30, 2000
 MAX_SUBNET_LINKS, MAX_RISKY_LINKS, MAX_INTERNET, MAX_INTERNET_TARGETS = 600, 200, 80, 12
 MAX_CONNECTION_EXAMPLES, MAX_OT_EVENTS_PER_HOST = 6, 40
-# Timeline view: individual flows drawn at their timestamps. Large runs keep every flagged flow (blocked,
-# or to/from an alert or IOC address) up to half the cap and fill the rest with a fixed random sample.
+# Timeline view: individual flows drawn at their timestamps. Large runs keep flagged flows (to/from an
+# alert or IOC address, then blocked) up to half the cap, sampled over the whole run, and fill the rest
+# with a fixed random sample (see _timeline).
 MAX_TIMELINE_FLOWS, MAX_TIMELINE_ALERTS, MAX_TIMELINE_IOC_LOOKUPS = 20_000, 200, 400
 SEV_RANK = {"Low": 1, "Medium": 2, "High": 3, "Critical": 4}
 SEV = {0: "Info", 1: "Low", 2: "Medium", 3: "High", 4: "Critical"}
@@ -413,83 +414,140 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
 
 
 def _hours(ts, t0) -> float:
-    return round((ts - t0).total_seconds() / 3600, 3)
+    return round((ts - t0).total_seconds() / 3600, 4)
+
+
+def _even(items: list, n: int) -> list:
+    """`n` items picked at even steps through `items`, so a time-sorted list keeps its whole span."""
+    if len(items) <= n:
+        return list(items)
+    step = len(items) / n
+    return [items[int(i * step)] for i in range(n)]
+
+
+def _spread(items: list, cap: int, favour=None, key=lambda x: x[0]) -> list:
+    """At most `cap` of the time-sorted `items`, spread over the whole run instead of the earliest ones.
+    Items for which `favour` is true are kept first (themselves spread if there are more than `cap`)."""
+    if len(items) <= cap:
+        return list(items)
+    fav = [x for x in items if favour(x)] if favour else []
+    if len(fav) >= cap:
+        return _even(fav, cap)
+    rest = [x for x in items if not favour(x)] if favour else items
+    return sorted(fav + _even(rest, cap - len(fav)), key=key)
 
 
 def _timeline(ds, res: dict, keep: list, ext, services: dict, pairs: dict, scanners=frozenset()) -> dict | None:
     """Flows, IPS alerts and IOC lookups in time order for the Timeline view.
 
-    Hosts are referenced by their index in ``nodes`` (>= 0) or as -(index + 1) into ``ext`` for outside
-    addresses. Flow flags: 1 blocked or failed, 2 to/from an IPS-alert or IOC address, 4 onto a port with
-    a known vulnerability on the destination host. Internal hosts beyond the node cap are left out."""
+    Hosts are referenced by their index in ``nodes`` (>= 0), as len(nodes) + i into ``more`` for internal
+    hosts the network view leaves out (so their traffic is still drawn), or as -(index + 1) into ``ext``
+    for outside addresses. Flow flags: 1 blocked or failed, 2 to/from an IPS-alert or IOC address, 4 onto
+    a port with a known vulnerability on the destination host.
+
+    Large runs are sampled: flows to/from an alert or IOC address first, then blocked flows, up to half
+    the budget, each tier sampled at random over the whole run (never just the earliest); the rest is a
+    random sample of everything else. ``hist`` then counts every flow per time bucket so the page can say
+    how many flows a stretch of time really had. Alerts and IOC lookups beyond their caps are thinned
+    evenly over the run, keeping alerts that were not blocked first. Alerts with no timestamp of their
+    own are listed apart (``untimed``) rather than placed at a guessed time."""
     con = ds.flow_store().con
     row = con.execute("SELECT count(*), min(ts), max(ts) FROM flows WHERE ts IS NOT NULL AND src_ip <> dst_ip").fetchone()
     total, t0, t1 = int(row[0] or 0), utc(row[1]), utc(row[2])
     if not total or t0 is None:
         return None
+    t0 = t0.replace(microsecond=0)          # t0 is sent to the page to the second; hours are counted from it
     idx = {ip: i for i, ip in enumerate(keep)}
     ext_idx: dict[str, int] = {}
+    more_idx: dict[str, int] = {}
 
     def ref(ip):
         if ip in idx:
             return idx[ip]
-        if not ext(ip):
+        try:
+            ipaddress.ip_address(ip)
+        except ValueError:
             return None
-        if ip not in ext_idx:
-            ext_idx[ip] = len(ext_idx)
-        return -(ext_idx[ip] + 1)
+        if ext(ip):
+            if ip not in ext_idx:
+                ext_idx[ip] = len(ext_idx)
+            return -(ext_idx[ip] + 1)
+        if ip not in more_idx:
+            more_idx[ip] = len(more_idx)
+        return len(keep) + more_idx[ip]
 
     flagged = {t.src_ip for t in ds.threats if ext(t.src_ip)}
     flagged |= {m["value"] for m in res.get("ioc_matches", []) if m.get("type") == "ip"}
     cols = "ts, src_ip, dst_ip, dst_port, action, established, proto"
     base = "FROM flows WHERE ts IS NOT NULL AND src_ip <> dst_ip"
-    prio = "(action <> 'allow' OR list_contains(?, src_ip) OR list_contains(?, dst_ip))"
+    hot = "(list_contains(?, src_ip) OR list_contains(?, dst_ip))"
     fl = sorted(flagged)
     cur = con.cursor()
-    if total <= MAX_TIMELINE_FLOWS:
+    sampled = total > MAX_TIMELINE_FLOWS
+    hist = None
+    if not sampled:
         cur.execute(f"SELECT {cols} {base} ORDER BY seq")
     else:
         half = MAX_TIMELINE_FLOWS // 2
-        n_prio = min(half, int(con.execute(f"SELECT count(*) {base} AND {prio}", [fl, fl]).fetchone()[0]))
-        cur.execute(f"""
-            SELECT * FROM (SELECT {cols}, seq {base} AND {prio} ORDER BY seq LIMIT {n_prio})
-            UNION ALL
-            SELECT * FROM (SELECT {cols}, seq {base} AND NOT {prio}) USING SAMPLE reservoir({MAX_TIMELINE_FLOWS - n_prio} ROWS) REPEATABLE (7)
-            ORDER BY seq""", [fl, fl, fl, fl])
-    flows = []
+        tiers = [(f"{hot}", [fl, fl]), (f"action <> 'allow' AND NOT {hot}", [fl, fl]),
+                 (f"action = 'allow' AND NOT {hot}", [fl, fl])]
+        counts = [int(con.execute(f"SELECT count(*) {base} AND {w}", a).fetchone()[0]) for w, a in tiers]
+        take = [min(counts[0], half)]
+        take.append(min(counts[1], half - take[0]))
+        take.append(min(counts[2], MAX_TIMELINE_FLOWS - take[0] - take[1]))
+        parts, args = [], []
+        for (w, a), n, k in zip(tiers, counts, take):
+            if not k:
+                continue
+            sample = "" if k >= n else f" USING SAMPLE reservoir({k} ROWS) REPEATABLE (7)"
+            parts.append(f"SELECT * FROM (SELECT {cols}, seq {base} AND {w}){sample}")
+            args += a
+        cur.execute(" UNION ALL ".join(parts) + " ORDER BY seq", args)
+        # every flow, counted per bucket of time, so a window's real total can be shown next to the sample
+        hours = (t1 - t0).total_seconds() / 3600
+        bw = max(0.25, hours / 2000)
+        rows = con.execute(f"SELECT CAST(floor((epoch(ts) - ?) / ?) AS BIGINT) AS b, count(*) {base} GROUP BY b ORDER BY b",
+                           [t0.timestamp(), bw * 3600]).fetchall()
+        hist = {"bucket": round(bw, 4), "counts": [[int(b), int(n)] for b, n in rows]}
+    flows, hidden = [], 0
     while rows := cur.fetchmany(10_000):
         for r in rows:
             ts, src, dst, port, action, est, proto = r[:7]
             s, d = ref(src), ref(dst)
             if s is None or d is None:
+                hidden += 1
                 continue
             f = (1 if action != "allow" or est is False else 0) | (2 if src in flagged or dst in flagged else 0) \
                 | (4 if port and src not in scanners and _hits_service(services.get(dst, ()), port, proto, utc(ts)) else 0)
             flows.append([_hours(utc(ts), t0), s, d, port or 0, f])
     cur.close()
-    # alerts without their own timestamp (Palo Alto rows in some exports) take the first session of the pair
-    timed = []
+
+    def dst_ref(ip):
+        r = ref(ip)
+        return -1 if r is None or r < 0 else r
+    timed, untimed = [], []
     for t in ds.threats:
-        p = pairs.get((t.src_ip, t.dst_ip))
-        ts = utc(t.ts) if t.ts else p.first if p else None
-        if ts:
-            timed.append((ts, t))
-    alerts = []
-    for ts, t in sorted(timed, key=lambda x: x[0])[:MAX_TIMELINE_ALERTS]:
-        d = idx.get(t.dst_ip)
-        alerts.append([_hours(ts, t0), -1 if d is None else d, t.src_ip, t.name, t.blocked])
+        (timed.append((utc(t.ts), t)) if t.ts else untimed.append(t))
+    timed.sort(key=lambda x: x[0])
+    alerts = [[_hours(ts, t0), dst_ref(t.dst_ip), t.src_ip, t.name, t.blocked]
+              for ts, t in _spread(timed, MAX_TIMELINE_ALERTS, favour=lambda x: not x[1].blocked)]
+    no_time = [[dst_ref(t.dst_ip), t.src_ip, t.name, t.blocked] for t in untimed[:MAX_TIMELINE_ALERTS]]
     domains = {m["value"].lower() for m in res.get("ioc_matches", []) if m.get("type") == "domain"}
-    lookups = []
+    found = []
     if domains:
         for e in ds.zeek_events:
-            if len(lookups) >= MAX_TIMELINE_IOC_LOOKUPS:
-                break
             q = str((e.fields or {}).get("query") or "").lower().rstrip(".")
-            if e.ts and q in domains and e.src_ip in idx:
-                lookups.append([_hours(utc(e.ts), t0), idx[e.src_ip], q])
-        lookups.sort()
-    return {"t0": _iso(t0), "hours": _hours(t1, t0), "total": total, "sampled": total > MAX_TIMELINE_FLOWS, "flows": flows,
-            "ext": [[ip, ip in flagged] for ip in ext_idx], "alerts": alerts, "ioc_lookups": lookups}
+            if e.ts and q in domains:
+                r = ref(e.src_ip)
+                if r is not None and r >= 0:
+                    found.append((utc(e.ts), r, q))
+        found.sort(key=lambda x: x[0])
+    lookups = [[_hours(ts, t0), r, q] for ts, r, q in _spread(found, MAX_TIMELINE_IOC_LOOKUPS)]
+    return {"t0": _iso(t0), "hours": _hours(t1, t0), "total": total, "sampled": sampled, "hist": hist,
+            "hidden": hidden, "flows": flows,
+            "ext": [[ip, ip in flagged] for ip in ext_idx], "more": [[ip, _subnet(ip)] for ip in more_idx],
+            "alerts": alerts, "alerts_total": len(timed), "untimed": no_time, "untimed_total": len(untimed),
+            "ioc_lookups": lookups, "ioc_lookups_total": len(found)}
 
 
 KIND_RANK = {"alert": 0, "vuln": 1, "reached": 2, "outbound": 3, "attempt": 4, "blocked": 5}
