@@ -7,7 +7,7 @@ import shutil
 import sys
 import tempfile
 
-from . import netmap, pcap, resources, runname
+from . import netmap, pcap, resources, runname, scanners
 from .correlate import Config, correlate
 from .errors import UserError
 from .ioc_archive import is_archive, match_archive, read_archives
@@ -36,6 +36,9 @@ def run(paths: list[str], outdir: str, cfg: Config | None = None,
     map_files = [path for path in paths if netmap.is_map_file(path)] + ([cfg.network_map] if cfg.network_map else [])
     networks = [e for path in map_files for e in netmap.read(path)]       # read first: a bad map fails fast
     paths = [path for path in paths if not netmap.is_map_file(path)]
+    scanner_files = [path for path in paths if scanners.is_list_file(path)] + ([cfg.known_scanners] if cfg.known_scanners else [])
+    cfg.known_scanner_list = [e for path in scanner_files for e in scanners.read(path)]
+    paths = [path for path in paths if not scanners.is_list_file(path)]
     archive_paths = [path for path in paths if is_archive(path)]
     overrides = overrides or {}
     captures = [path for path in paths if path not in archive_paths and _is_capture(path, overrides)]

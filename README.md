@@ -146,7 +146,7 @@ Windows paths are translated). Picking a folder fills in the path and moves focu
 evidence drive instead, or only one inbox folder for locked-down sites, set `VULNSCOPE_BROWSE` in
 `.env`; see [Docker folders](ARCHITECTURE.md#docker-container).
 
-**What it reads.** Zeek logs (TSV or JSON), Palo Alto TRAFFIC/THREAT, Suricata EVE, generic flow
+**What it reads.** Zeek logs (TSV or JSON, or a Zui/Brim export), Palo Alto TRAFFIC/THREAT, Suricata EVE, generic flow
 CSVs (nfdump, AWS VPC Flow Logs, SIEM exports), Nessus `.nessus` or CSV, and:
 
 - **Packet captures.** `.pcap`/`.pcapng` files, plain or `.gz`, are run through Zeek into a
@@ -160,6 +160,9 @@ CSVs (nfdump, AWS VPC Flow Logs, SIEM exports), Nessus `.nessus` or CSV, and:
   `package`) in the folder, uploaded, or passed with `--ioc-csv`. Exact matches are reported.
 - **Network map.** An optional `network_map.csv` (`cidr,name,type`) marks cloud networks such as
   AWS VPCs. Without it nothing changes.
+- **Known scanners.** An optional `known_scanners.csv` (`address,name`, one address or range per
+  line) lists scanners you run yourself. Hosts whose traffic looks like scanning are always
+  reported; the ones on this list are labelled "expected" instead of "review".
 
 [Methods](METHODS.md#inputs-and-normalization) lists every format, how it is detected, and what
 each source can and cannot contribute. Force a format with `--format file.csv=paloalto` if
@@ -262,6 +265,8 @@ Each run writes to its output folder (`vulnflow_runs/<id>/out/` on the upload pa
 - **CSV and JSON:** `correlated_findings.csv` for ticketing; `results.json` for automation.
 - **Normalized inputs:** `normalized/flows.csv`, `findings.csv`, `threats.csv` (IPS/IDS alerts),
   `zeek_events.jsonl`, `ot_events.jsonl`. [Compare reports](#compare-reports) searches them again.
+  `normalized/probed_addresses.csv` lists every internal address that was probed and never
+  answered (who probed it, ports, attempts, whether a firewall blocked it); these are not hosts.
 - **Hostile activity diagram** as `hostile_activity.svg`.
 - **Security Assistant** brief and an audit log of every question and answer (`ai_chat_log.md`),
   when used.

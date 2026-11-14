@@ -14,7 +14,8 @@ def _cfg(a) -> Config:
                   min_severity=a.min_severity,
                   scan_window_days=a.scan_window_days or None,
                   dedup_skew_seconds=None if a.dedup_skew < 0 else a.dedup_skew,
-                  network_map=getattr(a, "network_map", None))
+                  network_map=getattr(a, "network_map", None),
+                  known_scanners=getattr(a, "known_scanners", None))
 
 
 def _llm_cfg(a, required=True):
@@ -148,6 +149,9 @@ def main(argv=None) -> int:
         p.add_argument("--network-map", metavar="CSV",
                        help="CSV naming address ranges (cidr,name,type), e.g. AWS VPCs; a network_map.csv "
                             "inside an input folder is used automatically")
+        p.add_argument("--known-scanners", metavar="CSV",
+                       help="list of scanners you expect (address,name per line), labelled 'expected' instead "
+                            "of flagged; a known_scanners.csv inside an input folder is used automatically")
         p.add_argument("--min-severity", type=int, default=1, choices=range(5),
                        help="lowest Nessus severity to score, 0=Info..4=Critical (default 1)")
         p.add_argument("--scan-window-days", type=float, default=7, metavar="DAYS",

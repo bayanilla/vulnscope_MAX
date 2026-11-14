@@ -13,6 +13,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
+from . import scanners
 from .normalize import Dataset
 from .schema import SEVERITY_NAMES, Finding, Flow
 from .store import naive, utc
@@ -44,6 +45,10 @@ class Config:
     dedup_skew_seconds: float | None = 2.0
     # Optional CSV naming address ranges (cidr,name,type), e.g. AWS VPCs; see netmap.py.
     network_map: str | None = None
+    # Optional list of scanners you expect (address,name); see scanners.py. ``known_scanner_list``
+    # holds the parsed entries.
+    known_scanners: str | None = None
+    known_scanner_list: list = field(default_factory=list)
 
 
 class _Net:
@@ -127,6 +132,9 @@ class Correlator:
         self.scanner_sessions = con.execute(
             "SELECT count(*) FROM flows WHERE src_ip IN (SELECT ip FROM scanners)").fetchone()[0]
         self.internal_ips = {r[0] for r in con.execute("SELECT ip FROM ipnet WHERE internal").fetchall()}
+        # Hosts that exist: they started a session, or answered one (completed, refused with a reset,
+        # or sent data back). Addresses that were only probed and never answered are not hosts.
+        self.live_ips = self.store.answering_ips() & self.internal_ips
         del ips
         # per-host session counts, for internal hosts and scanned hosts
         wanted = self.internal_ips | {fd.host_ip for fd in ds.findings}
@@ -289,6 +297,17 @@ class Correlator:
                       AND NOT (s.t IS NOT NULL AND f.ts IS NOT NULL AND f.ts < s.t))
                 WHERE rn = 1""").fetchall():
             self._spread[kid] = (src, port, proto, utc(ts))
+
+    def _capture_loss(self) -> float | None:
+        worst = None
+        for e in self.ds.zeek_events:
+            if e.stream == "capture_loss":
+                try:
+                    pct = float(e.fields.get("percent_lost"))
+                except (TypeError, ValueError):
+                    continue
+                worst = pct if worst is None else max(worst, pct)
+        return None if worst is None else round(worst, 2)
 
     def prepare_blast(self, hosts):
         con = self.con
@@ -596,9 +615,9 @@ class Correlator:
         host_list = sorted(hosts.values(), key=lambda h: (h["priority"], -h["max_score"], h["host"]))
         if not vulnerability_data_available:
             # Keep observed internal hosts navigable without assigning a vulnerability score.
-            telemetry_hosts = sorted(self.internal_ips | {ip for t in ds.threats
-                                                          for ip in (t.src_ip, t.dst_ip)
-                                                          if self.net.internal(ip)})
+            telemetry_hosts = sorted(self.live_ips | {ip for t in ds.threats
+                                                      for ip in (t.src_ip, t.dst_ip)
+                                                      if self.net.internal(ip)})
             self.prepare_blast(telemetry_hosts)
             for ip in telemetry_hosts:
                 hosts[ip] = {"host": ip, "hostname": "", "os": "", "findings": 0,
@@ -624,10 +643,28 @@ class Correlator:
                 GROUP BY dst_ip, dst_port, proto ORDER BY dst_ip, count(*) DESC, min(seq)""").fetchall():
             servers[ip].append((svc, int(n)))
         scanned = set(ds.scanned_hosts)
+        alert_ips = {ip for t in ds.threats for ip in (t.src_ip, t.dst_ip) if self.net.internal(ip)}
+        live = self.live_ips | (alert_ips if not vulnerability_data_available else set())
+        # subnet broadcasts are not hosts, nor addresses that failed to answer
+        probed_only = self.internal_ips - live - scanned - self.store.broadcast_ips()
+        probed_subnets = Counter(scanners.subnet(ip) for ip in probed_only)
+        n_sessions, n_answered = self.store.answered_share()
         sessions = {ip: sum(n for _, n in svcs) for ip, svcs in servers.items()}
         not_scanned = sorted(set(servers) - scanned, key=lambda ip: (-sessions[ip], ip))
         coverage = {
-            "scanned_hosts": len(scanned), "telemetry_internal_hosts": len(internal_seen),
+            "scanned_hosts": len(scanned), "telemetry_internal_hosts": len(live),
+            "probed_only_addresses": len(probed_only),
+            # of those, addresses a firewall log shows traffic to being blocked
+            "probed_blocked_addresses": len(probed_only & self.store.firewall_blocked_ips()),
+            # where the unanswered probing went: [subnet, addresses], most probed first
+            "probed_only_subnets": [[sn, n] for sn, n in sorted(probed_subnets.items(),
+                                                                 key=lambda kv: (-kv[1], kv[0]))[:200]],
+            "sessions_answered_pct": round(100 * n_answered / n_sessions, 1) if n_sessions else None,
+            # highest packet loss Zeek estimated (capture_loss.log / CaptureLoss notice), in percent
+            "capture_loss_pct": self._capture_loss(),
+            # almost nothing answered: the sensor probably sees only one direction of the traffic
+            "one_way_capture_suspected": n_sessions >= scanners.ONE_WAY_MIN_SESSIONS
+                                         and n_answered < scanners.ONE_WAY_MAX_ANSWERED * n_sessions,
             "scanned_and_seen": len(scanned & (internal_seen | seen_scanned)),
             "scanned_not_seen": sorted(scanned - internal_seen - seen_scanned),
             "active_servers_not_scanned": [
@@ -643,6 +680,8 @@ class Correlator:
         t_min, t_max = self.con.execute("SELECT min(ts), max(ts) FROM flows").fetchone()
         times = [utc(t) for t in (t_min, t_max) if t] + [t.ts for t in ds.threats if t.ts]
         pc = Counter(r["priority"] for r in scored)
+        traffic_scanners = scanners.detect(self.con, ds.threats, self.net.internal,
+                                           scanners.Known(self.cfg.known_scanner_list, self.scanner_ips))
         summary = {
             "vulnerability_data_available": vulnerability_data_available,
             "flows": len(ds.flows), "findings_total": len(ds.findings), "findings_scored": len(scored),
@@ -660,7 +699,8 @@ class Correlator:
             "hosts_to_investigate": sorted(investigate),
             "hosts_possible_spread": sorted(spread),
             "threat_alerts": len(ds.threats),
-            "zeek_event_counts": dict(sorted(Counter(e.stream for e in ds.zeek_events).items())),
+            "zeek_event_counts": dict(sorted(Counter(e.stream for e in ds.zeek_events
+                                                     if e.stream != "capture_loss").items())),
             "ot_protocol_counts": dict(sorted(Counter(e.protocol for e in ds.ot_events).items())),
             "hosts_internet_exposed": sum(1 for h in host_list if h["internet_exposed"]),
             "window_start": _iso(min(times)) if times else None,
@@ -670,6 +710,8 @@ class Correlator:
             "duplicate_findings_merged": ds.duplicate_findings,
             "scanner_ips": self.scanner_ips,
             "scanner_sessions_excluded": int(self.scanner_sessions),
+            "traffic_scanners": traffic_scanners[:scanners.MAX_LISTED],
+            "traffic_scanners_total": len(traffic_scanners),
         }
         network_leads = []
         if not vulnerability_data_available:

@@ -2,6 +2,8 @@
 'use strict';
 const D = JSON.parse(document.getElementById('vf-data').textContent);
 const telemetryOnly = D.vulnerability_data_available === false;
+// subnet -> addresses that were probed and never answered (not hosts, so not drawn)
+const PROBED = D.probed_subnets || {};
 // All networks on one map (combine.py): each compared report is an island, and its hosts and subnets
 // carry "@<island>" on their ids so that equal addresses in two networks stay apart; shown() drops it.
 const COMBINED = D.combined || null;
@@ -1257,10 +1259,18 @@ function renderList() {
       `<span class="chev" aria-hidden="true">▸</span><span class="hgname">${esc(label)}` +
       (net ? ` <span class="net-badge${net.cloud ? ' cloud' : ''}" title="${esc(net.name)}">${esc(net.cloud ? net.type.toUpperCase() : net.name)}</span>` : '') + `</span>` +
       `<span class="hgcount">${ids.length} host${ids.length === 1 ? '' : 's'}` +
+      (!COMBINED && PROBED[k] ? ` · <span title="Addresses in this subnet that were probed and never answered; not counted as hosts">${PROBED[k]} probed, no answer</span>` : '') +
       (!telemetryOnly && p1 ? ` · <b class="p1">${p1} P1</b>` : '') + (likely ? ` · <b class="lk">${likely} likely</b>` : '') +
       (ioc ? ` · <b class="ioc">${ioc} IOC</b>` : '') + (shared ? ` · <b class="sh">${shared} shared</b>` : '') + `</span></div>` +
       (open ? `<div role="list">${ids.map(rowHtml).join('')}</div>` : '') + '</div>';
-  }).join('');
+  }).join('') + (() => {
+    // ranges where nothing answered at all have no hosts to list; say they were probed
+    if (COMBINED || filtered) return '';
+    const seen = new Set(order.map(o => o[0])), rest = Object.entries(PROBED).filter(([sn]) => !seen.has(sn));
+    const n = rest.reduce((a, [, c]) => a + c, 0);
+    return n ? `<div class="hgroup" role="listitem"><div class="hghead" style="cursor:default"><span class="hgname">No answer</span>` +
+      `<span class="hgcount" title="${esc(rest.slice(0, 40).map(([sn, c]) => `${sn} (${c})`).join(', '))}">${n.toLocaleString()} probed address${n === 1 ? '' : 'es'} in ${rest.length} more range${rest.length === 1 ? '' : 's'}; none are hosts</span></div></div>` : '';
+  })();
 }
 // These are recorded source/originator -> destination/responder tuples, not
 // arrows inferred from an internet/internal boundary or a vulnerability scan.
@@ -1544,6 +1554,9 @@ function renderPanel(id) {
     (d.ev ? `<span class="tag ${d.ev}">${d.ev === 'likely' ? 'LIKELY EXPLOITATION' : 'LEAD'}</span>` : '') + `</div></div>` +
     `<div class="stats"><div class="stat red"><b>${F.attackers_total}</b><span>outside addresses (N/S)${nAlert ? `, ${nAlert} with IPS alerts` : ''}</span></div>` +
     `<div class="stat pink"><b>${F.peers_total}</b><span>internal hosts (E/W)${telemetryOnly ? '' : ` · ${F.blast.high} high, ${F.blast.medium} med`}</span></div></div>` +
+    (F.probed_only ? `<p class="direction-note">Also probed ${F.probed_only.toLocaleString()} internal address${F.probed_only === 1 ? '' : 'es'} that never answered (not counted as hosts)${F.probed_blocked ? `; a firewall blocked the traffic to ${F.probed_blocked.toLocaleString()} of them` : ''}: ` +
+      (F.probed_ranges || []).map(([sn, n]) => `${esc(sn)} (${n})`).join(', ') +
+      (F.probed_ranges_total > (F.probed_ranges || []).length ? ` and ${F.probed_ranges_total - F.probed_ranges.length} more range${F.probed_ranges_total - F.probed_ranges.length === 1 ? '' : 's'}` : '') + `.</p>` : '') +
     (state.history.length ? `<p style="margin:10px 0 0"><button id="btn-back">← Back to ${esc(shown(state.history[state.history.length - 1]))}</button></p>` : '') +
     (COMBINED ? sharedSection(id, d) : '') +
     `<p class="direction-note">Recorded direction: source/originator → destination/responder. Ports are source → destination; ? means the log did not provide a port. Logged application labels appear only when supplied.</p>` +

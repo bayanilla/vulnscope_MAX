@@ -36,9 +36,33 @@ def parse(path: str, stats: ParseStats):
             else:
                 f = ev.get("flow") or {}
                 b_out, b_in = to_int(f.get("bytes_toserver"), 0), to_int(f.get("bytes_toclient"), 0)
+                sport, dport = clean_port(ev.get("src_port")), clean_port(ev.get("dest_port"))
+                proto = clean_proto(ev.get("proto"))
+                if _server_first(ev, proto, sport, dport):
+                    # Suricata joined this TCP session mid-stream and took the first packet it saw,
+                    # the server's reply, as the client. Turn it round so the server is the responder
+                    # (Zeek does the same), or the reply looks like an inbound session to a high port.
+                    src, dst, sport, dport, b_out, b_in = dst, src, dport, sport, b_in, b_out
+                    p_out, p_in = to_int(f.get("pkts_toclient"), 0), to_int(f.get("pkts_toserver"), 0)
+                else:
+                    p_out, p_in = to_int(f.get("pkts_toserver"), 0), to_int(f.get("pkts_toclient"), 0)
+                established = ((f.get("state") in ("established", "closed") and b_in > 0)
+                               # a TCP session joined mid-stream: both sides sent data. (Not UDP:
+                               # Suricata counts an ICMP error about a UDP flow as a reply.)
+                               or (proto == "tcp" and p_out > 0 and p_in > 0 and b_out > 0 and b_in > 0))
                 yield (Flow(ts=parse_ts(f.get("start") or ev.get("timestamp")), src_ip=src, dst_ip=dst,
-                                src_port=clean_port(ev.get("src_port")), dst_port=clean_port(ev.get("dest_port")),
-                                proto=clean_proto(ev.get("proto")),
+                                src_port=sport, dst_port=dport, proto=proto,
                                 action="deny" if f.get("action") == "drop" else "allow",
-                                established=(f.get("state") in ("established", "closed") and b_in > 0),
+                                established=established,
                                 bytes_out=b_out, bytes_in=b_in, app=ev.get("app_proto") or ""))
+
+
+def _server_first(ev: dict, proto: str, sport, dport) -> bool:
+    """A TCP flow Suricata picked up without seeing its SYN, whose "client" port is a service port
+    (below 1024) and whose "server" port is a high, ephemeral one."""
+    if proto != "tcp" or sport is None or dport is None:
+        return False
+    tcp = ev.get("tcp") or {}
+    if tcp.get("syn"):
+        return False
+    return sport < 1024 <= dport
