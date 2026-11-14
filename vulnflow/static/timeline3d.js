@@ -108,6 +108,80 @@ function label(text, x, y, z, cls) {
   const el = document.createElement('div'); el.className = 'tl-l ' + cls; el.textContent = text; $('tl-labels').appendChild(el);
   labels.push({el, v: new THREE.Vector3(x, y, z)});
 }
+// ---------------------------------------------------------------- alert labels
+// Alerts close together in time share one label ("23 IPS alerts ▸"); hover lists them, click opens that
+// stretch of time in the side panel. Labels are laid out on screen every frame so they never overlap:
+// each sits on the lowest free row above its rings, with a leader line down to them; one that finds
+// no free row is hidden until the camera gives it room (the rings stay).
+const alertName = n => n.replace(/\(.*?\)/g, '').replace(' Vulnerability', '').replace('Intel::Notice - ', '').trim();
+const alertDst = a => a[1] >= 0 ? hostName(a[1]) : (a[5] || '?');   // a host drawn here, or the address the alert names
+const clip = (t, n) => t.length > n ? t.slice(0, n - 1) + '…' : t;
+let clusters = [];
+function alertClusters() {
+  const gap = HRS / 80, out = [];   // e.g. 36 min on a 2-day run
+  T.alerts.forEach((a, k) => { const c = out[out.length - 1];
+    if (c && a[0] - c.h1 <= gap) { c.ks.push(k); c.h1 = a[0]; } else out.push({h0: a[0], h1: a[0], ks: [k]}); });
+  return out;
+}
+function alertLabels() {
+  clusters = alertClusters();
+  for (const c of clusters) {
+    const al = c.ks.map(k => T.alerts[k]), live = al.filter(a => !a[4]).length, one = al.length === 1 ? al[0] : null;
+    const text = one ? (one[4] ? 'blocked: ' : 'ALERT: ') + clip(alertName(one[3]), 44) + ' → ' + alertDst(one)
+      : `${al.length} IPS alerts` + (live && live < al.length ? ` (${live} not blocked)` : al.length && !live ? ' (all blocked)' : '') + ` · ${fmt(c.h0).slice(6)}–${fmt(c.h1).slice(6)}, first: ${clip(alertName((al.find(a => !a[4]) || al[0])[3]), 30)} ▸`;
+    const el = document.createElement('div'); el.className = 'tl-l ac ' + (live ? 'hot' : 'dim'); el.textContent = text;
+    el.tabIndex = 0; el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', one ? text : `${al.length} IPS alerts from ${fmt(c.h0)} to ${fmt(c.h1)}; show them in the side panel`);
+    $('tl-labels').appendChild(el);
+    c.el = el; c.live = live; c.x = tx((c.h0 + c.h1) / 2);
+    const tip = $('tl-tip');
+    el.addEventListener('mouseenter', e => { tip.innerHTML = clusterTip(c); tip.hidden = false;
+      const r = el.getBoundingClientRect(); tip.style.left = Math.max(8, Math.min(innerWidth - tip.offsetWidth - 8, r.left)) + 'px'; tip.style.top = Math.min(innerHeight - tip.offsetHeight - 8, r.bottom + 8) + 'px'; });
+    el.addEventListener('mouseleave', () => { tip.hidden = true; });
+    const go = () => { tip.hidden = true; showSpan(c.h0, c.h1, c.ks[0]); };
+    el.addEventListener('click', go); el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); go(); } });
+  }
+}
+function clusterTip(c) {
+  const al = c.ks.map(k => T.alerts[k]), byName = new Map();
+  for (const a of al) { const n = alertName(a[3]), e = byName.get(n) || {n, k: 0, live: 0, hosts: new Set()}; e.k++; if (!a[4]) e.live++; e.hosts.add(alertDst(a)); byName.set(n, e); }
+  const rows = [...byName.values()].sort((a, b) => b.live - a.live || b.k - a.k);
+  return `<b>${al.length === 1 ? 'IPS alert' : al.length + ' IPS alerts'}</b> · ${fmt(c.h0)}${al.length > 1 ? ' → ' + fmt(c.h1).slice(6) : ''}<br>`
+    + rows.slice(0, 10).map(e => `${e.k > 1 ? e.k + '× ' : ''}${e.live ? '<span class="bad">' + esc(clip(e.n, 70)) + '</span>' : esc(clip(e.n, 70))}${e.hosts.size ? ' → ' + esc([...e.hosts].slice(0, 3).join(', ')) + (e.hosts.size > 3 ? '…' : '') : ''}`).join('<br>')
+    + (rows.length > 10 ? `<br>and ${rows.length - 10} more kinds` : '') + '<br><i>Click to list them in the side panel</i>';
+}
+const _a = new THREE.Vector3(), _b = new THREE.Vector3();
+function layoutAlertLabels(W, Hh) {
+  const placed = [], ROWS = 6;
+  // live alerts and bigger groups claim space first
+  const order = clusters.slice().sort((a, b) => (b.live > 0) - (a.live > 0) || b.ks.length - a.ks.length);
+  for (const c of order) {
+    _a.set(c.x, R + 5, 0).project(camera);
+    if (!(_a.z < 1 && Math.abs(_a.x) < 1.05 && Math.abs(_a.y) < 1.05)) { c.el.style.display = 'none'; continue; }
+    c.el.style.display = '';
+    if (!c.w) { c.w = c.el.offsetWidth; c.hh = c.el.offsetHeight; }
+    const ax = (_a.x + 1) / 2 * W, ay = (1 - _a.y) / 2 * Hh, x0 = Math.max(4, Math.min(W - c.w - 4, ax - c.w / 2));
+    let spot = -1;
+    for (let r = 0; r < ROWS && spot < 0; r++) { const y1 = ay - 12 - r * (c.hh + 4), y0 = y1 - c.hh;
+      if (y0 < 4) break;
+      if (!placed.some(p => x0 < p.x1 + 6 && x0 + c.w > p.x0 - 6 && y0 < p.y1 && y1 > p.y0)) spot = r, placed.push({x0, x1: x0 + c.w, y0, y1}); }
+    if (spot < 0) { c.el.style.display = 'none'; continue; }
+    const top = ay - 12 - spot * (c.hh + 4) - c.hh;
+    c.el.style.transform = `translate(${x0}px,${top}px)`;
+    c.el.style.setProperty('--lead', Math.max(0, ay - top - c.hh) + 'px'); c.el.style.setProperty('--lx', (ax - x0) + 'px');
+  }
+}
+// open the side panel on a stretch of time: the smallest window that holds it
+function showSpan(h0, h1, firstAlert) {
+  const span = h1 - h0, w = WINS.find(x => x >= span * 1.2) || WINS[WINS.length - 1];
+  WIN = w; const sc = $('tl-scrub'); sc.max = Math.max(0, HRS - WIN);
+  sc.value = Math.max(0, Math.min(HRS - WIN, h0 - (WIN - span) / 2));
+  root.querySelectorAll('.tl-winbtns button').forEach(b => b.classList.toggle('on', +b.dataset.w === WIN));
+  setWindow(+sc.value);
+  // bring the group's first alert to the top of the event list
+  const box = root.querySelector('.tl-evs'), b = firstAlert != null && root.querySelector(`.tl-evs [data-alert="${firstAlert}"]`);
+  if (box && b) { box.scrollTop = b.offsetTop; b.classList.add('flash'); setTimeout(() => b.classList.remove('flash'), 1600); }
+}
 function build() {
   renderer = new THREE.WebGLRenderer({canvas: $('tl-canvas'), antialias: true, alpha: true});
   renderer.setClearColor(0x000000, 0);
@@ -131,15 +205,13 @@ function build() {
   // IPS alerts as rings around the tunnel; IOC domain lookups as dots on the host's lane
   const ringGeo = new THREE.TorusGeometry(R + 4, 1.1, 6, 96).rotateY(Math.PI / 2);
   const am = new THREE.InstancedMesh(ringGeo, new THREE.MeshBasicMaterial(), Math.max(1, T.alerts.length)); am.count = T.alerts.length;
-  const m4 = new THREE.Matrix4(); let stack = 0, lastH = -1e9;
-  T.alerts.forEach(([h, hi, src, name, blocked], k) => {
+  const m4 = new THREE.Matrix4();
+  T.alerts.forEach(([h, , , , blocked], k) => {
     m4.makeTranslation(tx(h), 0, 0); am.setMatrixAt(k, m4); am.setColorAt(k, new THREE.Color(blocked ? 0x8da2b5 : COL.crit));
-    if (!blocked || k < 6) { stack = h - lastH < HRS / 4 ? (stack + 1) % 4 : 0; lastH = h;   // long labels: stack any within a quarter of the run
-      label((blocked ? 'blocked: ' : 'ALERT: ') + name.replace(/\(.*?\)/g, '').replace(' Vulnerability', '').replace('Intel::Notice - ', '').slice(0, 52) + (hi >= 0 ? ' → ' + hostName(hi) : ''),
-        tx(h), R + 18 + stack * 13, 0, blocked ? 'dim' : 'hot'); }
   });
+  alertLabels();
   scene.add(am); pick.push({obj: am, info: k => { const [h, hi, src, name, blocked] = T.alerts[k];
-    return `<b>${blocked ? 'Blocked' : '<span class="bad">Not blocked</span>'} IPS alert</b> · ${fmt(h)}<br>${esc(name)}<br><span class="mono">${esc(src)}</span> → ${hi >= 0 ? esc(hostName(hi)) : '?'}${isNode(hi) ? '<br>Click to open the host' : ''}`; },
+    return `<b>${blocked ? 'Blocked' : '<span class="bad">Not blocked</span>'} IPS alert</b> · ${fmt(h)}<br>${esc(name)}<br><span class="mono">${esc(src)}</span> → ${esc(alertDst(T.alerts[k]))}${isNode(hi) ? '<br>Click to open the host' : ''}`; },
     click: k => isNode(T.alerts[k][1]) && openHost(N[T.alerts[k][1]].id)});
   if (T.ioc_lookups.length) {
     const im = new THREE.InstancedMesh(new THREE.SphereGeometry(2.2, 10, 8), new THREE.MeshBasicMaterial({color: COL.pink}), T.ioc_lookups.length);
@@ -167,7 +239,7 @@ function setWindow(h) {
   winLines = segs(f => inWin(f[0], h), .9);
   allLines.material.opacity = .06; winRings[0].position.x = tx(h); winRings[1].position.x = tx(h + WIN);
   const inW = T.flows.filter(f => inWin(f[0], h)), c = k => inW.filter(k).length, real = runCount(h);
-  const evs = T.alerts.map((a, k) => ({h: a[0], k, html: `<button type="button" class="ev${a[4] ? ' blk' : ''}" data-alert="${k}"><span class="tm">${fmt(a[0]).slice(6)}</span>${esc(a[3].replace(/\(.*?\)/g, ''))} → ${a[1] >= 0 ? esc(hostName(a[1])) : '?'}</button>`}))
+  const evs = T.alerts.map((a, k) => ({h: a[0], k, html: `<button type="button" class="ev${a[4] ? ' blk' : ''}" data-alert="${k}"><span class="tm">${fmt(a[0]).slice(6)}</span>${esc(a[3].replace(/\(.*?\)/g, ''))} → ${esc(alertDst(a))}</button>`}))
     .concat(T.ioc_lookups.map(a => ({h: a[0], html: `<button type="button" class="ev"${isNode(a[1]) ? ` data-host="${esc(N[a[1]].id)}"` : ''}><span class="tm">${fmt(a[0]).slice(6)}</span>${esc(hostName(a[1]))} looked up ${esc(a[2])}</button>`})))
     .filter(e => inWin(e.h, h)).sort((a, b) => a.h - b.h);
   const what = T.sampled ? ' drawn' : '';
@@ -177,7 +249,7 @@ function setWindow(h) {
     + `<div class="row"><span>Inbound from internet</span><b>${c(f => f[1] < 0)}</b></div><div class="row"><span>Outbound to internet</span><b>${c(f => f[2] < 0)}</b></div>`
     + `<div class="row"><span>Blocked or failed</span><b>${c(f => f[4] & 1)}</b></div><div class="row"><span>Alert or IOC address</span><b style="color:var(--pink)">${c(f => f[4] & 2)}</b></div>`
     + (telemetryOnly ? '' : `<div class="row"><span>Onto a vulnerable port</span><b>${c(f => f[4] & 4)}</b></div>`)
-    + (evs.length ? `<h3 style="margin-top:10px">Events</h3>${evs.slice(0, 12).map(e => e.html).join('')}` : '<p>No alerts or IOC lookups in this window.</p>');
+    + (evs.length ? `<h3 style="margin-top:10px">Events (${evs.length})</h3><div class="tl-evs">${evs.slice(0, 200).map(e => e.html).join('')}</div>` : '<p>No alerts or IOC lookups in this window.</p>');
   $('tl-win').querySelectorAll('[data-alert]').forEach(b => b.onclick = () => { const a = T.alerts[+b.dataset.alert]; if (isNode(a[1])) openHost(N[a[1]].id); });
   $('tl-win').querySelectorAll('[data-host]').forEach(b => b.onclick = () => openHost(b.dataset.host));
 }
@@ -256,6 +328,7 @@ function frame(now) {
   const W = innerWidth, Hh = innerHeight;
   for (const l of labels) { _v.copy(l.v).project(camera); const vis = _v.z < 1 && Math.abs(_v.x) < 1.1 && Math.abs(_v.y) < 1.1;
     l.el.style.display = vis ? '' : 'none'; if (vis) l.el.style.transform = `translate(${(_v.x + 1) / 2 * W}px,${(1 - _v.y) / 2 * Hh}px) translate(-50%,-50%)`; }
+  layoutAlertLabels(W, Hh);
 }
 function resize() { if (!renderer) return; renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1)); renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
 addEventListener('resize', () => { if (!root.hidden) resize(); });

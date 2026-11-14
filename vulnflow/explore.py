@@ -561,7 +561,7 @@ def _timeline(ds, res: dict, keep: list, ext, services: dict, pairs: dict, scann
     for t in ds.threats:
         (timed.append((utc(t.ts), t)) if t.ts else untimed.append(t))
     timed.sort(key=lambda x: x[0])
-    alerts = [[_hours(ts, t0), dst_ref(t.dst_ip), t.src_ip, t.name, t.blocked]
+    alerts = [[_hours(ts, t0), dst_ref(t.dst_ip), t.src_ip, t.name, t.blocked, t.dst_ip]
               for ts, t in _spread(timed, MAX_TIMELINE_ALERTS, favour=lambda x: not x[1].blocked)]
     no_time = [[dst_ref(t.dst_ip), t.src_ip, t.name, t.blocked] for t in untimed[:MAX_TIMELINE_ALERTS]]
     domains = {m["value"].lower() for m in res.get("ioc_matches", []) if m.get("type") == "domain"}
