@@ -374,8 +374,13 @@ def _estate_flows(rng, t, zeek, pan):
                             d=d() if callable(d) else d, dp=dp, app=app, action=action, fz=fz, tz=tz,
                             sent=rng.randint(400, 3000), rcvd=rng.randint(2000, 400000 if big else 90000) if ok else 0))
 
+    # an outside address under `prefix`; a two-part prefix such as 93.184 also needs a third octet,
+    # which comes from its own generator so the rest of the sample is unchanged
+    mid = random.Random(4096)
+
     def ext(prefix):
-        return lambda: f"{prefix}.{rng.randint(1, 254)}"
+        missing = 2 - prefix.count(".")
+        return lambda: prefix + "".join(f".{mid.randint(0, 255)}" for _ in range(missing)) + f".{rng.randint(1, 254)}"
 
     # east/west: every client logs on, resolves names, maps drives, prints and uses the proxy and apps
     for ws in OFFICE + LAPTOPS:

@@ -22,12 +22,15 @@ const T0 = new Date(T.t0), HRS = Math.max(T.hours, 1);
 const when = h => new Date(T0.getTime() + h * 3600e3);
 const fmt = h => when(h).toISOString().slice(5, 16).replace('T', ' ') + 'Z';
 const short = n => (n || '').split('.')[0];
-const N = D.nodes, X = T.ext;
-const hostName = i => i >= 0 ? (short(N[i].name) || N[i].id) : X[-i - 1][0];
+// host refs: >= 0 into nodes, then on into T.more (internal hosts the network view leaves out), < 0 into T.ext
+const N = D.nodes, X = T.ext, NN = N.length, MORE = T.more || [];
+const hostName = i => i < 0 ? X[-i - 1][0] : i < NN ? (short(N[i].name) || N[i].id) : MORE[i - NN][0];
+const subnetOf = i => i < NN ? N[i].subnet : MORE[i - NN][1];
+const isNode = i => i >= 0 && i < NN;
 const telemetryOnly = !D.vulnerability_data_available;
 // shared services (DNS, AD, proxy, file and print): hosts that more than 25 others talk to; traffic to them is expected
 const deg = new Map(); for (const [a, b] of D.links || []) { deg.set(a, (deg.get(a) || 0) + 1); deg.set(b, (deg.get(b) || 0) + 1); }
-const hub = N.map(n => (deg.get(n.id) || 0) > 25);
+const hub = N.map(n => (deg.get(n.id) || 0) > 25), isHub = i => i < NN && hub[i];
 
 // ---------------------------------------------------------------- page chrome
 const BRAND = (document.querySelector('meta[name="application-name"]') || {}).content || 'VulnScope';
@@ -41,13 +44,14 @@ root.innerHTML = `<canvas id="tl-canvas" aria-label="Flows over time"></canvas><
   <div class="seg" role="group" aria-label="View"><button type="button" data-view="flat" title="Flat network view (2)">Flat</button><button type="button" data-view="3d" title="3D network view (3)">3D</button><button type="button" data-view="paths" title="Attack paths (P)">Attack paths</button><button type="button" class="on" aria-current="true" title="Timeline (Esc to go back)">Timeline</button></div>
   <span class="tl-qwrap"><button type="button" id="tl-about-toggle" aria-controls="tl-about" aria-expanded="false" aria-label="What am I looking at?" title="What am I looking at? (?)">?</button></span></header>
 <aside class="tl-side"><h3>Time window</h3><div class="tl-winbtns" role="group" aria-label="Window length">${WINS.map(w => `<button type="button" data-w="${w}">${w < 1 ? w * 60 + ' min' : w + ' h'}</button>`).join('')}</div>
-  <input id="tl-scrub" type="range" min="0" step="0.25" aria-label="Window start"><div id="tl-win"></div><div id="tl-sample"></div></aside>
+  <input id="tl-scrub" type="range" min="0" step="any" aria-label="Window start"><div id="tl-win"></div><div id="tl-sample"></div></aside>
 <p id="tl-about" hidden>Time runs <b>left to right</b> along the tunnel. Each lane on the wall is a subnet and the <b>internet</b> is the outer band on top. Every flow is a <b>chord</b> drawn at the moment it happened, so you can read the order of events: first contact, the exploit alert, the callback out, and anything that repeats on a schedule. <b>Rings</b> are IPS alerts. Drag the window in the side panel to light up one stretch of time.</p>
 <div class="tl-legend" id="tl-legend"></div>
 <div class="tl-cams" role="group" aria-label="Camera"><button type="button" data-p="angled" title="Angled view">Angled</button><button type="button" data-p="side" title="Side view">Side</button><button type="button" data-p="down" title="Look down the tunnel">Down the tunnel</button><button type="button" data-p="above" title="Top-down view">Above</button><button type="button" id="tl-spin" title="Turn slowly to the left (stops when you move the camera; Space)">Spin</button></div>
 <div id="tl-tip" hidden></div>`;
 const $ = id => document.getElementById(id);
-$('tl-sub').textContent = `${fmt(0)} → ${fmt(T.hours)} · ${T.flows.length.toLocaleString()} flows drawn` + (T.sampled ? ` (sample of ${T.total.toLocaleString()})` : '');
+$('tl-sub').textContent = `${fmt(0)} → ${fmt(T.hours)} · ${T.flows.length.toLocaleString()} flows drawn` + (T.sampled ? ` (sample of ${T.total.toLocaleString()})` : '')
+  + (T.hidden ? ` · ${T.hidden.toLocaleString()} with an unreadable address not drawn` : '');
 $('tl-legend').innerHTML = [[COL.pink, 'To/from an alert or IOC address'], [COL.cyan, 'Inbound from internet'], [COL.violet, 'Outbound to internet'],
   [COL.orange, 'Direct between subnets'], [COL.internal, 'Within a subnet or to shared services'], [COL.blocked, 'Blocked or failed'], [COL.crit, 'IPS alert', 'ring'], [COL.pink, 'IOC domain lookup', 'dot']]
   .map(([c, t, k]) => `<span><i class="${k || ''}" style="--c:${hex(c)}"></i>${t}</span>`).join('') + '<span class="cal">Drag: rotate · right-drag or Shift-drag: pan · scroll: zoom</span>';
@@ -61,18 +65,21 @@ const labels = [], pick = [];
 let hostA, extA, allLines, winLines, winRings = [], lanes;
 
 function laneLayout() {
-  const subs = (D.subnets || []).slice().sort((a, b) => b.hosts - a.hosts);
-  const shown = subs.slice(0, 14).sort((a, b) => a.id < b.id ? -1 : 1), keep = new Set(shown.map(s => s.id));
-  const list = shown.map(s => ({id: s.id, name: s.id, n: 0}));
+  // lanes are the 14 subnets with the most hosts drawn here (network-view hosts and the rest), then "other subnets"
+  const all = N.map((_, i) => subnetOf(i)).concat(MORE.map(m => m[1])), per = new Map();
+  for (const sn of all) per.set(sn, (per.get(sn) || 0) + 1);
+  const subs = [...per.keys()].sort((a, b) => per.get(b) - per.get(a) || (a < b ? -1 : 1));
+  const shown = subs.slice(0, 14).sort(), keep = new Set(shown);
+  const list = shown.map(id => ({id, name: id, n: 0}));
   if (subs.length > shown.length) list.push({id: '*', name: 'other subnets', n: 0});
   const byId = Object.fromEntries(list.map(l => [l.id, l]));
-  const laneOf = N.map(n => byId[keep.has(n.subnet) ? n.subnet : '*'] || list[0]);
-  laneOf.forEach(l => l && l.n++);
+  const laneOf = all.map(sn => byId[keep.has(sn) ? sn : '*']);
+  laneOf.forEach(l => l.n++);
   const INET = Math.PI * .55, gap = .05, rest = Math.PI * 2 - INET - gap * (list.length + 1);
   const wsum = list.reduce((a, l) => a + Math.sqrt(l.n + 2), 0);
   let a = INET / 2 + gap;
   list.forEach(l => { l.span = Math.sqrt(l.n + 2) / wsum * rest; l.a0 = a; a += l.span + gap; l.k = 0; });
-  hostA = N.map((n, i) => { const l = laneOf[i]; return l.a0 + (l.k++ + .5) / l.n * l.span; });
+  hostA = all.map((_, i) => { const l = laneOf[i]; return l.a0 + (l.k++ + .5) / l.n * l.span; });
   extA = X.map((e, i) => -INET / 2 + ((i * 0.618034) % 1) * INET);
   return {list, INET};
 }
@@ -81,7 +88,7 @@ const ptAt = (ref, h) => { const x = tx(h); if (ref >= 0) { const a = hostA[ref]
 function flowColor(s, d, f) {
   if (f & 2) return COL.pink; if (f & 1) return COL.blocked;
   if (s < 0) return COL.cyan; if (d < 0) return COL.violet;
-  return N[s].subnet !== N[d].subnet && !hub[s] && !hub[d] ? COL.orange : COL.internal;
+  return subnetOf(s) !== subnetOf(d) && !isHub(s) && !isHub(d) ? COL.orange : COL.internal;
 }
 function segs(filter, opacity) {
   const p = [], c = [], col = new THREE.Color();
@@ -127,39 +134,51 @@ function build() {
   const m4 = new THREE.Matrix4(); let stack = 0, lastH = -1e9;
   T.alerts.forEach(([h, hi, src, name, blocked], k) => {
     m4.makeTranslation(tx(h), 0, 0); am.setMatrixAt(k, m4); am.setColorAt(k, new THREE.Color(blocked ? 0x8da2b5 : COL.crit));
-    if (!blocked || k < 6) { stack = h - lastH < HRS / 25 ? stack + 1 : 0; lastH = h;
+    if (!blocked || k < 6) { stack = h - lastH < HRS / 4 ? (stack + 1) % 4 : 0; lastH = h;   // long labels: stack any within a quarter of the run
       label((blocked ? 'blocked: ' : 'ALERT: ') + name.replace(/\(.*?\)/g, '').replace(' Vulnerability', '').replace('Intel::Notice - ', '').slice(0, 52) + (hi >= 0 ? ' → ' + hostName(hi) : ''),
         tx(h), R + 18 + stack * 13, 0, blocked ? 'dim' : 'hot'); }
   });
   scene.add(am); pick.push({obj: am, info: k => { const [h, hi, src, name, blocked] = T.alerts[k];
-    return `<b>${blocked ? 'Blocked' : '<span class="bad">Not blocked</span>'} IPS alert</b> · ${fmt(h)}<br>${esc(name)}<br><span class="mono">${esc(src)}</span> → ${hi >= 0 ? esc(hostName(hi)) : '?'}${hi >= 0 ? '<br>Click to open the host' : ''}`; },
-    click: k => T.alerts[k][1] >= 0 && openHost(N[T.alerts[k][1]].id)});
+    return `<b>${blocked ? 'Blocked' : '<span class="bad">Not blocked</span>'} IPS alert</b> · ${fmt(h)}<br>${esc(name)}<br><span class="mono">${esc(src)}</span> → ${hi >= 0 ? esc(hostName(hi)) : '?'}${isNode(hi) ? '<br>Click to open the host' : ''}`; },
+    click: k => isNode(T.alerts[k][1]) && openHost(N[T.alerts[k][1]].id)});
   if (T.ioc_lookups.length) {
     const im = new THREE.InstancedMesh(new THREE.SphereGeometry(2.2, 10, 8), new THREE.MeshBasicMaterial({color: COL.pink}), T.ioc_lookups.length);
     T.ioc_lookups.forEach(([h, hi], k) => { m4.makeTranslation(...ptAt(hi, h)); im.setMatrixAt(k, m4); });
-    scene.add(im); pick.push({obj: im, info: k => { const [h, hi, q] = T.ioc_lookups[k]; return `<b class="bad">IOC domain lookup</b> · ${fmt(h)}<br>${esc(hostName(hi))} asked for <span class="mono">${esc(q)}</span><br>Click to open the host`; },
-      click: k => openHost(N[T.ioc_lookups[k][1]].id)});
-    const [h, hi, q] = T.ioc_lookups[0]; const p = ptAt(hi, h); label(`IOC lookups: ${q}` + (T.ioc_lookups.length > 1 ? ` (${T.ioc_lookups.length}×)` : ''), p[0], p[1] - 10, p[2], 'hot');
+    scene.add(im); pick.push({obj: im, info: k => { const [h, hi, q] = T.ioc_lookups[k]; return `<b class="bad">IOC domain lookup</b> · ${fmt(h)}<br>${esc(hostName(hi))} asked for <span class="mono">${esc(q)}</span>${isNode(hi) ? '<br>Click to open the host' : ''}`; },
+      click: k => isNode(T.ioc_lookups[k][1]) && openHost(N[T.ioc_lookups[k][1]].id)});
+    const [h, hi, q] = T.ioc_lookups[0], nAll = T.ioc_lookups_total || T.ioc_lookups.length; const p = ptAt(hi, h); label(`IOC lookups: ${q}` + (nAll > 1 ? ` (${nAll.toLocaleString()}×)` : ''), p[0], p[1] - 10, p[2], 'hot');
   }
   winRings = [circle(R + 3, 0, COL.cyan, .9), circle(R + 3, 0, COL.cyan, .9)];
   controls(); built = true;
 }
 
 // ---------------------------------------------------------------- window, side panel
+// a window is [h, h + WIN); the last one also takes in the very end of the run
+const inWin = (t, h) => t >= h && (t < h + WIN || (h + WIN >= HRS - 1e-6 && t <= HRS));
+// every flow in [h, h + WIN), from the per-bucket counts of the whole run (sampled runs only)
+function runCount(h) {
+  if (!T.hist) return null;
+  const bw = T.hist.bucket, e = h + WIN; let n = 0;
+  for (const [b, k] of T.hist.counts) { const lo = b * bw, hi = lo + bw, o = Math.min(hi, e) - Math.max(lo, h); if (o > 0) n += k * Math.min(1, o / bw); }
+  return Math.round(n);
+}
 function setWindow(h) {
   if (winLines) { scene.remove(winLines); winLines.geometry.dispose(); }
-  winLines = segs(f => f[0] >= h && f[0] < h + WIN, .9);
+  winLines = segs(f => inWin(f[0], h), .9);
   allLines.material.opacity = .06; winRings[0].position.x = tx(h); winRings[1].position.x = tx(h + WIN);
-  const inW = T.flows.filter(f => f[0] >= h && f[0] < h + WIN), c = k => inW.filter(k).length;
+  const inW = T.flows.filter(f => inWin(f[0], h)), c = k => inW.filter(k).length, real = runCount(h);
   const evs = T.alerts.map((a, k) => ({h: a[0], k, html: `<button type="button" class="ev${a[4] ? ' blk' : ''}" data-alert="${k}"><span class="tm">${fmt(a[0]).slice(6)}</span>${esc(a[3].replace(/\(.*?\)/g, ''))} → ${a[1] >= 0 ? esc(hostName(a[1])) : '?'}</button>`}))
-    .concat(T.ioc_lookups.map(a => ({h: a[0], html: `<button type="button" class="ev" data-host="${esc(N[a[1]].id)}"><span class="tm">${fmt(a[0]).slice(6)}</span>${esc(hostName(a[1]))} looked up ${esc(a[2])}</button>`})))
-    .filter(e => e.h >= h && e.h < h + WIN).sort((a, b) => a.h - b.h);
-  $('tl-win').innerHTML = `<div class="row"><span>${fmt(h)} → +${WIN < 1 ? WIN * 60 + ' min' : WIN + ' h'}</span><b>${inW.length.toLocaleString()} flows</b></div>`
+    .concat(T.ioc_lookups.map(a => ({h: a[0], html: `<button type="button" class="ev"${isNode(a[1]) ? ` data-host="${esc(N[a[1]].id)}"` : ''}><span class="tm">${fmt(a[0]).slice(6)}</span>${esc(hostName(a[1]))} looked up ${esc(a[2])}</button>`})))
+    .filter(e => inWin(e.h, h)).sort((a, b) => a.h - b.h);
+  const what = T.sampled ? ' drawn' : '';
+  $('tl-win').innerHTML = `<div class="row"><span>${fmt(h)} → +${WIN < 1 ? WIN * 60 + ' min' : WIN + ' h'}</span><b>${inW.length.toLocaleString()} flows${what}</b></div>`
+    + (real != null ? `<div class="row"><span>Flows in the run, this window</span><b>≈ ${real.toLocaleString()}</b></div>` : '')
+    + (T.sampled ? '<p class="tl-note">The counts below are of the flows drawn.</p>' : '')
     + `<div class="row"><span>Inbound from internet</span><b>${c(f => f[1] < 0)}</b></div><div class="row"><span>Outbound to internet</span><b>${c(f => f[2] < 0)}</b></div>`
     + `<div class="row"><span>Blocked or failed</span><b>${c(f => f[4] & 1)}</b></div><div class="row"><span>Alert or IOC address</span><b style="color:var(--pink)">${c(f => f[4] & 2)}</b></div>`
     + (telemetryOnly ? '' : `<div class="row"><span>Onto a vulnerable port</span><b>${c(f => f[4] & 4)}</b></div>`)
     + (evs.length ? `<h3 style="margin-top:10px">Events</h3>${evs.slice(0, 12).map(e => e.html).join('')}` : '<p>No alerts or IOC lookups in this window.</p>');
-  $('tl-win').querySelectorAll('[data-alert]').forEach(b => b.onclick = () => { const a = T.alerts[+b.dataset.alert]; if (a[1] >= 0) openHost(N[a[1]].id); });
+  $('tl-win').querySelectorAll('[data-alert]').forEach(b => b.onclick = () => { const a = T.alerts[+b.dataset.alert]; if (isNode(a[1])) openHost(N[a[1]].id); });
   $('tl-win').querySelectorAll('[data-host]').forEach(b => b.onclick = () => openHost(b.dataset.host));
 }
 function setupSide() {
@@ -170,7 +189,16 @@ function setupSide() {
   const markW = () => root.querySelectorAll('.tl-winbtns button').forEach(b => b.classList.toggle('on', +b.dataset.w === WIN));
   root.querySelectorAll('.tl-winbtns button').forEach(b => b.onclick = () => { WIN = +b.dataset.w; sc.max = Math.max(0, HRS - WIN); markW(); setWindow(Math.min(+sc.value, +sc.max)); });
   markW(); setWindow(+sc.value);
-  $('tl-sample').innerHTML = T.sampled ? `<p>This run has ${T.total.toLocaleString()} flows. Every blocked flow and every flow to or from an alert or IOC address is kept (up to half the budget); the rest is a fixed random sample.</p>` : '';
+  const notes = [];
+  if (T.sampled) notes.push(`This run has ${T.total.toLocaleString()} flows, more than can be drawn. Flows to or from an alert or IOC address, then blocked flows, are kept first (up to half the budget), each picked at random across the whole run; the rest is a fixed random sample.`);
+  if (MORE.length) notes.push(`${MORE.length.toLocaleString()} internal host${MORE.length > 1 ? 's are' : ' is'} not in the network view; ${MORE.length > 1 ? 'their' : 'its'} traffic is still drawn on ${MORE.length > 1 ? 'their' : 'its'} subnet's lane.`);
+  if ((T.alerts_total || 0) > T.alerts.length) notes.push(`${T.alerts.length} of ${T.alerts_total.toLocaleString()} IPS alerts are shown, spread over the whole run (alerts that were not blocked first).`);
+  if ((T.ioc_lookups_total || 0) > T.ioc_lookups.length) notes.push(`${T.ioc_lookups.length} of ${T.ioc_lookups_total.toLocaleString()} IOC lookups are shown, spread over the whole run.`);
+  const un = T.untimed || [];
+  $('tl-sample').innerHTML = notes.map(n => `<p>${esc(n)}</p>`).join('')
+    + (un.length ? `<h3 style="margin-top:10px">Alerts with no time (${(T.untimed_total || un.length).toLocaleString()})</h3><p>The log gave no timestamp, so they are not placed on the tunnel.</p>`
+      + un.slice(0, 12).map((a, k) => `<button type="button" class="ev${a[3] ? ' blk' : ''}" data-untimed="${k}">${esc(a[2].replace(/\(.*?\)/g, ''))} → ${a[0] >= 0 ? esc(hostName(a[0])) : '?'}</button>`).join('') : '');
+  $('tl-sample').querySelectorAll('[data-untimed]').forEach(b => b.onclick = () => { const a = un[+b.dataset.untimed]; if (isNode(a[0])) openHost(N[a[0]].id); });
 }
 
 // ---------------------------------------------------------------- camera: moves only when you drag or zoom, or while Spin is on

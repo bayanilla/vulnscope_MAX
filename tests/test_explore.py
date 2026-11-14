@@ -171,14 +171,20 @@ class ExploreTests(unittest.TestCase):
     def test_timeline_orders_flows_alerts_and_ioc_lookups(self):
         t = self.data["timeline"]
         nodes = [n["id"] for n in self.data["nodes"]]
-        self.assertEqual(len(t["flows"]), sum(1 for f in self.ds.flows if f.ts and f.src_ip != f.dst_ip
-                                              and all(ip in nodes or not ip.startswith("10.") for ip in (f.src_ip, f.dst_ip))))
+        # every timed flow is drawn, including traffic between hosts the network view leaves out
+        self.assertEqual(len(t["flows"]), sum(1 for f in self.ds.flows if f.ts and f.src_ip != f.dst_ip))
+        self.assertEqual(t["hidden"], 0)
         self.assertFalse(t["sampled"])
         self.assertEqual([f[0] for f in t["flows"]], sorted(f[0] for f in t["flows"]))
         self.assertTrue(all(0 <= f[0] <= t["hours"] for f in t["flows"]))
-        ext = [e[0] for e in t["ext"]]
-        name = lambda r: nodes[r] if r >= 0 else ext[-r - 1]
-        # the web01 exploit alert has no timestamp of its own, so it sits at the pair's first session
+        ext, more = [e[0] for e in t["ext"]], [m[0] for m in t["more"]]
+        name = lambda r: ext[-r - 1] if r < 0 else nodes[r] if r < len(nodes) else more[r - len(nodes)]
+        # every IPS alert is placed at its own time, in order
+        self.assertEqual(len(t["alerts"]), len(self.ds.threats))
+        self.assertEqual(t["untimed"], [])
+        t0 = datetime.fromisoformat(t["t0"].replace("Z", "+00:00"))
+        self.assertEqual(sorted(round((a.ts - t0).total_seconds() / 3600, 4) for a in self.ds.threats),
+                         [a[0] for a in t["alerts"]])
         web = [a for a in t["alerts"] if a[2] == "203.0.113.45"]
         self.assertEqual(len(web), 1)
         self.assertEqual(name(web[0][1]), "10.10.1.10")
@@ -217,6 +223,71 @@ class ExploreTests(unittest.TestCase):
         self.assertEqual(len(t["flows"]), 500)
         self.assertEqual(sum(1 for f in t["flows"] if f[4] & 2), 40)   # every flagged flow survives the sample
         self.assertEqual([f[0] for f in t["flows"]], sorted(f[0] for f in t["flows"]))
+
+    def test_timeline_spreads_flagged_flows_over_the_whole_run(self):
+        # more flagged flows than half the budget: the kept ones must cover the run, not just its start
+        from datetime import timedelta
+        base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        flows = [Flow(base + timedelta(minutes=i), "198.51.100.9", "10.60.1.1", 443, "tcp") for i in range(2000)]
+        flows += [Flow(base + timedelta(minutes=i), "10.60.0.2", "10.60.1.1", 445, "tcp") for i in range(2000)]
+        ds = Dataset(flows=flows, threats=[ThreatEvent(base, "198.51.100.9", "10.60.1.1", 443, "Exploit attempt")])
+        old = explore.MAX_TIMELINE_FLOWS
+        explore.MAX_TIMELINE_FLOWS = 400
+        try:
+            t = explore.build(correlate(ds), ds)["timeline"]
+        finally:
+            explore.MAX_TIMELINE_FLOWS = old
+        hot = [f[0] for f in t["flows"] if f[4] & 2]
+        self.assertEqual(len(hot), 200)
+        self.assertLess(min(hot), t["hours"] * 0.1)
+        self.assertGreater(max(hot), t["hours"] * 0.9)
+        # the per-bucket counts cover every flow in the run
+        self.assertEqual(sum(n for _, n in t["hist"]["counts"]), t["total"])
+
+    def test_timeline_draws_hosts_left_out_of_the_network_view(self):
+        ts = datetime(2026, 1, 1, 8, tzinfo=timezone.utc)
+        ds = Dataset(flows=[Flow(ts, "10.70.0.%d" % i, "10.70.1.%d" % i, 502, "tcp") for i in range(1, 6)])
+        old = explore.MAX_NODES
+        explore.MAX_NODES = 2
+        try:
+            data = explore.build(correlate(ds), ds)
+        finally:
+            explore.MAX_NODES = old
+        t = data["timeline"]
+        self.assertEqual(len(data["nodes"]), 2)
+        self.assertEqual(len(t["flows"]), 5)
+        self.assertEqual(len(t["more"]), 8)
+        self.assertTrue(all(m[1] in ("10.70.0.0/24", "10.70.1.0/24") for m in t["more"]))
+        self.assertTrue(all(0 <= r < 2 + 8 for f in t["flows"] for r in f[1:3]))
+
+    def test_timeline_lists_untimed_alerts_apart(self):
+        ts = datetime(2026, 1, 1, 8, tzinfo=timezone.utc)
+        ds = Dataset(flows=[Flow(ts, "198.51.100.7", "10.90.0.5", 3389, "tcp", action="deny", established=False)],
+                     threats=[ThreatEvent(None, "198.51.100.7", "10.90.0.5", 3389, "RDP exploit", action="reset-both")])
+        t = explore.build(correlate(ds), ds)["timeline"]
+        self.assertEqual(t["alerts"], [])                     # not placed at a guessed time
+        self.assertEqual(t["untimed_total"], 1)
+        self.assertEqual(t["untimed"][0][1:], ["198.51.100.7", "RDP exploit", True])
+
+    def test_timeline_thins_alerts_over_the_run_keeping_unblocked_ones(self):
+        from datetime import timedelta
+        base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        threats = [ThreatEvent(base + timedelta(hours=i), "198.51.100.%d" % (i + 1), "10.90.0.5", 3389, "scan", action="drop")
+                   for i in range(50)]
+        threats.append(ThreatEvent(base + timedelta(hours=49, minutes=30), "203.0.113.9", "10.90.0.5", 443, "exploit"))
+        ds = Dataset(flows=[Flow(base, "10.90.0.6", "10.90.0.5", 445, "tcp"), Flow(base + timedelta(hours=50), "10.90.0.6", "10.90.0.5", 445, "tcp")],
+                     threats=threats)
+        old = explore.MAX_TIMELINE_ALERTS
+        explore.MAX_TIMELINE_ALERTS = 6
+        try:
+            t = explore.build(correlate(ds), ds)["timeline"]
+        finally:
+            explore.MAX_TIMELINE_ALERTS = old
+        self.assertEqual((len(t["alerts"]), t["alerts_total"]), (6, 51))
+        self.assertIn("exploit", [a[3] for a in t["alerts"]])
+        hours = [a[0] for a in t["alerts"]]
+        self.assertEqual(hours, sorted(hours))
+        self.assertGreater(max(h for h, *_, blocked in t["alerts"] if blocked), 30)
 
     def test_timeline_needs_timestamps(self):
         ds = Dataset(flows=[Flow(None, "198.51.100.7", "10.90.0.5", 22, "tcp")])

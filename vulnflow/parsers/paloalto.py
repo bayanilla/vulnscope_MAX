@@ -86,11 +86,18 @@ def parse(path: str, stats: ParseStats):
                     if a in header:
                         idx[key] = header.index(a)
                         break
+            # every time column the export has, in preference order: THREAT rows leave Start Time
+            # empty, so each row falls back to the next column that has a value (e.g. Receive Time)
+            ts_cols = [header.index(a) for a in HEADER_ALIASES["ts"] if a in header]
+
+            def get(k):
+                if k == "ts":
+                    return next((row[i] for i in ts_cols if i < len(row) and row[i].strip()), None)
+                return row[idx[k]] if k in idx and idx[k] < len(row) else None
             for row in reader:
                 if not any(c.strip() for c in row):
                     continue
                 stats.read += 1
-                get = lambda k: row[idx[k]] if k in idx and idx[k] < len(row) else None
                 kind = (get("type") or "TRAFFIC").strip().upper()
                 if kind == "THREAT":
                     t = _threat(get, stats)
