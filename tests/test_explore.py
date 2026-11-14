@@ -269,6 +269,14 @@ class ExploreTests(unittest.TestCase):
         self.assertEqual(t["untimed_total"], 1)
         self.assertEqual(t["untimed"][0][1:], ["198.51.100.7", "RDP exploit", True])
 
+    def test_timeline_alerts_name_their_destination_address(self):
+        # an alert onto an outside address (a C2 callback) still says where it went
+        ts = datetime(2026, 1, 1, 8, tzinfo=timezone.utc)
+        ds = Dataset(flows=[Flow(ts, "10.90.0.5", "198.51.100.7", 443, "tcp")],
+                     threats=[ThreatEvent(ts, "10.90.0.5", "198.51.100.7", 443, "Beacon")])
+        a = explore.build(correlate(ds), ds)["timeline"]["alerts"][0]
+        self.assertEqual((a[1], a[5]), (-1, "198.51.100.7"))
+
     def test_timeline_thins_alerts_over_the_run_keeping_unblocked_ones(self):
         from datetime import timedelta
         base = datetime(2026, 1, 1, tzinfo=timezone.utc)
