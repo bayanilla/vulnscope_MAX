@@ -290,6 +290,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                         "out_ports": sorted(back.tried)[:8] if back else [],
                         "connection_examples": (p.examples if p else []) + (back.examples if back else []),
                         "alerts": len(open_al), "alerts_blocked": len(al) - len(open_al),
+                        "alerts_in": sum(t.src_ip == src for t in al),
                         "alert_examples": [{"src_ip": t.src_ip, "dst_ip": t.dst_ip,
                                             "dst_port": t.dst_port, "name": t.name,
                                             "blocked": t.blocked} for t in al[:MAX_CONNECTION_EXAMPLES]],
@@ -306,6 +307,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
                             "vuln_ports": [], "out_sessions": 0, "out_established": 0, "out_ports": [],
                             "connection_examples": [],
                             "alerts": len(open_al), "alerts_blocked": len(al) - len(open_al),
+                            "alerts_in": sum(t.src_ip == src for t in al),
                             "alert_examples": [{"src_ip": t.src_ip, "dst_ip": t.dst_ip,
                                                 "dst_port": t.dst_port, "name": t.name,
                                                 "blocked": t.blocked} for t in al[:MAX_CONNECTION_EXAMPLES]],
@@ -371,9 +373,18 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     # overview edges: internal pairs touching at least one node we keep
     # Past MAX_NODES, draw the riskiest hosts: evidence first, then priority and score. Sorting by
     # address alone would drop whole ranges (for example cloud subnets that sort after on-prem).
+    # Then hosts in IPS/IDS alerts, OT devices and the busiest hosts, so telemetry-only runs (no
+    # priorities or scores) do not fall back to address order and drop alerted hosts and PLCs.
     ev_rank = {"likely": 0, "lead": 1}
+    alerted = {ip for t in ds.threats for ip in (t.src_ip, t.dst_ip)}
+    ot_hosts = {ip for ip, c in ot_counts.items() if c}
+
+    def activity(n):
+        h = hostinfo.get(n) or {}
+        return (h.get("inbound_flows") or 0) + (h.get("outbound_flows") or 0)
     keep = sorted(nodes, key=lambda n: (not nodes[n]["observed"], ev_rank.get(nodes[n]["ev"], 2),
-                                        nodes[n]["pri"] or "P9", -(nodes[n]["score"] or 0), n))[:MAX_NODES]
+                                        nodes[n]["pri"] or "P9", -(nodes[n]["score"] or 0),
+                                        n not in alerted, n not in ot_hosts, -activity(n), n))[:MAX_NODES]
     kept = set(keep)
     links = {}
     for (s, d), p in pairs.items():
@@ -407,7 +418,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         "focus": {ip: f for ip, f in focus.items() if ip in kept}, "ioc_matches": res.get("ioc_matches", []), **overview,
         "ioc_counts": {host: len(ids) for host, ids in ioc_by_host.items()},
         "article_briefs": res.get("article_briefs", {}),
-        "start": res["hosts"][0]["host"] if res["hosts"] else None,
+        "start": (keep[0] if telemetry_only and keep else res["hosts"][0]["host"] if res["hosts"] else None),
         "timeline": timeline,
     }
 
@@ -557,7 +568,7 @@ def _overview_summary(pairs, nodes, focus, kept, ext) -> dict:
             e = inet.get(a["ip"])
             if e is None:
                 e = inet[a["ip"]] = {"ip": a["ip"], "kind": a["kind"], "sessions": 0, "alerts": 0, "targets": [],
-                                     "in_sessions": 0, "out_sessions": 0, "out_hosts": 0}
+                                     "in_sessions": 0, "out_sessions": 0, "out_hosts": 0, "alerts_in": 0}
             if KIND_RANK[a["kind"]] < KIND_RANK[e["kind"]]:
                 e["kind"] = a["kind"]
             e["sessions"] += a["sessions"] + a["out_sessions"]
@@ -565,12 +576,15 @@ def _overview_summary(pairs, nodes, focus, kept, ext) -> dict:
             e["out_sessions"] += a["out_sessions"]
             e["out_hosts"] += a["out_sessions"] > 0
             e["alerts"] += a["alerts"]
+            e["alerts_in"] += a.get("alerts_in", 0)
             # direction of this host's traffic with the address: in (it reached the host), out (the host
             # connected out to it) or both
             d = "both" if a["sessions"] and a["out_sessions"] else "out" if a["out_sessions"] else "in"
             e["targets"].append([host, a["kind"], a["sessions"] + a["out_sessions"], d])
     for e in inet.values():
-        e["dir"] = ("both" if e["out_sessions"] and (e["in_sessions"] or e["alerts"])
+        # an alert only counts as inbound when the outside address set it off (it was the source);
+        # a client-side alert such as a bad server certificate is the internal host going out
+        e["dir"] = ("both" if e["out_sessions"] and (e["in_sessions"] or e["alerts_in"])
                     else "out" if e["out_sessions"] else "in")
     # Inbound and outbound are ranked separately and interleaved, so internal hosts calling out are not
     # crowded off the overview by inbound scanners (which outnumber them and rank first by kind).

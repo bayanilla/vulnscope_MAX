@@ -695,15 +695,16 @@ class Correlator:
         }
 
     def _telemetry_leads(self) -> list[dict]:
-        """IPS/IDS alerts grouped by the internal host involved: the target, or the source when
-        an internal host set off an alert towards an outside address (e.g. a beacon)."""
+        """IPS/IDS alerts grouped by the internal hosts involved: the target and the internal source
+        (an internal host that set off an alert, towards an outside address or another internal host)."""
         by_host: dict[str, list] = defaultdict(list)
         role: dict[str, set] = defaultdict(set)
         for t in self.ds.threats:
             if self.net.internal(t.dst_ip):
                 by_host[t.dst_ip].append(t)
                 role[t.dst_ip].add("target")
-            elif self.net.internal(t.src_ip):
+            # the internal source is listed too, also when the target is internal (lateral movement)
+            if self.net.internal(t.src_ip) and t.src_ip != t.dst_ip:
                 by_host[t.src_ip].append(t)
                 role[t.src_ip].add("source")
         return [{"host": ip, "alerts": len(alerts), "unblocked": sum(not t.blocked for t in alerts),
