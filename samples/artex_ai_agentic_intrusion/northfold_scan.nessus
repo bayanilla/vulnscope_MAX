@@ -1,0 +1,1223 @@
+<?xml version='1.0' encoding='utf-8'?>
+<NessusClientData_v2>
+  <Report name="Northfold monthly scan">
+    <ReportHost name="10.50.1.10">
+      <HostProperties>
+        <tag name="host-ip">10.50.1.10</tag>
+        <tag name="host-fqdn">portal01.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 5.15 on Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202400</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202580</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="4" pluginID="900101" pluginName="Northfold Portal Report API Executes Arbitrary SQL Statements" pluginFamily="CGI abuses">
+        <cvss3_base_score>9.8</cvss3_base_score>
+        <exploit_available>true</exploit_available>
+        <synopsis>The portal's report API passes caller-supplied SQL to MySQL with the application account, which holds SUPER and FILE privileges.</synopsis>
+        <solution>Remove free-form SQL from the report API and drop SUPER/FILE from the application account.</solution>
+      </ReportItem>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="42479" pluginName="CGI Generic SQL Injection (blind)" pluginFamily="CGI abuses">
+        <cvss3_base_score>8.6</cvss3_base_score>
+        <exploit_available>true</exploit_available>
+        <synopsis>A CGI application hosted on the remote web server is potentially prone to SQL injection.</synopsis>
+        <solution>Modify the affected CGI scripts so that they properly escape arguments.</solution>
+      </ReportItem>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="4" pluginID="232781" pluginName="Apache Tomcat 9.0.x &lt; 9.0.99 Remote Code Execution (CVE-2025-24813)" pluginFamily="Web Servers">
+        <cvss3_base_score>9.8</cvss3_base_score>
+        <cve>CVE-2025-24813</cve>
+        <exploit_available>true</exploit_available>
+        <exploit_framework_metasploit>true</exploit_framework_metasploit>
+        <synopsis>The Tomcat instance behind the portal is affected by a partial PUT remote code execution vulnerability.</synopsis>
+        <solution>Upgrade to Apache Tomcat 9.0.99 or later.</solution>
+      </ReportItem>
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="2" pluginID="900102" pluginName="JavaScript Source Maps Publicly Accessible" pluginFamily="CGI abuses">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Production JavaScript source maps reveal internal API routes.</synopsis>
+        <solution>Do not publish source maps.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.1.11">
+      <HostProperties>
+        <tag name="host-ip">10.50.1.11</tag>
+        <tag name="host-fqdn">sso01.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 5.15 on Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202420</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202600</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="3" pluginID="900104" pluginName="Web Login Endpoint Lacks Rate Limiting and Account Lockout" pluginFamily="CGI abuses">
+        <cvss3_base_score>7.5</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>The SSO login form accepts unlimited attempts from one address.</synopsis>
+        <solution>Add rate limiting, lockout and phishing-resistant MFA.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.1.12">
+      <HostProperties>
+        <tag name="host-ip">10.50.1.12</tag>
+        <tag name="host-fqdn">api01.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 5.15 on Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202440</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202620</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="443" svc_name="www" protocol="tcp" severity="2" pluginID="900103" pluginName="OpenAPI / Swagger Documentation Exposed Without Authentication" pluginFamily="CGI abuses">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>The API gateway publishes its full OpenAPI document to anonymous users.</synopsis>
+        <solution>Require authentication for API documentation.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.1.25">
+      <HostProperties>
+        <tag name="host-ip">10.50.1.25</tag>
+        <tag name="host-fqdn">mail01.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 5.15 on Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202460</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202640</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="25" svc_name="smtp" protocol="tcp" severity="2" pluginID="900107" pluginName="SMTP Relay Accepts Unauthenticated Submission From Server Segment" pluginFamily="SMTP problems">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>The mail relay accepts mail from any DMZ server without authentication.</synopsis>
+        <solution>Require authenticated submission and per-sender limits.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.0.10">
+      <HostProperties>
+        <tag name="host-ip">10.50.0.10</tag>
+        <tag name="host-fqdn">dc01.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows Server 2022 Standard</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202480</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202660</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="88" svc_name="kerberos" protocol="tcp" severity="2" pluginID="900108" pluginName="Kerberos RC4-HMAC Encryption Allowed for Service Accounts" pluginFamily="Windows">
+        <cvss3_base_score>5.9</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Service accounts accept RC4 tickets, which makes Kerberoasting practical.</synopsis>
+        <solution>Require AES for service accounts and use gMSAs.</solution>
+      </ReportItem>
+      <ReportItem port="389" svc_name="ldap" protocol="tcp" severity="2" pluginID="191001" pluginName="Active Directory LDAP Signing and Channel Binding Not Required" pluginFamily="Windows">
+        <cvss3_base_score>5.9</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>The domain controller accepts unsigned LDAP binds.</synopsis>
+        <solution>Require LDAP signing and channel binding.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.0.11">
+      <HostProperties>
+        <tag name="host-ip">10.50.0.11</tag>
+        <tag name="host-fqdn">dc02.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows Server 2022 Standard</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202500</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202680</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="88" svc_name="kerberos" protocol="tcp" severity="2" pluginID="900108" pluginName="Kerberos RC4-HMAC Encryption Allowed for Service Accounts" pluginFamily="Windows">
+        <cvss3_base_score>5.9</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Service accounts accept RC4 tickets, which makes Kerberoasting practical.</synopsis>
+        <solution>Require AES for service accounts and use gMSAs.</solution>
+      </ReportItem>
+      <ReportItem port="389" svc_name="ldap" protocol="tcp" severity="2" pluginID="191001" pluginName="Active Directory LDAP Signing and Channel Binding Not Required" pluginFamily="Windows">
+        <cvss3_base_score>5.9</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>The domain controller accepts unsigned LDAP binds.</synopsis>
+        <solution>Require LDAP signing and channel binding.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.0.20">
+      <HostProperties>
+        <tag name="host-ip">10.50.0.20</tag>
+        <tag name="host-fqdn">db01.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 5.15 on Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202520</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202700</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="3306" svc_name="mysql" protocol="tcp" severity="4" pluginID="900106" pluginName="MySQL Server Unsupported Version Detection" pluginFamily="Databases">
+        <cvss3_base_score>10.0</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>The installed version of MySQL is no longer supported.</synopsis>
+        <solution>Upgrade to a supported MySQL release.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.0.30">
+      <HostProperties>
+        <tag name="host-ip">10.50.0.30</tag>
+        <tag name="host-fqdn">git01.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 5.15 on Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202540</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202720</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.0.31">
+      <HostProperties>
+        <tag name="host-ip">10.50.0.31</tag>
+        <tag name="host-fqdn">ci01.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 5.15 on Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202560</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202740</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="8080" svc_name="www" protocol="tcp" severity="4" pluginID="189463" pluginName="Jenkins &lt; 2.442 Arbitrary File Read (CVE-2024-23897)" pluginFamily="CGI abuses">
+        <cvss3_base_score>9.8</cvss3_base_score>
+        <cve>CVE-2024-23897</cve>
+        <exploit_available>true</exploit_available>
+        <exploit_framework_metasploit>true</exploit_framework_metasploit>
+        <synopsis>The Jenkins controller allows arbitrary file read through its CLI.</synopsis>
+        <solution>Upgrade Jenkins to 2.442 or later.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.0.40">
+      <HostProperties>
+        <tag name="host-ip">10.50.0.40</tag>
+        <tag name="host-fqdn">fs01.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows Server 2019 Standard</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202580</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202760</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.0.45">
+      <HostProperties>
+        <tag name="host-ip">10.50.0.45</tag>
+        <tag name="host-fqdn">crm01.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows Server 2012 R2 Standard</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202600</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202780</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="8080" svc_name="www" protocol="tcp" severity="4" pluginID="900105" pluginName="Sales API Accepts Predictable Development Credential" pluginFamily="CGI abuses">
+        <cvss3_base_score>9.1</cvss3_base_score>
+        <exploit_available>true</exploit_available>
+        <synopsis>The legacy sales API accepts a local-development username and password from any internal address.</synopsis>
+        <solution>Remove development credentials and put the API behind SSO.</solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="4" pluginID="108797" pluginName="Unsupported Windows OS (remote)" pluginFamily="Windows">
+        <cvss3_base_score>10.0</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>The remote host runs a version of Windows that is no longer supported.</synopsis>
+        <solution>Upgrade to a supported version of Windows.</solution>
+      </ReportItem>
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.0.50">
+      <HostProperties>
+        <tag name="host-ip">10.50.0.50</tag>
+        <tag name="host-fqdn">backup01.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows Server 2019 Standard</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202620</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202800</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.0.60">
+      <HostProperties>
+        <tag name="host-ip">10.50.0.60</tag>
+        <tag name="host-fqdn">jump01.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows Server 2022 Standard</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202640</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202820</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.40.10">
+      <HostProperties>
+        <tag name="host-ip">10.50.40.10</tag>
+        <tag name="host-fqdn">seclab01.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202660</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202840</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.41.10">
+      <HostProperties>
+        <tag name="host-ip">10.50.41.10</tag>
+        <tag name="host-fqdn">lab-juice.lab.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 5.15 on Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202680</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202860</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="80" svc_name="www" protocol="tcp" severity="3" pluginID="900110" pluginName="Intentionally Vulnerable Training Application Detected (OWASP Juice Shop)" pluginFamily="CGI abuses">
+        <cvss3_base_score>7.5</cvss3_base_score>
+        <exploit_available>true</exploit_available>
+        <synopsis>A deliberately vulnerable application used for security testing is reachable.</synopsis>
+        <solution>Keep training targets on an isolated network.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.41.11">
+      <HostProperties>
+        <tag name="host-ip">10.50.41.11</tag>
+        <tag name="host-fqdn">lab-dvwa.lab.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 5.15 on Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202700</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202880</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="80" svc_name="www" protocol="tcp" severity="3" pluginID="900110" pluginName="Intentionally Vulnerable Training Application Detected (DVWA)" pluginFamily="CGI abuses">
+        <cvss3_base_score>7.5</cvss3_base_score>
+        <exploit_available>true</exploit_available>
+        <synopsis>A deliberately vulnerable application used for security testing is reachable.</synopsis>
+        <solution>Keep training targets on an isolated network.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.41.12">
+      <HostProperties>
+        <tag name="host-ip">10.50.41.12</tag>
+        <tag name="host-fqdn">lab-webgoat.lab.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 5.15 on Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202720</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202900</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="80" svc_name="www" protocol="tcp" severity="3" pluginID="900110" pluginName="Intentionally Vulnerable Training Application Detected (WebGoat)" pluginFamily="CGI abuses">
+        <cvss3_base_score>7.5</cvss3_base_score>
+        <exploit_available>true</exploit_available>
+        <synopsis>A deliberately vulnerable application used for security testing is reachable.</synopsis>
+        <solution>Keep training targets on an isolated network.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.41.13">
+      <HostProperties>
+        <tag name="host-ip">10.50.41.13</tag>
+        <tag name="host-fqdn">lab-api.lab.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 5.15 on Ubuntu 22.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202740</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202920</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="80" svc_name="www" protocol="tcp" severity="3" pluginID="900110" pluginName="Intentionally Vulnerable Training Application Detected (crAPI)" pluginFamily="CGI abuses">
+        <cvss3_base_score>7.5</cvss3_base_score>
+        <exploit_available>true</exploit_available>
+        <synopsis>A deliberately vulnerable application used for security testing is reachable.</synopsis>
+        <solution>Keep training targets on an isolated network.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.21">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.21</tag>
+        <tag name="host-fqdn">eng-mbp-01.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202760</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202940</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.22">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.22</tag>
+        <tag name="host-fqdn">eng-mbp-02.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202780</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202960</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.23">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.23</tag>
+        <tag name="host-fqdn">eng-mbp-03.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202800</tag>
+        <tag name="HOST_END_TIMESTAMP">1792202980</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.24">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.24</tag>
+        <tag name="host-fqdn">eng-mbp-04.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202820</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203000</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.25">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.25</tag>
+        <tag name="host-fqdn">eng-mbp-05.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202840</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203020</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.26">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.26</tag>
+        <tag name="host-fqdn">eng-mbp-06.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202860</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203040</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.27">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.27</tag>
+        <tag name="host-fqdn">eng-mbp-07.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202880</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203060</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.28">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.28</tag>
+        <tag name="host-fqdn">eng-mbp-08.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202900</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203080</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.29">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.29</tag>
+        <tag name="host-fqdn">eng-mbp-09.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202920</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203100</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.30">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.30</tag>
+        <tag name="host-fqdn">eng-mbp-10.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202940</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203120</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.31">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.31</tag>
+        <tag name="host-fqdn">eng-mbp-11.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202960</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203140</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.32">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.32</tag>
+        <tag name="host-fqdn">eng-mbp-12.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792202980</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203160</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.33">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.33</tag>
+        <tag name="host-fqdn">eng-mbp-13.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203000</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203180</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.34">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.34</tag>
+        <tag name="host-fqdn">eng-mbp-14.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203020</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203200</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.35">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.35</tag>
+        <tag name="host-fqdn">eng-mbp-15.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203040</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203220</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.36">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.36</tag>
+        <tag name="host-fqdn">eng-mbp-16.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203060</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203240</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.37">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.37</tag>
+        <tag name="host-fqdn">eng-mbp-17.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203080</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203260</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.38">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.38</tag>
+        <tag name="host-fqdn">eng-mbp-18.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203100</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203280</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.39">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.39</tag>
+        <tag name="host-fqdn">eng-mbp-19.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203120</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203300</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.40">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.40</tag>
+        <tag name="host-fqdn">eng-mbp-20.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203140</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203320</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.41">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.41</tag>
+        <tag name="host-fqdn">eng-mbp-21.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203160</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203340</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.42">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.42</tag>
+        <tag name="host-fqdn">eng-mbp-22.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203180</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203360</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.43">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.43</tag>
+        <tag name="host-fqdn">eng-mbp-23.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203200</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203380</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.44">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.44</tag>
+        <tag name="host-fqdn">eng-mbp-24.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203220</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203400</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.45">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.45</tag>
+        <tag name="host-fqdn">eng-mbp-25.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203240</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203420</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.46">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.46</tag>
+        <tag name="host-fqdn">eng-mbp-26.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203260</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203440</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.47">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.47</tag>
+        <tag name="host-fqdn">eng-mbp-27.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203280</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203460</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.48">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.48</tag>
+        <tag name="host-fqdn">eng-mbp-28.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203300</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203480</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.49">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.49</tag>
+        <tag name="host-fqdn">eng-mbp-29.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203320</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203500</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.50">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.50</tag>
+        <tag name="host-fqdn">eng-mbp-30.northfold.example</tag>
+        <tag name="operating-system">Mac OS X 15.1</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203340</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203520</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.51">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.51</tag>
+        <tag name="host-fqdn">eng-lx-01.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203360</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203540</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.52">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.52</tag>
+        <tag name="host-fqdn">eng-lx-02.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203380</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203560</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.53">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.53</tag>
+        <tag name="host-fqdn">eng-lx-03.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203400</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203580</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.54">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.54</tag>
+        <tag name="host-fqdn">eng-lx-04.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203420</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203600</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.55">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.55</tag>
+        <tag name="host-fqdn">eng-lx-05.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203440</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203620</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.56">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.56</tag>
+        <tag name="host-fqdn">eng-lx-06.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203460</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203640</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.57">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.57</tag>
+        <tag name="host-fqdn">eng-lx-07.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203480</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203660</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.58">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.58</tag>
+        <tag name="host-fqdn">eng-lx-08.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203500</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203680</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.59">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.59</tag>
+        <tag name="host-fqdn">eng-lx-09.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203520</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203700</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.60">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.60</tag>
+        <tag name="host-fqdn">eng-lx-10.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203540</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203720</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.61">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.61</tag>
+        <tag name="host-fqdn">eng-lx-11.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203560</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203740</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.62">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.62</tag>
+        <tag name="host-fqdn">eng-lx-12.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203580</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203760</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.63">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.63</tag>
+        <tag name="host-fqdn">eng-lx-13.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203600</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203780</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.64">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.64</tag>
+        <tag name="host-fqdn">eng-lx-14.northfold.example</tag>
+        <tag name="operating-system">Linux Kernel 6.8 on Ubuntu 24.04</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203620</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203800</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.10.65">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.65</tag>
+        <tag name="host-fqdn">ops-ws-01.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203640</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203820</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.66">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.66</tag>
+        <tag name="host-fqdn">ops-ws-02.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203660</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203840</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.67">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.67</tag>
+        <tag name="host-fqdn">ops-ws-03.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203680</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203860</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.68">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.68</tag>
+        <tag name="host-fqdn">ops-ws-04.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203700</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203880</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.69">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.69</tag>
+        <tag name="host-fqdn">ops-ws-05.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203720</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203900</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.70">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.70</tag>
+        <tag name="host-fqdn">ops-ws-06.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203740</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203920</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.71">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.71</tag>
+        <tag name="host-fqdn">ops-ws-07.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203760</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203940</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.72">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.72</tag>
+        <tag name="host-fqdn">ops-ws-08.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203780</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203960</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.73">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.73</tag>
+        <tag name="host-fqdn">ops-ws-09.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203800</tag>
+        <tag name="HOST_END_TIMESTAMP">1792203980</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.74">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.74</tag>
+        <tag name="host-fqdn">ops-ws-10.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203820</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204000</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.75">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.75</tag>
+        <tag name="host-fqdn">ops-ws-11.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203840</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204020</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.76">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.76</tag>
+        <tag name="host-fqdn">ops-ws-12.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203860</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204040</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.77">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.77</tag>
+        <tag name="host-fqdn">ops-ws-13.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203880</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204060</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.78">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.78</tag>
+        <tag name="host-fqdn">ops-ws-14.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203900</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204080</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.79">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.79</tag>
+        <tag name="host-fqdn">sales-ws-01.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203920</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204100</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.80">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.80</tag>
+        <tag name="host-fqdn">sales-ws-02.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203940</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204120</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.81">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.81</tag>
+        <tag name="host-fqdn">sales-ws-03.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203960</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204140</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.82">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.82</tag>
+        <tag name="host-fqdn">sales-ws-04.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792203980</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204160</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.83">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.83</tag>
+        <tag name="host-fqdn">sales-ws-05.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792204000</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204180</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.84">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.84</tag>
+        <tag name="host-fqdn">sales-ws-06.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792204020</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204200</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.85">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.85</tag>
+        <tag name="host-fqdn">sales-ws-07.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792204040</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204220</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.86">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.86</tag>
+        <tag name="host-fqdn">sales-ws-08.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792204060</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204240</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.87">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.87</tag>
+        <tag name="host-fqdn">sales-ws-09.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792204080</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204260</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.88">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.88</tag>
+        <tag name="host-fqdn">sales-ws-10.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792204100</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204280</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.89">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.89</tag>
+        <tag name="host-fqdn">sales-ws-11.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792204120</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204300</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.10.90">
+      <HostProperties>
+        <tag name="host-ip">10.50.10.90</tag>
+        <tag name="host-fqdn">sales-ws-12.northfold.example</tag>
+        <tag name="operating-system">Microsoft Windows 11 Enterprise</tag>
+        <tag name="HOST_START_TIMESTAMP">1792204140</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204320</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+      <ReportItem port="445" svc_name="cifs" protocol="tcp" severity="2" pluginID="57608" pluginName="SMB Signing not required" pluginFamily="Misc.">
+        <cvss3_base_score>5.3</cvss3_base_score>
+        <exploit_available>false</exploit_available>
+        <synopsis>Signing is not required on the remote SMB server.</synopsis>
+        <solution>Enforce message signing in the host's configuration.</solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="10.50.30.10">
+      <HostProperties>
+        <tag name="host-ip">10.50.30.10</tag>
+        <tag name="host-fqdn">prn-10.northfold.example</tag>
+        <tag name="operating-system">HP LaserJet</tag>
+        <tag name="HOST_START_TIMESTAMP">1792204160</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204340</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.30.11">
+      <HostProperties>
+        <tag name="host-ip">10.50.30.11</tag>
+        <tag name="host-fqdn">prn-11.northfold.example</tag>
+        <tag name="operating-system">HP LaserJet</tag>
+        <tag name="HOST_START_TIMESTAMP">1792204180</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204360</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.30.12">
+      <HostProperties>
+        <tag name="host-ip">10.50.30.12</tag>
+        <tag name="host-fqdn">prn-12.northfold.example</tag>
+        <tag name="operating-system">HP LaserJet</tag>
+        <tag name="HOST_START_TIMESTAMP">1792204200</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204380</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+    <ReportHost name="10.50.30.13">
+      <HostProperties>
+        <tag name="host-ip">10.50.30.13</tag>
+        <tag name="host-fqdn">prn-13.northfold.example</tag>
+        <tag name="operating-system">HP LaserJet</tag>
+        <tag name="HOST_START_TIMESTAMP">1792204220</tag>
+        <tag name="HOST_END_TIMESTAMP">1792204400</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings" />
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>

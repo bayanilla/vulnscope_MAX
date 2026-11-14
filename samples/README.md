@@ -17,6 +17,9 @@ Choose one of the folders directly under `samples/`:
 - `compare_two_companies/` is for **Compare reports**: six more sites of two fictional companies, one
   of them the Gootloader sample's company. `python3 -m vulnflow compare-sample` analyzes them as seven
   named reports and compares them. See [the Compare sample](#the-compare-sample-two-companies-seven-sites) below.
+- `artex_ai_agentic_intrusion/` and `cyberstrike_ai_fortigate_intrusion/` replay public reporting on two
+  agentic offensive frameworks (ARTEX and CyberStrikeAI) against fictional companies, as Zeek, Suricata
+  and Nessus data. See [the agentic framework samples](#the-agentic-offensive-framework-samples-artex-ai-and-cyberstrike-ai) below.
 
 On the upload page, choose either subfolder under **Analyze files with Múcaro VulnScope** and click
 **Analyze folder**. The scan-backed folder's executive report, technical report, and Explorer show
@@ -240,3 +243,23 @@ On **Open all networks in the Explorer**, SMB signing alone lights up 340 of the
 `82.29.129.54` or a Gootloader domain under **Shared items** to see one item's hosts in every network.
 Each report also opens on its own: Corvane HQ's leads are `www01` and `partners01`, Phoenix's is
 `phx-fs01`, Austin's is `build01`, and Dresden has none.
+
+## The agentic offensive framework samples (Artex AI and CyberStrike AI)
+
+Two folders, one per tool, each with its own README that cites the sources and lists what an analyst
+should find. Both are generated (`vulnflow/sample_artex.py`, `vulnflow/sample_cyberstrike.py`) and
+contain only text logs: no payloads, binaries or captures. Published operator addresses appear in the
+traffic so the bundled IOC lists match; everything else is fictional.
+
+| Folder | Company | What happens | Likely exploitation |
+| --- | --- | --- | --- |
+| `artex_ai_agentic_intrusion/` | Northfold Systems, software vendor, 92 hosts | ARTEX-style mapping (`norma/0.4`), SSO password spray with address rotation, MySQL general_log web shell on the portal, webhook.site C2, Kerberoasting, DCSync, mass mail, exfiltration; plus a lab benchmark agent (LLM API calls) that escapes to the sales API | portal01 |
+| `cyberstrike_ai_fortigate_intrusion/` | Tallmast Logistics, 79 hosts | FortiGate management-port fingerprinting, fixed-interval SSL-VPN login bursts, a VPN login with stolen credentials, gogo/Nuclei discovery, Veeam CVE-2023-27532 and CVE-2024-40711, DCSync; sqlmap against the web server, proxy then Tor fallback, CyberStrikeAI WebShell and a 5-second no-jitter implant | web01 |
+
+```sh
+python3 -m vulnflow analyze samples/artex_ai_agentic_intrusion -o artex_output
+python3 -m vulnflow analyze samples/cyberstrike_ai_fortigate_intrusion -o cyberstrike_output
+```
+
+A folder's `README.md` and `article_previews.json` are not read as telemetry; the previews file is used
+as the article overview cache when no other cache is given.

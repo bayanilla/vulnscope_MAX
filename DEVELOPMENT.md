@@ -64,8 +64,10 @@ failing step's log is one click away under **Details**.
 ## Samples
 
 `python3 -m vulnflow samples` rewrites the sample folders: scan-backed, telemetry-only, the 4,324-host
-on-prem + AWS sample, Gootloader (`vulnflow/sample_gootloader.py`) and the two-company Compare sample
-(`vulnflow/sample_compare.py`). `python3 -m vulnflow compare-sample` analyzes the Compare sample's
+on-prem + AWS sample, Gootloader (`vulnflow/sample_gootloader.py`), the two-company Compare sample
+(`vulnflow/sample_compare.py`) and the Artex AI and CyberStrike AI samples (`vulnflow/sample_artex.py`,
+`vulnflow/sample_cyberstrike.py`, sharing the writers in `vulnflow/sample_kit.py`; their README files are
+written by hand). `python3 -m vulnflow compare-sample` analyzes the Compare sample's
 seven sites into an upload page's data folder and compares them. All sample data is fabricated. See
 [samples/README.md](samples/README.md). Use `samples/` and `example_output/` for interface testing
 only. Tests check that each generated sample matches its checked-in folder byte for byte.

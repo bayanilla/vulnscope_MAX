@@ -243,7 +243,7 @@ def main(argv=None) -> int:
     c.add_argument("--workdir", metavar="DIR", help="where to put DuckDB's temporary files while searching flows")
 
     g = sub.add_parser("samples", help="write the sample folders (scan-backed, telemetry-only, 4,324-host on-prem + AWS, "
-                                       "Gootloader, and the two-company Compare sample)")
+                                       "Gootloader, the two-company Compare sample, Artex AI and CyberStrike AI)")
     g.add_argument("outdir", nargs="?", default="samples")
 
     cs = sub.add_parser("compare-sample", help="load the two-company Compare sample into the upload page: seven site "

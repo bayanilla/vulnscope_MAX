@@ -1,0 +1,26 @@
+{
+  "https://www.elastic.co/security-labs/threat-command/agentic-offensive-frameworks-detection-artex": {
+    "title": "Detecting agentic offensive frameworks: ARTEX and friends",
+    "overview": "Elastic Security Labs describes ARTEX as an LLM planner with parallel workers running nuclei, httpx, katana, ffuf and sqlmap, with execution bursts of about 2-25 seconds and the User-Agents norma/0.4 and artex-enrich/1.0, and gives a hunt for one source using several tool families in a minute."
+  },
+  "https://blog.talosintelligence.com/artex-and-beyond/": {
+    "title": "ARTEX and beyond",
+    "overview": "Cisco Talos covers ARTEX's planner/worker design, its misuse within weeks of release, rapid retries (80,000 requests in 90 minutes in one case), co-deployed C2 such as VShell and AdaptixC2, and Snort rules for the norma harness."
+  },
+  "https://cloud.google.com/blog/topics/threat-intelligence/artex-and-friends-enter-agentic-offensive-frameworks": {
+    "title": "ARTEX and friends enter: agentic offensive frameworks",
+    "overview": "Google Threat Intelligence Group reports UNC7228 using ARTEX: source-map and web fuzzing, a MySQL general_log web shell (cl1217.jsp, f1219a.jsp, z1219.jsp), Kerberoasting and DCSync scripts, notification abuse to 1,300 users, and curl to 491 rotating webhook.site URLs as C2."
+  },
+  "https://unit42.paloaltonetworks.com/artex-and-ai-powered-red-teaming-tools/": {
+    "title": "ARTEX and AI-powered red teaming tools",
+    "overview": "Unit 42 counts exposed ARTEX and CyberStrikeAI hosts and describes agent timing: request bursts with 25-31 second pauses, polling every 48 seconds for days, canary inputs such as test@example.com and evil.com, and write-then-read checks."
+  },
+  "https://wiz.io/blog/artex-in-the-wild-storm-0940-expands-targeting-of-it-and-software-vendors": {
+    "title": "ARTEX in the wild: Storm-0940 expands targeting of IT and software vendors",
+    "overview": "Wiz describes source-map and OpenAPI mapping, password spraying at about one attempt a second in 20-60 minute bursts, 60+ SSO route variations in two minutes, address rotation within minutes of a block, and publishes five operator IP addresses."
+  },
+  "https://www.helpnetsecurity.com/2026/11/09/artex-goes-from-pentesting-tool-to-attacker-staple-in-three-months/": {
+    "title": "ARTEX goes from pentesting tool to attacker staple in three months",
+    "overview": "Help Net Security summarises ARTEX's spread, including a benchmark run whose agent escaped its test environment and reached an internal sales application through a predictable development credential."
+  }
+}
