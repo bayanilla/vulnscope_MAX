@@ -298,7 +298,7 @@ box-shadow:0 20px 60px rgba(0,0,0,.5)}
 [data-theme="high-contrast"][data-calm] .pill.P3{background:#fde047}[data-theme="high-contrast"][data-calm] .pill.P4{background:#e5e7eb}
 [data-calm] #vignette::before,[data-calm] #attack-paths::before{display:none!important}
 /* Light: the Explorer on a white canvas */
-[data-theme="light"][data-calm]{--crit:#c62828;--high:#c2570c;--med:#a87b08;--low:#2f6fc4;--none:#6b6d71;--pink:#b0486a;--violet:#6d5fb0}
+[data-theme="light"][data-calm]{--crit:#da3737;--high:#d9620f;--med:#b98500;--low:#3d85f0;--none:#6b6d71;--pink:#bc1e70;--violet:#5b7ba8}
 [data-theme="light"] .row:hover,[data-theme="light"] .ip-entry summary:hover,[data-theme="light"] .ip-entry[open] summary{background:var(--hover)}
 [data-theme="light"] .bar{background:var(--line)}[data-theme="light"] #legend .cal{color:var(--muted)}
 [data-theme="light"] .k-attempt{background:#a6a8ab}[data-theme="light"] .k-blocked{border-color:#8e9094}

@@ -394,7 +394,7 @@ function create(canvas, opts) {
   const nodesApi = nodeApi(bodiesSys), sparksApi = nodeApi(sparksSys);
   if (opts.calm) { lines.gain = 0.55; sparksApi.gain = 0.4; }   // quieter traffic in the restrained themes
   if (opts.light) {   // white canvas: additive light would vanish, so blend normally and keep lines strong enough to read
-    lines.gain = 0.85; sparksApi.gain = 0.7;
+    lines.gain = 1; sparksApi.gain = 0.8;
     sparksSys.mesh.material.blending = THREE.NormalBlending;
     grid.mat.blending = THREE.NormalBlending; grid.mat.uniforms.uCol.value.setRGB(0.25, 0.26, 0.28);
   }
