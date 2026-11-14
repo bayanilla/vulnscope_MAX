@@ -39,10 +39,10 @@ let WIN = WINS[1];
 root.innerHTML = `<canvas id="tl-canvas" aria-label="Flows over time"></canvas><div id="tl-labels"></div>
 <header class="tl-top">${BRAND_LOGO.startsWith('data:image/') ? `<img class="tl-logo${BRAND_SMALL ? ' logo-small' : ''}" src="${esc(BRAND_LOGO)}" alt="" aria-hidden="true">` : ''}<div class="tl-title"><div class="t">${esc(BRAND)} · Timeline</div><div class="s" id="tl-sub"></div></div>
   <div class="seg" role="group" aria-label="View"><button type="button" data-view="flat" title="Flat network view (2)">Flat</button><button type="button" data-view="3d" title="3D network view (3)">3D</button><button type="button" data-view="paths" title="Attack paths (P)">Attack paths</button><button type="button" class="on" aria-current="true" title="Timeline (Esc to go back)">Timeline</button></div>
-  <span class="tl-qwrap"><button type="button" id="tl-about-toggle" aria-controls="tl-about" aria-expanded="false" aria-label="What am I looking at?" title="What am I looking at? (?)">?</button>
-  <p id="tl-about" hidden>Time runs <b>left to right</b> along the tunnel. Each lane on the wall is a subnet and the <b>internet</b> is the outer band on top. Every flow is a <b>chord</b> drawn at the moment it happened, so you can read the order of events: first contact, the exploit alert, the callback out, and anything that repeats on a schedule. <b>Rings</b> are IPS alerts. Drag the window in the side panel to light up one stretch of time.</p></span></header>
+  <span class="tl-qwrap"><button type="button" id="tl-about-toggle" aria-controls="tl-about" aria-expanded="false" aria-label="What am I looking at?" title="What am I looking at? (?)">?</button></span></header>
 <aside class="tl-side"><h3>Time window</h3><div class="tl-winbtns" role="group" aria-label="Window length">${WINS.map(w => `<button type="button" data-w="${w}">${w < 1 ? w * 60 + ' min' : w + ' h'}</button>`).join('')}</div>
   <input id="tl-scrub" type="range" min="0" step="0.25" aria-label="Window start"><div id="tl-win"></div><div id="tl-sample"></div></aside>
+<p id="tl-about" hidden>Time runs <b>left to right</b> along the tunnel. Each lane on the wall is a subnet and the <b>internet</b> is the outer band on top. Every flow is a <b>chord</b> drawn at the moment it happened, so you can read the order of events: first contact, the exploit alert, the callback out, and anything that repeats on a schedule. <b>Rings</b> are IPS alerts. Drag the window in the side panel to light up one stretch of time.</p>
 <div class="tl-legend" id="tl-legend"></div>
 <div class="tl-cams" role="group" aria-label="Camera"><button type="button" data-p="angled" title="Angled view">Angled</button><button type="button" data-p="side" title="Side view">Side</button><button type="button" data-p="down" title="Look down the tunnel">Down the tunnel</button><button type="button" data-p="above" title="Top-down view">Above</button><button type="button" id="tl-spin" title="Turn slowly to the left (stops when you move the camera; Space)">Spin</button></div>
 <div id="tl-tip" hidden></div>`;
@@ -235,7 +235,21 @@ addEventListener('resize', () => { if (!root.hidden) resize(); });
 // ---------------------------------------------------------------- note, open and close, switching views
 const ABOUT_MS = 20000; let aboutTimer = 0;
 function closeAbout() { clearTimeout(aboutTimer); $('tl-about').hidden = true; $('tl-about-toggle').setAttribute('aria-expanded', 'false'); }
-function openAbout(ms = ABOUT_MS) { $('tl-about').hidden = false; $('tl-about-toggle').setAttribute('aria-expanded', 'true'); clearTimeout(aboutTimer); aboutTimer = setTimeout(closeAbout, ms); }
+// the note sits centered under the tunnel: above the legend, left of the side panel and camera buttons
+function placeAbout() {
+  const box = el => { if (!el) return null; const cs = getComputedStyle(el); if (cs.display === 'none') return null;
+    const b = el.getBoundingClientRect(); return b.width && b.height ? b : null; };
+  const v = root.getBoundingClientRect(); let l = v.left + 18, r = v.right - 18, bottom = v.bottom - 14;
+  for (const el of [root.querySelector('.tl-side'), root.querySelector('.tl-cams')]) { const b = box(el); if (b) r = Math.min(r, b.left - 14); }
+  const lg = box($('tl-legend')); if (lg) bottom = Math.min(bottom, lg.top - 10);
+  const cams = box(root.querySelector('.tl-cams')); if (cams && lg && cams.bottom > lg.top) bottom = Math.min(bottom, cams.top - 10);
+  if (r - l < 280) { l = v.left + 18; r = v.right - 18; }
+  const st = $('tl-about').style;
+  st.left = Math.round(l - v.left) + 'px'; st.right = Math.round(v.right - r) + 'px'; st.bottom = Math.round(v.bottom - bottom) + 'px';
+  st.maxWidth = Math.round(Math.min(620, r - l)) + 'px';
+}
+function openAbout(ms = ABOUT_MS) { $('tl-about').hidden = false; placeAbout(); requestAnimationFrame(placeAbout); $('tl-about-toggle').setAttribute('aria-expanded', 'true'); clearTimeout(aboutTimer); aboutTimer = setTimeout(closeAbout, ms); }
+addEventListener('resize', () => { if (!$('tl-about').hidden) placeAbout(); });
 function toggleAbout() { if ($('tl-about').hidden) openAbout(); else closeAbout(); }
 $('tl-about-toggle').onclick = toggleAbout;
 $('tl-about').addEventListener('mouseenter', () => clearTimeout(aboutTimer));

@@ -1644,26 +1644,40 @@ function aboutHtml() {
   const d = D.nodes.find(n => n.id === state.focus) || {};
   return ABOUT.focus(d.name ? d.name.split('.')[0] + ' (' + shown(state.focus) + ')' : shown(state.focus));
 }
+// The note sits centered under the picture: above the legend, between the host list on the left and
+// whatever is open on the right (host panel, shared items, 3D camera controls, Security Assistant).
 function placeAbout() {
-  const b = $('about-toggle').getBoundingClientRect(), root = document.documentElement.style;
-  root.setProperty('--about-top', Math.round(b.bottom + 8) + 'px');
-  root.setProperty('--about-right', Math.max(10, Math.round(innerWidth - b.right)) + 'px');
+  const box = id => { const el = $(id); if (!el || el.hidden) return null; const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return null; const b = el.getBoundingClientRect(); return b.width && b.height ? b : null; };
+  let l = 18, r = innerWidth - 18, bottom = innerHeight - 14;
+  const rail = box('rail'); if (rail) l = Math.max(l, rail.right + 14);
+  for (const id of ['panel', 'shared', 'viewctl', 'analyst-chat']) { const b = box(id); if (b && b.bottom > innerHeight / 2) r = Math.min(r, b.left - 14); }
+  const lg = box('legend'); if (lg) bottom = lg.top - 10;
+  if (r - l < 280) { l = 18; r = innerWidth - 18; }   // no room between the side panels: use the full width
+  const root = document.documentElement.style;
+  root.setProperty('--about-left', Math.round(l) + 'px');
+  root.setProperty('--about-right', Math.round(innerWidth - r) + 'px');
+  root.setProperty('--about-bottom', Math.round(innerHeight - bottom) + 'px');
 }
 function closeAbout() { clearTimeout(aboutTimer); $('about').hidden = true; $('about-toggle').setAttribute('aria-expanded', 'false'); }
 function openAbout(ms = ABOUT_MS) {
   $('about').innerHTML = aboutHtml(); aboutShown = aboutKey(); placeAbout();
   $('about').hidden = false; $('about-toggle').setAttribute('aria-expanded', 'true');
+  requestAnimationFrame(placeAbout);   // side panels may still be opening for this view
   clearTimeout(aboutTimer); aboutTimer = setTimeout(closeAbout, ms);
 }
 // called whenever the view may have changed: a new view opens the note again, the same view only refreshes it
 function updateAbout() {
-  if (aboutKey() !== aboutShown) openAbout(); else if (!$('about').hidden) { $('about').innerHTML = aboutHtml(); placeAbout(); }
+  if (aboutKey() !== aboutShown) openAbout(); else if (!$('about').hidden) { $('about').innerHTML = aboutHtml(); placeAbout(); requestAnimationFrame(placeAbout); }
 }
 function toggleAbout() { if ($('about').hidden) openAbout(); else closeAbout(); }
 $('about-toggle').onclick = toggleAbout;
 $('about').addEventListener('mouseenter', () => clearTimeout(aboutTimer));
 $('about').addEventListener('mouseleave', () => { clearTimeout(aboutTimer); aboutTimer = setTimeout(closeAbout, 3000); });
 addEventListener('resize', () => { if (!$('about').hidden) placeAbout(); });
+// re-place when a side panel opens or closes (host panel, Security Assistant drawer)
+{ const mo = new MutationObserver(() => { if (!$('about').hidden) placeAbout(); });
+  for (const el of [document.body, $('panel'), $('shared'), $('analyst-chat')]) if (el) mo.observe(el, { attributes: true, attributeFilter: ['class', 'hidden'] }); }
 const closePaths = () => { if (window.VFPaths) window.VFPaths.close(); if (window.VFTimeline) window.VFTimeline.close(); };
 $('vw-flat').onclick = () => { closePaths(); set3d(false, true); };
 $('btn-3d').onclick = () => { closePaths(); set3d(true, true); };
