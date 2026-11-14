@@ -23,7 +23,7 @@ from .schema import ParseStats
 _MAGIC = (b"\xd4\xc3\xb2\xa1", b"\xa1\xb2\xc3\xd4", b"\x4d\x3c\xb2\xa1", b"\xa1\xb2\x3c\x4d",
           b"\x0a\x0d\x0d\x0a")
 # Zeek's own bookkeeping logs: nothing about the network in them.
-_SKIP_LOGS = {"loaded_scripts", "packet_filter", "stats", "capture_loss", "reporter", "telemetry",
+_SKIP_LOGS = {"loaded_scripts", "packet_filter", "stats", "reporter", "telemetry",
               "print", "broker", "cluster", "config"}
 _ZEEK_CANDIDATES = ("/usr/local/zeek/bin/zeek", "/opt/zeek/bin/zeek", "/opt/homebrew/bin/zeek",
                     "/usr/local/bin/zeek")

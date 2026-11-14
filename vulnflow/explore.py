@@ -194,6 +194,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
     # Addresses that were only probed and never answered are not hosts: they are counted per host
     # ("probed, no answer") instead of being drawn as peers.
     answering = ds.flow_store().answering_ips()
+    broadcast = ds.flow_store().broadcast_ips() - answering
     traffic_scanners = {e["ip"]: e for e in res["summary"].get("traffic_scanners") or ()}
 
     def ext(ip):
@@ -331,7 +332,7 @@ def build(res: dict, ds, cfg: Config | None = None) -> dict:
         # east/west: every internal peer in either direction (failed attempts too), then onward peers
         peers, probed_only, probed_blocked = [], Counter(), 0
         for other in (out_of.get(ip, set()) | in_to.get(ip, set())):
-            if ext(other):
+            if ext(other) or other in broadcast:
                 continue
             if other not in answering and other not in hostinfo and other not in ds.scanned_hosts:
                 probed_only[_subnet(other)] += 1

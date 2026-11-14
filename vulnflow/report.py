@@ -57,6 +57,9 @@ def _svc(r) -> str:
     return "host-level" if r["port"] == 0 else f"{r['port']}/{r['proto']}" + (f" ({r['service']})" if r["service"] else "")
 
 
+CAPTURE_LOSS_WARN_PCT = 1.0
+
+
 def _hosts_seen(cov: dict) -> str:
     """'N internal hosts sent or answered traffic', plus the addresses that were only probed."""
     n, dead = cov["telemetry_internal_hosts"], cov.get("probed_only_addresses", 0)
@@ -73,6 +76,10 @@ def _hosts_seen(cov: dict) -> str:
         if top:
             text += (" Most probed: " + ", ".join(f"{sn} ({n})" for sn, n in top[:5])
                      + (f" and {len(top) - 5} more ranges" if len(top) > 5 else "") + ".")
+    loss = cov.get("capture_loss_pct")
+    if loss is not None and loss >= CAPTURE_LOSS_WARN_PCT:
+        text += (f" **Check the sensor:** Zeek estimated it missed up to {loss:g}% of packets, so some "
+                 "sessions, hosts and alerts may be missing from this report.")
     if cov.get("one_way_capture_suspected"):
         text += (f" **Check the sensor:** only {cov.get('sessions_answered_pct')}% of sessions show any answer, "
                  "which usually means it sees one direction of the traffic. Hosts that exist may be "

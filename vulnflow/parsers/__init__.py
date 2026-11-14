@@ -30,7 +30,9 @@ def detect(path: str) -> str:
         return "filebeat_zeek"
     if head.startswith("#separator") or "\n#fields" in head or first.startswith("#fields"):
         return "zeek"
-    if first.lstrip().startswith("{") and '"event_type"' in first:
+    if first.lstrip().startswith("[") and '"_path"' in head[:4096]:
+        return "zeek"                 # Zui/Brim JSON export: one array of records tagged by _path
+    if first.lstrip().startswith("{") and '"event_type"' in first and '"_path"' not in first:
         return "suricata"
     if first.lstrip().startswith("{") and ('"id.orig_h"' in first or '"note"' in first):
         return "zeek"

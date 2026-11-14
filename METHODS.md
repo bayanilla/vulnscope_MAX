@@ -27,12 +27,13 @@ skipped. Zeek and Palo Alto files can be plain or `.gz`.
 
 | Kind | Format | Notes |
 | --- | --- | --- |
-| Telemetry | Zeek `conn.log` (TSV or JSON) | `conn_state` decides completed vs. failed sessions. `REJ` (the host answered with a reset) is reported as *refused by the host*, not as a firewall block; only firewall/IPS logs report blocks. |
-| Alerts | Zeek `notice.log` (TSV or JSON) | Notices become IPS/IDS alerts used as exploitation evidence. |
+| Telemetry | Zeek `conn.log` (TSV or JSON) | `conn_state` decides completed vs. failed sessions. A session the capture joined mid-stream (`OTH`, `SH`, `SHR`) counts as completed when the history shows an ACK or data from both sides; a UDP/ICMP session (an answered ping) when packets went both ways. `REJ` (the host answered with a reset) is reported as *refused by the host*, not as a firewall block; only firewall/IPS logs report blocks. |
+| Alerts | Zeek `notice.log` (TSV or JSON) | Notices about hosts become IPS/IDS alerts used as exploitation evidence. `CaptureLoss::` notices and `capture_loss.log` are a sensor-quality signal instead: the reports warn when Zeek estimated 1% or more packet loss. Zeek's bookkeeping logs (`loaded_scripts`, `stats`, `packet_filter`, `reporter`, ...) are skipped. |
 | Context | Other Zeek streams (TSV or JSON, including `.log.gz`) | `#path` identifies TSV streams; JSON uses `_path` or the filename. DNS, HTTP, SMTP, files, custom streams and others are preserved in `normalized/zeek_events.jsonl` with typed fields and per-stream counts. They do not create extra sessions. |
 | Industrial telemetry | Zeek Modbus, DNP3, BACnet, S7, EtherNet/IP, CIP, OPC UA logs | Preserved in `normalized/ot_events.jsonl` with protocol, operation, endpoints and direction when available. Observed operations do not become alerts automatically. |
 | Telemetry + alerts | Palo Alto TRAFFIC and THREAT logs | Web UI / Panorama CSV export (header row) or raw syslog CSV in PAN-OS field order. Zones `untrust/outside/internet/external/wan` count as external. Timestamps are assumed UTC. |
-| Telemetry + alerts | Suricata EVE JSON | `flow` events become sessions, `alert` events become alerts. |
+| Telemetry + alerts + context | Zui / Brim export (JSON array or JSON lines, plain or `.gz`) | Records tagged by `_path` are read like Zeek JSON (nested `id` objects, ISO times); brimcap's Suricata `alert` records become alerts. |
+| Telemetry + alerts | Suricata EVE JSON | `flow` events become sessions, `alert` events become alerts. A TCP flow Suricata joined mid-stream with a service port (below 1024) as the client and a high port as the server is turned round, as Zeek does, so a server's reply is not read as an inbound session. |
 | Telemetry | Generic flow CSV / TSV / space-delimited | nfdump CSV, AWS VPC Flow Logs, SIEM exports. Columns are matched by common names (`src_ip`, `sa`, `srcaddr`, ...). |
 | Telemetry + alerts + context | Zeek logs shipped by Filebeat / Elastic Agent: Kibana Discover CSV or NDJSON (`elasticdump`, `_search` hits, Filebeat file output), plain or `.gz` | Rows with `event.dataset: zeek.*` are turned back into Zeek records; other modules' rows are skipped. See below. |
 | Packets | `.pcap` / `.pcapng` (plain or `.gz`) | Converted with Zeek, then read as Zeek logs. See below. |
@@ -110,7 +111,8 @@ flag remains available.
 An internal address counts as a host when it started a session or answered one (the session
 completed, it refused with a reset, or it sent data back). Addresses that were only probed and
 never answered are reported as a separate count, per subnet and per scanner, and are not drawn in
-the Explorer. Each one is listed in `normalized/probed_addresses.csv` with who probed it and
+the Explorer. Subnet broadcasts (an address ending in `.255` that only received UDP/ICMP, or
+`255.255.255.255`) are neither hosts nor probed addresses. Each one is listed in `normalized/probed_addresses.csv` with who probed it and
 whether a firewall log shows the traffic was blocked. A firewall block does not make an address
 a host, because firewalls also log blocks for empty addresses. Zeek alone cannot tell a silent
 drop from an empty address. When fewer than 2% of sessions show any answer, the reports warn that

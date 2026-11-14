@@ -146,7 +146,7 @@ Windows paths are translated). Picking a folder fills in the path and moves focu
 evidence drive instead, or only one inbox folder for locked-down sites, set `VULNSCOPE_BROWSE` in
 `.env`; see [Docker folders](ARCHITECTURE.md#docker-container).
 
-**What it reads.** Zeek logs (TSV or JSON), Palo Alto TRAFFIC/THREAT, Suricata EVE, generic flow
+**What it reads.** Zeek logs (TSV or JSON, or a Zui/Brim export), Palo Alto TRAFFIC/THREAT, Suricata EVE, generic flow
 CSVs (nfdump, AWS VPC Flow Logs, SIEM exports), Nessus `.nessus` or CSV, and:
 
 - **Packet captures.** `.pcap`/`.pcapng` files, plain or `.gz`, are run through Zeek into a

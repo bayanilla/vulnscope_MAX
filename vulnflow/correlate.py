@@ -298,6 +298,17 @@ class Correlator:
                 WHERE rn = 1""").fetchall():
             self._spread[kid] = (src, port, proto, utc(ts))
 
+    def _capture_loss(self) -> float | None:
+        worst = None
+        for e in self.ds.zeek_events:
+            if e.stream == "capture_loss":
+                try:
+                    pct = float(e.fields.get("percent_lost"))
+                except (TypeError, ValueError):
+                    continue
+                worst = pct if worst is None else max(worst, pct)
+        return None if worst is None else round(worst, 2)
+
     def prepare_blast(self, hosts):
         con = self.con
         hosts = [h for h in hosts if h not in self._blast_data]
@@ -634,7 +645,8 @@ class Correlator:
         scanned = set(ds.scanned_hosts)
         alert_ips = {ip for t in ds.threats for ip in (t.src_ip, t.dst_ip) if self.net.internal(ip)}
         live = self.live_ips | (alert_ips if not vulnerability_data_available else set())
-        probed_only = self.internal_ips - live - scanned
+        # subnet broadcasts are not hosts, nor addresses that failed to answer
+        probed_only = self.internal_ips - live - scanned - self.store.broadcast_ips()
         probed_subnets = Counter(scanners.subnet(ip) for ip in probed_only)
         n_sessions, n_answered = self.store.answered_share()
         sessions = {ip: sum(n for _, n in svcs) for ip, svcs in servers.items()}
@@ -648,6 +660,8 @@ class Correlator:
             "probed_only_subnets": [[sn, n] for sn, n in sorted(probed_subnets.items(),
                                                                  key=lambda kv: (-kv[1], kv[0]))[:200]],
             "sessions_answered_pct": round(100 * n_answered / n_sessions, 1) if n_sessions else None,
+            # highest packet loss Zeek estimated (capture_loss.log / CaptureLoss notice), in percent
+            "capture_loss_pct": self._capture_loss(),
             # almost nothing answered: the sensor probably sees only one direction of the traffic
             "one_way_capture_suspected": n_sessions >= scanners.ONE_WAY_MIN_SESSIONS
                                          and n_answered < scanners.ONE_WAY_MAX_ANSWERED * n_sessions,
@@ -685,7 +699,8 @@ class Correlator:
             "hosts_to_investigate": sorted(investigate),
             "hosts_possible_spread": sorted(spread),
             "threat_alerts": len(ds.threats),
-            "zeek_event_counts": dict(sorted(Counter(e.stream for e in ds.zeek_events).items())),
+            "zeek_event_counts": dict(sorted(Counter(e.stream for e in ds.zeek_events
+                                                     if e.stream != "capture_loss").items())),
             "ot_protocol_counts": dict(sorted(Counter(e.protocol for e in ds.ot_events).items())),
             "hosts_internet_exposed": sum(1 for h in host_list if h["internet_exposed"]),
             "window_start": _iso(min(times)) if times else None,
